@@ -202,14 +202,7 @@ export default function HomePage() {
             </div>
 
             {/* DESKTOP ACTIONS */}
-            <div className="hidden items-center gap-3 lg:flex">
-
-              <a
-                href="/marketplace"
-                className="inline-flex items-center justify-center rounded-lg bg-blue-900 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-md"
-              >
-                Property For You
-              </a>
+            <div className="hidden items-center gap-3 lg:flex">  
 
               <a
                 href="/profile"
