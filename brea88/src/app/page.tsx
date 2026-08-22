@@ -128,7 +128,7 @@ export default function HomePage() {
 
               <div className="flex min-w-0 flex-col justify-center">
                 <span className="truncate text-sm font-black leading-tight tracking-tight text-blue-900 sm:text-lg lg:text-xl">
-                  CYYYYY
+                  BREA 88 REALTY OPC
                 </span>
 
                 <span className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.12em] text-slate-600 sm:text-[10px] sm:tracking-[0.15em]">
