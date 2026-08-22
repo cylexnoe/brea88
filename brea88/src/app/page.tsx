@@ -384,145 +384,204 @@ export default function HomePage() {
           CORPORATE PROFILE
       ====================================================== */}
 
-      <section
-        id="profile"
-        className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24"
-      >
+      {/* CORPORATE PROFILE & GOALS */}
+<section
+  id="profile"
+  className="bg-slate-50 py-14 sm:py-16 lg:py-24"
+>
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+    <div className="grid items-stretch gap-6 lg:grid-cols-12 lg:gap-8">
 
-          <div className="lg:col-span-7">
+      {/* COMPANY OVERVIEW */}
+      <div className="flex flex-col lg:col-span-7">
 
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-blue-900">
-              Corporate Profile
-            </span>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md sm:p-8 lg:p-10">
 
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Company Overview
-            </h2>
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-blue-900">
+            Corporate Profile
+          </span>
 
-            <div className="mt-6 space-y-4 text-sm leading-7 text-slate-600 sm:text-base">
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+            Company Overview
+          </h2>
 
-              <p>
-                BREA 88 Realty OPC is a duly registered real
-                estate brokerage company committed to providing
-                professional, ethical, and client-centered real
-                estate services.
-              </p>
+          <div className="mt-6 space-y-4">
+            <p className="text-sm leading-7 text-slate-600 sm:text-base">
+              BREA 88 Realty OPC is a duly registered real estate brokerage
+              company committed to providing professional, ethical, and
+              client-centered real estate services. Guided by our core
+              principle,
+              <strong className="text-blue-900">
+                {" "}“Service with a Heart,”
+              </strong>{" "}
+              we are dedicated to helping clients achieve their real estate
+              goals through integrity, expertise, and personalized service.
+            </p>
 
-              <p>
-                Guided by our core principle,
-                <strong className="text-blue-900">
-                  {' '}“Service with a Heart,”{' '}
-                </strong>
-                we are dedicated to helping clients achieve
-                their real estate goals through integrity,
-                expertise, and personalized service.
-              </p>
+            <p className="text-sm leading-7 text-slate-600 sm:text-base">
+              Established in 2026, BREA 88 Realty OPC was founded to deliver
+              exceptional real estate solutions while building lasting
+              relationships with developers, investors, property owners, and
+              homebuyers.
+            </p>
+          </div>
 
-              <p>
-                Established in 2026, BREA 88 Realty OPC was
-                founded to deliver exceptional real estate
-                solutions while building lasting relationships
-                with developers, investors, property owners,
-                and homebuyers.
-              </p>
+          {/* REGISTRATION DETAILS */}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
 
-            </div>
-
-            {/* REGISTRATION */}
-            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
                 <FileText className="h-5 w-5 text-blue-900" />
+              </div>
 
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   SEC Registration
                 </p>
 
-                <p className="mt-1 text-sm font-bold text-slate-800">
+                <p className="mt-0.5 text-sm font-bold text-slate-800">
                   May 14, 2026
                 </p>
+              </div>
+            </div>
 
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                <FileText className="h-5 w-5 text-blue-900" />
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-
-                <FileText className="h-5 w-5 text-blue-900" />
-
-                <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   BIR Registration
                 </p>
 
-                <p className="mt-1 text-sm font-bold text-slate-800">
+                <p className="mt-0.5 text-sm font-bold text-slate-800">
                   May 19, 2026
                 </p>
-
               </div>
-
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      {/* VISION & MISSION */}
+      <div className="flex lg:col-span-5">
+
+        <div className="flex w-full flex-col rounded-2xl bg-blue-900 p-6 text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-8 lg:p-10">
+
+          {/* HEADER */}
+          <div className="flex items-center justify-between gap-4 border-b border-blue-800 pb-5">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300">
+                Our Direction
+              </p>
+
+              <h3 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">
+                Vision & Mission
+              </h3>
+            </div>
+
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
+              <Award className="h-5 w-5 text-blue-200" />
+            </div>
           </div>
 
           {/* VISION */}
-          <div className="lg:col-span-5">
+          <div className="mt-7">
+            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-rose-400">
+              Vision
+            </h4>
 
-            <div className="lg:col-span-5 bg-blue-900 text-white p-8 rounded-2xl shadow-xl">
+            <p className="mt-3 text-sm leading-7 text-blue-100 sm:text-base">
+              To be a trusted and respected real estate brokerage company
+              recognized for excellence, integrity, innovation, and
+              compassionate service, creating meaningful opportunities for
+              clients, developers, and communities.
+            </p>
+          </div>
 
-              <h3 className="border-b border-blue-800 pb-4 text-xl font-bold">
-                Our Vision & Mission
-              </h3>
+          {/* MISSION */}
+          <div className="mt-8 border-t border-blue-800 pt-7">
+            <h4 className="text-xs font-bold uppercase tracking-[0.18em] text-rose-400">
+              Mission Focus
+            </h4>
 
-              <div className="mt-6">
+            <ul className="mt-4 space-y-4 text-sm leading-6 text-blue-100">
 
-                <h4 className="text-xs font-bold uppercase tracking-widest text-rose-400">
-                  Vision
-                </h4>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-white">
+                  ✓
+                </span>
 
-                <p className="mt-2 text-sm leading-6 text-slate-200">
-                  To be a trusted and respected real estate
-                  brokerage company recognized for excellence,
-                  integrity, innovation, and compassionate
-                  service.
-                </p>
+                <span>
+                  Delivering professional and ethical real estate services.
+                </span>
+              </li>
 
-              </div>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-white">
+                  ✓
+                </span>
 
-              <div className="mt-6 border-t border-blue-800 pt-6">
+                <span>
+                  Building long-term partnerships based on trust,
+                  transparency, and mutual success.
+                </span>
+              </li>
 
-                <h4 className="text-xs font-bold uppercase tracking-widest text-rose-400">
-                  Mission Focus
-                </h4>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-white">
+                  ✓
+                </span>
 
-                <div className="mt-4 grid gap-3">
+                <span>
+                  Assisting clients in making informed and rewarding property
+                  investment decisions.
+                </span>
+              </li>
 
-                  {[
-                    'Delivering professional and ethical real estate services.',
-                    'Building long-term partnerships based on trust, transparency, and mutual success.',
-                    'Assisting clients in making informed and rewarding property investment decisions.',
-                    'Supporting developer partners through effective project marketing and sales strategies.',
-                    'Providing “Service with a Heart” in every transaction and client engagement.',
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-lg bg-blue-800/40 p-3 text-sm leading-6 text-slate-200"
-                    >
-                      {item}
-                    </div>
-                  ))}
+              <li className="flex items-start gap-3">
+                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-white">
+                  ✓
+                </span>
 
-                </div>
+                <span>
+                  Supporting developer partners through effective project
+                  marketing and sales strategies.
+                </span>
+              </li>
 
-              </div>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-white">
+                  ✓
+                </span>
 
-            </div>
+                <span>
+                  Providing “Service with a Heart” in every transaction and
+                  client engagement.
+                </span>
+              </li>
 
+            </ul>
+          </div>
+
+          {/* BOTTOM SPACE / BALANCE */}
+          <div className="mt-auto pt-8">
+            <div className="h-px w-full bg-blue-800" />
+
+            <p className="mt-4 text-xs font-medium text-blue-300">
+              BREA 88 REALTY OPC — Service with a Heart
+            </p>
           </div>
 
         </div>
+      </div>
 
-      </section>
+    </div>
+  </div>
+</section>
 
       {/* =====================================================
           CEO
