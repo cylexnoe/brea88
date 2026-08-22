@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import {Home, Search, MapPin, Heart, ShieldCheck, Award, Briefcase, FileText, CheckCircle, Lock, Eye, EyeOff, X, User, Menu, Building2, Phone, Mail, Facebook} from 'lucide-react';
+import {Search, MapPin, Heart, ShieldCheck, Award, Briefcase, FileText, CheckCircle, Lock, Eye, EyeOff, X, User, Menu, Building2, Phone, Mail} from 'lucide-react';
 
 import { PROPERTIES } from './data';
 import emailjs from '@emailjs/browser';
