@@ -468,7 +468,7 @@ export default function HomePage() {
           {/* VISION */}
           <div className="lg:col-span-5">
 
-            <div className="h-full rounded-2xl bg-blue-900 p-6 text-white shadow-xl sm:p-8">
+            <div className="lg:col-span-5 bg-blue-900 text-white p-8 rounded-2xl shadow-xl">
 
               <h3 className="border-b border-blue-800 pb-4 text-xl font-bold">
                 Our Vision & Mission
