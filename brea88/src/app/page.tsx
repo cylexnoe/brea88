@@ -316,17 +316,12 @@ export default function HomePage() {
           </p>
 
           {/* PROPERTY market */}
-          <div className="mt-8 flex w-full max-w-4xl flex-col gap-3 rounded-xl bg-white p-3 text-slate-800 shadow-xl sm:mt-12 sm:p-4 md:flex-row md:gap-4">
-            {/* PROPERTY FOR YOU BUTTON */}
-            <a
-              href="/marketplace"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-900 px-6 py-4 text-center text-sm font-bold uppercase tracking-wider text-white transition hover:bg-blue-800 md:w-auto md:px-8"
-            >
-              <Building2 className="h-4 w-4" />
-              Property For You
-            </a>
-          </div>
-        </div>
+         <div className="mt-8 sm:mt-12">
+              <a href="/marketplace"className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-900 px-8 py-4 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition duration-200 hover:bg-blue-800 active:scale-[0.98] sm:w-auto">
+                <Building2 className="h-4 w-4" />
+                Property For You
+              </a>
+            </div>
       </section>
 
       {/* =====================================================
