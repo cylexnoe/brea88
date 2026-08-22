@@ -315,46 +315,8 @@ export default function HomePage() {
             throughout the Philippines.
           </p>
 
-          {/* PROPERTY SEARCH */}
+          {/* PROPERTY market */}
           <div className="mt-8 flex w-full max-w-4xl flex-col gap-3 rounded-xl bg-white p-3 text-slate-800 shadow-xl sm:mt-12 sm:p-4 md:flex-row md:gap-4">
-
-            {/* LOCATION */}
-            <div className="flex flex-1 items-center gap-3 border-b border-slate-200 px-2 pb-3 md:border-b-0 md:border-r md:pb-0">
-              <MapPin className="h-5 w-5 flex-shrink-0 text-blue-900" />
-
-              <div className="w-full">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Target Region
-                </p>
-
-                <input
-                  type="text"
-                  placeholder="e.g., Cebu, Manila, Cavite"
-                  className="w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            {/* PROPERTY TYPE */}
-            <div className="flex flex-1 items-center gap-3 border-b border-slate-200 px-2 pb-3 md:border-b-0 md:border-r md:pb-0">
-              <Home className="h-5 w-5 flex-shrink-0 text-blue-900" />
-
-              <div className="w-full">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Property Type
-                </p>
-
-                <select className="w-full cursor-pointer bg-transparent text-sm font-medium outline-none">
-                  <option>Villa / House</option>
-                  <option>Apartment</option>
-                  <option>Loft</option>
-                  <option>Commercial</option>
-                  <option>Condominium</option>
-                  <option>Lot</option>
-                </select>
-              </div>
-            </div>
-
             {/* PROPERTY FOR YOU BUTTON */}
             <a
               href="/marketplace"
