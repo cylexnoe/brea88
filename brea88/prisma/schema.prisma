@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Property {
+  id        Int      @id @default(autoincrement())
+  title     String
+  tag       String
+  price     String
+  location  String
+  image     String
+  beds      Int?
+  baths     Int?
+  sqft      Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tag])
+  @@index([location])
+  @@map("properties")
+}

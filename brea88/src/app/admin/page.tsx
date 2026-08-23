@@ -60,13 +60,18 @@ export default function AdminDashboard() {
   // LOGOUT
   // ==========================================
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin');
-    localStorage.removeItem('token');
-    sessionStorage.clear();
-
-    router.push('/');
-  };
+  const handleLogout = async () => {
+  try {
+    await fetch('/api/logout', {
+      method: 'POST',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    router.replace('/');
+    router.refresh();
+  }
+};
 
   // ==========================================
   // INPUT CHANGE
