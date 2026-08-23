@@ -313,74 +313,41 @@ export default function HomePage() {
               and Compassion throughout the Philippines.
             </p>
 
-           <div className="mt-7 w-full max-w-4xl">
-        <div className="rounded-2xl border border-white/10 bg-white/95 p-3 shadow-2xl backdrop-blur-md sm:p-4">
+                    <div className="mt-7 w-full max-w-4xl">
+                  <div className="rounded-2xl border border-white/10 bg-white/95 p-3 shadow-2xl backdrop-blur-md sm:p-4">
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
 
-            {/* SEARCH INPUT */}
-            <div className="relative md:col-span-8">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      {/* SEARCH INPUT */}
+                      <div className="relative md:col-span-8">
+                        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
-              <input
-                type="text"
-                placeholder="Search properties, locations, or keywords..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
-              />
+                        <input
+                          type="text"
+                          placeholder="Search properties, locations, or keywords..."
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                        />
+                      </div>
+
+                      {/* PROPERTY BUTTON */}
+                      <div className="md:col-span-4">
+                        <a
+                          href="/marketplace"
+                          className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg active:translate-y-0"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          Property For You
+                        </a>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
+          </section>  
 
-            {/* PROPERTY BUTTON */}
-            <div className="md:col-span-4">
-              <a
-                href="/marketplace"
-                className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg active:translate-y-0"
-              >
-                <Building2 className="h-4 w-4" />
-                Property For You
-              </a>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-      {/* =====================================================
-          PROPERTY SEARCH
-      ====================================================== */}
-
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-
-        <div className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-lg sm:p-6">
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-
-            <div className="relative md:col-span-8">
-              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
-
-              <input
-                type="text"
-                placeholder="Search properties, locations, or keywords..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-
-            <div className="md:col-span-4">
-              <a
-                href="/marketplace"
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-6 py-3 text-center text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-md active:translate-y-0"
-              >
-                <Building2 className="h-4 w-4" />
-                Property For You
-              </a>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* =====================================================
           CORPORATE PROFILE
