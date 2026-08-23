@@ -300,7 +300,32 @@ export default function HomePage() {
 
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/50" />
         </div>
+<div className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-lg sm:p-6">
 
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+
+            <div className="relative md:col-span-8">
+              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+
+              <input
+                type="text"
+                placeholder="Search properties, locations, or keywords..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="md:col-span-4">
+              <a
+                href="/marketplace"
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-6 py-3 text-center text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-md active:translate-y-0"
+              >
+                <Building2 className="h-4 w-4" />
+                Property For You
+              </a>
+            </div>
+
+          </div>
+        </div>
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
           <div className="max-w-4xl text-white">
