@@ -20,6 +20,7 @@ import {
   Building2,
   Phone,
   Mail,
+  Loader2
 } from 'lucide-react';
 
 import { PROPERTIES } from './data';
@@ -54,32 +55,37 @@ export default function HomePage() {
   // =========================================================
 
   const sendEmail = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
+  e: React.FormEvent<HTMLFormElement>
+) => {
+  e.preventDefault();
 
-    if (!formRef.current) return;
+  if (!formRef.current) return;
 
-    setIsSubmitting(true);
-    setSubmitStatus('idle');
+  setIsSubmitting(true);
+  setSubmitStatus('idle');
 
-    try {
-      await emailjs.sendForm(
-        'service_ypezpkv',
-        'template_ab5mkom',
-        formRef.current,
-        'PVaFDUtH8z3a_c3NS'
-      );
+  try {
+    await emailjs.sendForm(
+      'service_ypezpkv',
+      'template_ab5mkom',
+      formRef.current,
+      'PVaFDUtH8z3a_c3NS'
+    );
 
-      setSubmitStatus('success');
-      formRef.current.reset();
-    } catch (error) {
-      console.error(error);
-      setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    // EmailJS successfully accepted the email
+    setSubmitStatus('success');
+    formRef.current.reset();
+
+  } catch (error) {
+    console.error('EmailJS Error:', error);
+
+    // EmailJS failed
+    setSubmitStatus('error');
+
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // =========================================================
   // ADMIN LOGIN
@@ -418,9 +424,9 @@ export default function HomePage() {
 
                   </div>
 
-                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/40">
+                  <div className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-md">
 
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 transition-transform duration-300 group-hover:scale-105">
                       <FileText className="h-5 w-5 text-blue-900" />
                     </div>
 
@@ -1144,11 +1150,6 @@ export default function HomePage() {
       {/* =====================================================
           CONTACT
       ====================================================== */}
-
-      {/* =====================================================
-    CONTACT / LEAD GENERATION
-====================================================== */}
-
       <section
         id="contact"
         className="relative overflow-hidden bg-white py-16 sm:py-20 lg:py-28"
@@ -1183,11 +1184,6 @@ export default function HomePage() {
 
           {/* CONTACT CONTENT */}
           <div className="mt-12 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:gap-8">
-
-
-            {/* =================================================
-                CONTACT INFORMATION
-            ================================================== */}
 
             <div className="relative overflow-hidden rounded-3xl bg-blue-950 p-7 text-white shadow-[0_20px_50px_rgba(30,64,175,0.18)] sm:p-9 lg:p-10">
 
@@ -1340,13 +1336,13 @@ export default function HomePage() {
               ================================================== */}
 
               <form
+                ref={formRef}
                 onSubmit={sendEmail}
                 className="mt-8 space-y-5"
               >
 
-                {/* NAME */}
+                {/* FULL NAME */}
                 <div>
-
                   <label
                     htmlFor="contact-name"
                     className="mb-2 block text-sm font-bold text-slate-700"
@@ -1357,18 +1353,15 @@ export default function HomePage() {
                   <input
                     id="contact-name"
                     type="text"
-                    name="user_name"
+                    name="name"
                     required
                     placeholder="Enter your full name"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
-
                 </div>
-
 
                 {/* EMAIL */}
                 <div>
-
                   <label
                     htmlFor="contact-email"
                     className="mb-2 block text-sm font-bold text-slate-700"
@@ -1379,83 +1372,53 @@ export default function HomePage() {
                   <input
                     id="contact-email"
                     type="email"
-                    name="user_email"
+                    name="email"
                     required
-                    placeholder="you@example.com"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    placeholder="Enter your email"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
-
                 </div>
 
-
-                {/* PHONE */}
+                {/* CONTACT NUMBER */}
                 <div>
-
                   <label
-                    htmlFor="contact-phone"
+                    htmlFor="contact-number"
                     className="mb-2 block text-sm font-bold text-slate-700"
                   >
-                    Phone Number
+                    Contact Number
                   </label>
 
                   <input
-                    id="contact-phone"
+                    id="contact-number"
                     type="tel"
-                    name="phone"
-                    placeholder="+63 9XX XXX XXXX"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    name="contact_number"
+                    required
+                    placeholder="09XX XXX XXXX"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
-
                 </div>
 
-
-                {/* INTEREST */}
+                {/* PREFERRED LOCATION */}
                 <div>
-
                   <label
-                    htmlFor="contact-interest"
+                    htmlFor="prefer-location"
                     className="mb-2 block text-sm font-bold text-slate-700"
                   >
-                    I'm interested in
+                    Preferred Location
                   </label>
 
-                  <select
-                    id="contact-interest"
-                    name="interest"
-                    className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Select an option
-                    </option>
-
-                    <option value="buying">
-                      Buying a Property
-                    </option>
-
-                    <option value="selling">
-                      Selling a Property
-                    </option>
-
-                    <option value="investment">
-                      Property Investment
-                    </option>
-
-                    <option value="viewing">
-                      Property Viewing
-                    </option>
-
-                    <option value="general">
-                      General Inquiry
-                    </option>
-                  </select>
-
+                  <input
+                    id="prefer-location"
+                    type="text"
+                    name="prefer_location"
+                    required
+                    placeholder="e.g. Cebu City, Mandaue, Lapu-Lapu"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
                 </div>
-
 
                 {/* MESSAGE */}
                 <div>
-
                   <label
                     htmlFor="contact-message"
                     className="mb-2 block text-sm font-bold text-slate-700"
@@ -1469,26 +1432,46 @@ export default function HomePage() {
                     required
                     rows={5}
                     placeholder="Tell us what you're looking for..."
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm leading-6 text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                   />
-
                 </div>
 
 
                 {/* SUBMIT */}
-                <button
+               <button
                   type="submit"
-                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl active:translate-y-0"
+                  disabled={isSubmitting}
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
-                  Send Inquiry
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      Send Inquiry
 
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    →
-                  </span>
+                      <span
+                        aria-hidden="true"
+                        className="transition-transform duration-300 group-hover:translate-x-1"
+                      >
+                        →
+                      </span>
+                    </>
+                  )}
                 </button>
+                                  {submitStatus === 'success' && !isSubmitting && (
+                    <div className="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-center text-sm font-semibold text-green-700">
+                      ✓ Inquiry sent successfully! We'll get back to you soon.
+                    </div>
+                  )}
+
+                  {submitStatus === 'error' && !isSubmitting && (
+                    <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
+                      ✕ Failed to send your inquiry. Please try again.
+                    </div>
+                  )}
 
 
                 <p className="text-center text-[11px] leading-5 text-slate-400">
