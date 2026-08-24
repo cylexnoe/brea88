@@ -196,13 +196,14 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('POST /api/properties error:', error);
+    } catch (error) {
+    console.error('GET /api/properties error:', error);
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create property.',
+        message: 'Failed to load properties.',
+        error: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );
