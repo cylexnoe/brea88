@@ -51,6 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  Agent: 'Agent',
   Property: 'Property'
 } as const
 
@@ -70,6 +71,26 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const AgentScalarFieldEnum = {
+  id: 'id',
+  fullName: 'fullName',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  role: 'role',
+  slug: 'slug',
+  phone: 'phone',
+  profileImage: 'profileImage',
+  bio: 'bio',
+  facebook: 'facebook',
+  messenger: 'messenger',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AgentScalarFieldEnum = (typeof AgentScalarFieldEnum)[keyof typeof AgentScalarFieldEnum]
+
+
 export const PropertyScalarFieldEnum = {
   id: 'id',
   title: 'title',
@@ -81,6 +102,7 @@ export const PropertyScalarFieldEnum = {
   beds: 'beds',
   baths: 'baths',
   sqft: 'sqft',
+  agentId: 'agentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

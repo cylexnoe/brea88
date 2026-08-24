@@ -8,5 +8,6 @@
  *
  * 🟢 You can import this file directly.
  */
+export type * from './models/Agent'
 export type * from './models/Property'
 export type * from './commonInputTypes'

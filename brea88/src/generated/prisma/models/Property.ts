@@ -31,6 +31,7 @@ export type PropertyAvgAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  agentId: number | null
 }
 
 export type PropertySumAggregateOutputType = {
@@ -38,6 +39,7 @@ export type PropertySumAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  agentId: number | null
 }
 
 export type PropertyMinAggregateOutputType = {
@@ -50,6 +52,7 @@ export type PropertyMinAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  agentId: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,6 +67,7 @@ export type PropertyMaxAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  agentId: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -79,6 +83,7 @@ export type PropertyCountAggregateOutputType = {
   beds: number
   baths: number
   sqft: number
+  agentId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -90,6 +95,7 @@ export type PropertyAvgAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  agentId?: true
 }
 
 export type PropertySumAggregateInputType = {
@@ -97,6 +103,7 @@ export type PropertySumAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  agentId?: true
 }
 
 export type PropertyMinAggregateInputType = {
@@ -109,6 +116,7 @@ export type PropertyMinAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  agentId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -123,6 +131,7 @@ export type PropertyMaxAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  agentId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -138,6 +147,7 @@ export type PropertyCountAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  agentId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -240,6 +250,7 @@ export type PropertyGroupByOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  agentId: number | null
   createdAt: Date
   updatedAt: Date
   _count: PropertyCountAggregateOutputType | null
@@ -278,8 +289,10 @@ export type PropertyWhereInput = {
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
+  agentId?: Prisma.IntNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+  agent?: Prisma.XOR<Prisma.AgentNullableScalarRelationFilter, Prisma.AgentWhereInput> | null
 }
 
 export type PropertyOrderByWithRelationInput = {
@@ -293,8 +306,10 @@ export type PropertyOrderByWithRelationInput = {
   beds?: Prisma.SortOrderInput | Prisma.SortOrder
   baths?: Prisma.SortOrderInput | Prisma.SortOrder
   sqft?: Prisma.SortOrderInput | Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  agent?: Prisma.AgentOrderByWithRelationInput
 }
 
 export type PropertyWhereUniqueInput = Prisma.AtLeast<{
@@ -311,8 +326,10 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
+  agentId?: Prisma.IntNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+  agent?: Prisma.XOR<Prisma.AgentNullableScalarRelationFilter, Prisma.AgentWhereInput> | null
 }, "id">
 
 export type PropertyOrderByWithAggregationInput = {
@@ -326,6 +343,7 @@ export type PropertyOrderByWithAggregationInput = {
   beds?: Prisma.SortOrderInput | Prisma.SortOrder
   baths?: Prisma.SortOrderInput | Prisma.SortOrder
   sqft?: Prisma.SortOrderInput | Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PropertyCountOrderByAggregateInput
@@ -349,6 +367,7 @@ export type PropertyScalarWhereWithAggregatesInput = {
   beds?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   baths?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
+  agentId?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
 }
@@ -365,6 +384,7 @@ export type PropertyCreateInput = {
   sqft?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  agent?: Prisma.AgentCreateNestedOneWithoutPropertiesInput
 }
 
 export type PropertyUncheckedCreateInput = {
@@ -378,6 +398,7 @@ export type PropertyUncheckedCreateInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  agentId?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -394,6 +415,7 @@ export type PropertyUpdateInput = {
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  agent?: Prisma.AgentUpdateOneWithoutPropertiesNestedInput
 }
 
 export type PropertyUncheckedUpdateInput = {
@@ -407,6 +429,7 @@ export type PropertyUncheckedUpdateInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -422,6 +445,7 @@ export type PropertyCreateManyInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  agentId?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -451,8 +475,19 @@ export type PropertyUncheckedUpdateManyInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type PropertyListRelationFilter = {
+  every?: Prisma.PropertyWhereInput
+  some?: Prisma.PropertyWhereInput
+  none?: Prisma.PropertyWhereInput
+}
+
+export type PropertyOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type StringNullableListFilter<$PrismaModel = never> = {
@@ -474,6 +509,7 @@ export type PropertyCountOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -483,6 +519,7 @@ export type PropertyAvgOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
 }
 
 export type PropertyMaxOrderByAggregateInput = {
@@ -495,6 +532,7 @@ export type PropertyMaxOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -509,6 +547,7 @@ export type PropertyMinOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -518,14 +557,53 @@ export type PropertySumOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
+}
+
+export type PropertyCreateNestedManyWithoutAgentInput = {
+  create?: Prisma.XOR<Prisma.PropertyCreateWithoutAgentInput, Prisma.PropertyUncheckedCreateWithoutAgentInput> | Prisma.PropertyCreateWithoutAgentInput[] | Prisma.PropertyUncheckedCreateWithoutAgentInput[]
+  connectOrCreate?: Prisma.PropertyCreateOrConnectWithoutAgentInput | Prisma.PropertyCreateOrConnectWithoutAgentInput[]
+  createMany?: Prisma.PropertyCreateManyAgentInputEnvelope
+  connect?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+}
+
+export type PropertyUncheckedCreateNestedManyWithoutAgentInput = {
+  create?: Prisma.XOR<Prisma.PropertyCreateWithoutAgentInput, Prisma.PropertyUncheckedCreateWithoutAgentInput> | Prisma.PropertyCreateWithoutAgentInput[] | Prisma.PropertyUncheckedCreateWithoutAgentInput[]
+  connectOrCreate?: Prisma.PropertyCreateOrConnectWithoutAgentInput | Prisma.PropertyCreateOrConnectWithoutAgentInput[]
+  createMany?: Prisma.PropertyCreateManyAgentInputEnvelope
+  connect?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+}
+
+export type PropertyUpdateManyWithoutAgentNestedInput = {
+  create?: Prisma.XOR<Prisma.PropertyCreateWithoutAgentInput, Prisma.PropertyUncheckedCreateWithoutAgentInput> | Prisma.PropertyCreateWithoutAgentInput[] | Prisma.PropertyUncheckedCreateWithoutAgentInput[]
+  connectOrCreate?: Prisma.PropertyCreateOrConnectWithoutAgentInput | Prisma.PropertyCreateOrConnectWithoutAgentInput[]
+  upsert?: Prisma.PropertyUpsertWithWhereUniqueWithoutAgentInput | Prisma.PropertyUpsertWithWhereUniqueWithoutAgentInput[]
+  createMany?: Prisma.PropertyCreateManyAgentInputEnvelope
+  set?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  disconnect?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  delete?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  connect?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  update?: Prisma.PropertyUpdateWithWhereUniqueWithoutAgentInput | Prisma.PropertyUpdateWithWhereUniqueWithoutAgentInput[]
+  updateMany?: Prisma.PropertyUpdateManyWithWhereWithoutAgentInput | Prisma.PropertyUpdateManyWithWhereWithoutAgentInput[]
+  deleteMany?: Prisma.PropertyScalarWhereInput | Prisma.PropertyScalarWhereInput[]
+}
+
+export type PropertyUncheckedUpdateManyWithoutAgentNestedInput = {
+  create?: Prisma.XOR<Prisma.PropertyCreateWithoutAgentInput, Prisma.PropertyUncheckedCreateWithoutAgentInput> | Prisma.PropertyCreateWithoutAgentInput[] | Prisma.PropertyUncheckedCreateWithoutAgentInput[]
+  connectOrCreate?: Prisma.PropertyCreateOrConnectWithoutAgentInput | Prisma.PropertyCreateOrConnectWithoutAgentInput[]
+  upsert?: Prisma.PropertyUpsertWithWhereUniqueWithoutAgentInput | Prisma.PropertyUpsertWithWhereUniqueWithoutAgentInput[]
+  createMany?: Prisma.PropertyCreateManyAgentInputEnvelope
+  set?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  disconnect?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  delete?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  connect?: Prisma.PropertyWhereUniqueInput | Prisma.PropertyWhereUniqueInput[]
+  update?: Prisma.PropertyUpdateWithWhereUniqueWithoutAgentInput | Prisma.PropertyUpdateWithWhereUniqueWithoutAgentInput[]
+  updateMany?: Prisma.PropertyUpdateManyWithWhereWithoutAgentInput | Prisma.PropertyUpdateManyWithWhereWithoutAgentInput[]
+  deleteMany?: Prisma.PropertyScalarWhereInput | Prisma.PropertyScalarWhereInput[]
 }
 
 export type PropertyCreateimagesInput = {
   set: string[]
-}
-
-export type StringFieldUpdateOperationsInput = {
-  set?: string
 }
 
 export type PropertyUpdateimagesInput = {
@@ -549,16 +627,137 @@ export type NullableFloatFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
+export type PropertyCreateWithoutAgentInput = {
+  title: string
+  tag: string
+  price: string
+  location: string
+  image: string
+  images?: Prisma.PropertyCreateimagesInput | string[]
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
+export type PropertyUncheckedCreateWithoutAgentInput = {
+  id?: number
+  title: string
+  tag: string
+  price: string
+  location: string
+  image: string
+  images?: Prisma.PropertyCreateimagesInput | string[]
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type PropertyCreateOrConnectWithoutAgentInput = {
+  where: Prisma.PropertyWhereUniqueInput
+  create: Prisma.XOR<Prisma.PropertyCreateWithoutAgentInput, Prisma.PropertyUncheckedCreateWithoutAgentInput>
+}
+
+export type PropertyCreateManyAgentInputEnvelope = {
+  data: Prisma.PropertyCreateManyAgentInput | Prisma.PropertyCreateManyAgentInput[]
+  skipDuplicates?: boolean
+}
+
+export type PropertyUpsertWithWhereUniqueWithoutAgentInput = {
+  where: Prisma.PropertyWhereUniqueInput
+  update: Prisma.XOR<Prisma.PropertyUpdateWithoutAgentInput, Prisma.PropertyUncheckedUpdateWithoutAgentInput>
+  create: Prisma.XOR<Prisma.PropertyCreateWithoutAgentInput, Prisma.PropertyUncheckedCreateWithoutAgentInput>
+}
+
+export type PropertyUpdateWithWhereUniqueWithoutAgentInput = {
+  where: Prisma.PropertyWhereUniqueInput
+  data: Prisma.XOR<Prisma.PropertyUpdateWithoutAgentInput, Prisma.PropertyUncheckedUpdateWithoutAgentInput>
+}
+
+export type PropertyUpdateManyWithWhereWithoutAgentInput = {
+  where: Prisma.PropertyScalarWhereInput
+  data: Prisma.XOR<Prisma.PropertyUpdateManyMutationInput, Prisma.PropertyUncheckedUpdateManyWithoutAgentInput>
+}
+
+export type PropertyScalarWhereInput = {
+  AND?: Prisma.PropertyScalarWhereInput | Prisma.PropertyScalarWhereInput[]
+  OR?: Prisma.PropertyScalarWhereInput[]
+  NOT?: Prisma.PropertyScalarWhereInput | Prisma.PropertyScalarWhereInput[]
+  id?: Prisma.IntFilter<"Property"> | number
+  title?: Prisma.StringFilter<"Property"> | string
+  tag?: Prisma.StringFilter<"Property"> | string
+  price?: Prisma.StringFilter<"Property"> | string
+  location?: Prisma.StringFilter<"Property"> | string
+  image?: Prisma.StringFilter<"Property"> | string
+  images?: Prisma.StringNullableListFilter<"Property">
+  beds?: Prisma.IntNullableFilter<"Property"> | number | null
+  baths?: Prisma.IntNullableFilter<"Property"> | number | null
+  sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
+  agentId?: Prisma.IntNullableFilter<"Property"> | number | null
+  createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
+}
+
+export type PropertyCreateManyAgentInput = {
+  id?: number
+  title: string
+  tag: string
+  price: string
+  location: string
+  image: string
+  images?: Prisma.PropertyCreateimagesInput | string[]
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type PropertyUpdateWithoutAgentInput = {
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  tag?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.StringFieldUpdateOperationsInput | string
+  location?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.PropertyUpdateimagesInput | string[]
+  beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type PropertyUncheckedUpdateWithoutAgentInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  tag?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.StringFieldUpdateOperationsInput | string
+  location?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.PropertyUpdateimagesInput | string[]
+  beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type PropertyUncheckedUpdateManyWithoutAgentInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  tag?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.StringFieldUpdateOperationsInput | string
+  location?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.PropertyUpdateimagesInput | string[]
+  beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -574,8 +773,10 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  agentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
 export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -589,8 +790,10 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  agentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
 export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -604,8 +807,10 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  agentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
 export type PropertySelectScalar = {
@@ -619,15 +824,27 @@ export type PropertySelectScalar = {
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  agentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "images" | "beds" | "baths" | "sqft" | "createdAt" | "updatedAt", ExtArgs["result"]["property"]>
+export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "images" | "beds" | "baths" | "sqft" | "agentId" | "createdAt" | "updatedAt", ExtArgs["result"]["property"]>
+export type PropertyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
+}
+export type PropertyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
+}
+export type PropertyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
+}
 
 export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Property"
-  objects: {}
+  objects: {
+    agent: Prisma.$AgentPayload<ExtArgs> | null
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
     title: string
@@ -639,6 +856,7 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     beds: number | null
     baths: number | null
     sqft: number | null
+    agentId: number | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["property"]>
@@ -1035,6 +1253,7 @@ readonly fields: PropertyFieldRefs;
  */
 export interface Prisma__PropertyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  agent<T extends Prisma.Property$agentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Property$agentArgs<ExtArgs>>): Prisma.Prisma__AgentClient<runtime.Types.Result.GetResult<Prisma.$AgentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1074,6 +1293,7 @@ export interface PropertyFieldRefs {
   readonly beds: Prisma.FieldRef<"Property", 'Int'>
   readonly baths: Prisma.FieldRef<"Property", 'Int'>
   readonly sqft: Prisma.FieldRef<"Property", 'Float'>
+  readonly agentId: Prisma.FieldRef<"Property", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Property", 'DateTime'>
 }
@@ -1093,6 +1313,10 @@ export type PropertyFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
+  /**
    * Filter, which Property to fetch.
    */
   where: Prisma.PropertyWhereUniqueInput
@@ -1111,6 +1335,10 @@ export type PropertyFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extensio
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
+  /**
    * Filter, which Property to fetch.
    */
   where: Prisma.PropertyWhereUniqueInput
@@ -1128,6 +1356,10 @@ export type PropertyFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the Property
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
   /**
    * Filter, which Property to fetch.
    */
@@ -1177,6 +1409,10 @@ export type PropertyFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
+  /**
    * Filter, which Property to fetch.
    */
   where?: Prisma.PropertyWhereInput
@@ -1224,6 +1460,10 @@ export type PropertyFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the Property
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
   /**
    * Filter, which Properties to fetch.
    */
@@ -1273,6 +1513,10 @@ export type PropertyCreateArgs<ExtArgs extends runtime.Types.Extensions.Internal
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
+  /**
    * The data needed to create a Property.
    */
   data: Prisma.XOR<Prisma.PropertyCreateInput, Prisma.PropertyUncheckedCreateInput>
@@ -1306,6 +1550,10 @@ export type PropertyCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    */
   data: Prisma.PropertyCreateManyInput | Prisma.PropertyCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1320,6 +1568,10 @@ export type PropertyUpdateArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Omit specific fields from the Property
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
   /**
    * The data needed to update a Property.
    */
@@ -1372,6 +1624,10 @@ export type PropertyUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    * Limit how many Properties to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1386,6 +1642,10 @@ export type PropertyUpsertArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Omit specific fields from the Property
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
   /**
    * The filter to search for the Property to update in case it exists.
    */
@@ -1413,6 +1673,10 @@ export type PropertyDeleteArgs<ExtArgs extends runtime.Types.Extensions.Internal
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
+  /**
    * Filter which Property to delete.
    */
   where: Prisma.PropertyWhereUniqueInput
@@ -1433,6 +1697,25 @@ export type PropertyDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
 }
 
 /**
+ * Property.agent
+ */
+export type Property$agentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Agent
+   */
+  select?: Prisma.AgentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Agent
+   */
+  omit?: Prisma.AgentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AgentInclude<ExtArgs> | null
+  where?: Prisma.AgentWhereInput
+}
+
+/**
  * Property without action
  */
 export type PropertyDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1444,4 +1727,8 @@ export type PropertyDefaultArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Omit specific fields from the Property
    */
   omit?: Prisma.PropertyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PropertyInclude<ExtArgs> | null
 }
