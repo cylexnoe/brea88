@@ -46,8 +46,7 @@ export default function AgentLoginPage() {
         );
       }
 
-      router.push('/profile');
-
+      router.push('/home');
       router.refresh();
     } catch (error) {
       console.error('Agent login error:', error);

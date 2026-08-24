@@ -17,9 +17,10 @@ export default function AgentRegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
     phone: '',
+    role: 'Agent',
     password: '',
     confirmPassword: '',
   });
@@ -28,7 +29,7 @@ export default function AgentRegisterPage() {
   const [error, setError] = useState('');
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
 
@@ -48,8 +49,8 @@ export default function AgentRegisterPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
 
@@ -62,10 +63,11 @@ export default function AgentRegisterPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
+          fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
+          role: formData.role,
         }),
       });
 
@@ -77,6 +79,7 @@ export default function AgentRegisterPage() {
         );
       }
 
+      // Registration successful
       router.push('/agent/login');
     } catch (error) {
       console.error('Agent registration error:', error);
@@ -110,7 +113,7 @@ export default function AgentRegisterPage() {
         <div className="bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
 
           {/* HEADER */}
-          <div className="bg-blue-950 text-white px-7 py-8 text-center">
+          <div className="bg-blue-950 text-white px-6 sm:px-7 py-8 text-center">
 
             <div className="flex justify-center mb-5">
               <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
@@ -131,7 +134,7 @@ export default function AgentRegisterPage() {
           {/* FORM */}
           <form
             onSubmit={handleRegister}
-            className="p-7 space-y-5"
+            className="p-5 sm:p-7 space-y-5"
           >
 
             {/* ERROR */}
@@ -141,7 +144,7 @@ export default function AgentRegisterPage() {
               </div>
             )}
 
-            {/* NAME */}
+            {/* FULL NAME */}
             <div>
 
               <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
@@ -157,8 +160,8 @@ export default function AgentRegisterPage() {
                 <input
                   required
                   type="text"
-                  name="name"
-                  value={formData.name}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleChange}
                   placeholder="Juan Dela Cruz"
                   autoComplete="name"
@@ -166,6 +169,30 @@ export default function AgentRegisterPage() {
                 />
 
               </div>
+
+            </div>
+
+            {/* ROLE */}
+            <div>
+
+              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
+                Account Type
+              </label>
+
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 outline-none text-sm focus:border-blue-600 focus:bg-white transition"
+              >
+                <option value="Agent">
+                  Real Estate Agent
+                </option>
+
+                <option value="Broker">
+                  Real Estate Broker
+                </option>
+              </select>
 
             </div>
 
@@ -244,8 +271,9 @@ export default function AgentRegisterPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="At least 6 characters"
+                  placeholder="At least 8 characters"
                   autoComplete="new-password"
+                  minLength={8}
                   className="w-full bg-transparent px-3 py-3.5 outline-none text-sm"
                 />
 
@@ -274,6 +302,7 @@ export default function AgentRegisterPage() {
                   onChange={handleChange}
                   placeholder="Repeat your password"
                   autoComplete="new-password"
+                  minLength={8}
                   className="w-full bg-transparent px-3 py-3.5 outline-none text-sm"
                 />
 
@@ -332,3 +361,4 @@ export default function AgentRegisterPage() {
     </main>
   );
 }
+
