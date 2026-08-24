@@ -8,25 +8,15 @@ type RouteContext = {
   }>;
 };
 
-function getId(value: string): number | null {
-  const id = Number(value);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return null;
-  }
-
-  return id;
-}
-
 export async function GET(
   request: Request,
   context: RouteContext
 ) {
   try {
-    const { id: idParam } = await context.params;
-    const id = getId(idParam);
+    const { id } = await context.params;
+    const propertyId = Number(id);
 
-    if (id === null) {
+    if (!Number.isInteger(propertyId)) {
       return NextResponse.json(
         {
           success: false,
@@ -38,7 +28,7 @@ export async function GET(
 
     const property = await prisma.property.findUnique({
       where: {
-        id,
+        id: propertyId,
       },
     });
 
@@ -86,10 +76,10 @@ export async function PUT(
       );
     }
 
-    const { id: idParam } = await context.params;
-    const id = getId(idParam);
+    const { id } = await context.params;
+    const propertyId = Number(id);
 
-    if (id === null) {
+    if (!Number.isInteger(propertyId)) {
       return NextResponse.json(
         {
           success: false,
@@ -99,77 +89,78 @@ export async function PUT(
       );
     }
 
-    const existingProperty =
-      await prisma.property.findUnique({
-        where: {
-          id,
-        },
-      });
-
-    if (!existingProperty) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Property not found.',
-        },
-        { status: 404 }
-      );
-    }
-
     const body = await request.json();
 
     const title =
       typeof body.title === 'string'
         ? body.title.trim()
-        : existingProperty.title;
+        : '';
 
     const tag =
       typeof body.tag === 'string'
         ? body.tag.trim()
-        : existingProperty.tag;
+        : '';
 
     const price =
       typeof body.price === 'string'
         ? body.price.trim()
-        : existingProperty.price;
+        : '';
 
     const location =
       typeof body.location === 'string'
         ? body.location.trim()
-        : existingProperty.location;
+        : '';
+
+    const images = Array.isArray(body.images)
+      ? body.images.filter(
+          (item: unknown): item is string =>
+            typeof item === 'string' &&
+            item.trim().length > 0
+        )
+      : [];
 
     const image =
       typeof body.image === 'string'
         ? body.image.trim()
-        : existingProperty.image;
+        : '';
 
     const beds =
-      body.beds !== undefined
-        ? body.beds === null || body.beds === ''
-          ? null
-          : Number(body.beds)
-        : existingProperty.beds;
+      body.beds !== undefined &&
+      body.beds !== null &&
+      body.beds !== ''
+        ? Number(body.beds)
+        : null;
 
     const baths =
-      body.baths !== undefined
-        ? body.baths === null || body.baths === ''
-          ? null
-          : Number(body.baths)
-        : existingProperty.baths;
+      body.baths !== undefined &&
+      body.baths !== null &&
+      body.baths !== ''
+        ? Number(body.baths)
+        : null;
 
     const sqft =
-      body.sqft !== undefined
-        ? body.sqft === null || body.sqft === ''
-          ? null
-          : Number(body.sqft)
-        : existingProperty.sqft;
+      body.sqft !== undefined &&
+      body.sqft !== null &&
+      body.sqft !== ''
+        ? Number(body.sqft)
+        : null;
 
-    if (!title || !tag || !price || !location || !image) {
+    if (!title || !tag || !price || !location) {
       return NextResponse.json(
         {
           success: false,
           message:
-            'Title, category, price, location, and image are required.',
+            'Title, category, price, and location are required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (images.length === 0 && !image) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'At least one property image is required.',
         },
         { status: 400 }
       );
@@ -214,26 +205,33 @@ export async function PUT(
       );
     }
 
-    const property = await prisma.property.update({
-      where: {
-        id,
-      },
-      data: {
-        title,
-        tag,
-        price,
-        location,
-        image,
-        beds,
-        baths,
-        sqft,
-      },
-    });
+    const finalImages =
+      images.length > 0
+        ? images
+        : [image];
+
+    const updatedProperty =
+      await prisma.property.update({
+        where: {
+          id: propertyId,
+        },
+        data: {
+          title,
+          tag,
+          price,
+          location,
+          image: finalImages[0],
+          images: finalImages,
+          beds,
+          baths,
+          sqft,
+        },
+      });
 
     return NextResponse.json({
       success: true,
       message: 'Property updated successfully.',
-      property,
+      property: updatedProperty,
     });
   } catch (error) {
     console.error(
@@ -268,10 +266,10 @@ export async function DELETE(
       );
     }
 
-    const { id: idParam } = await context.params;
-    const id = getId(idParam);
+    const { id } = await context.params;
+    const propertyId = Number(id);
 
-    if (id === null) {
+    if (!Number.isInteger(propertyId)) {
       return NextResponse.json(
         {
           success: false,
@@ -281,26 +279,9 @@ export async function DELETE(
       );
     }
 
-    const existingProperty =
-      await prisma.property.findUnique({
-        where: {
-          id,
-        },
-      });
-
-    if (!existingProperty) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Property not found.',
-        },
-        { status: 404 }
-      );
-    }
-
     await prisma.property.delete({
       where: {
-        id,
+        id: propertyId,
       },
     });
 

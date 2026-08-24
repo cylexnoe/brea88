@@ -7,13 +7,14 @@ import PropertyCard from '../propertyCard';
 interface Property {
   id: number;
   title: string;
-  tag: 'Residential' | 'Commercial' | 'Investment' | 'All';
+  tag: string;
   price: string;
   location: string;
   image: string;
-  beds?: number;
-  baths?: number;
-  sqft: number;
+  images?: string[];
+  beds?: number | null;
+  baths?: number | null;
+  sqft?: number | null;
 }
 
 export default function MarketplacePage() {

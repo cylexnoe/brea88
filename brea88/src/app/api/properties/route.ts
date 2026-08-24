@@ -14,14 +14,15 @@ export async function GET() {
   } catch (error) {
     console.error('GET /api/properties error:', error);
 
-    const message =
-      error instanceof Error ? error.message : String(error);
-
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to load properties.',
-        debug: message,
+        debug:
+          process.env.NODE_ENV !== 'production' &&
+          error instanceof Error
+            ? error.message
+            : undefined,
       },
       { status: 500 }
     );
@@ -68,6 +69,14 @@ export async function POST(request: Request) {
       typeof body.image === 'string'
         ? body.image.trim()
         : '';
+
+    const images = Array.isArray(body.images)
+      ? body.images.filter(
+          (item: unknown): item is string =>
+            typeof item === 'string' &&
+            item.trim().length > 0
+        )
+      : [];
 
     const beds =
       body.beds !== undefined &&
@@ -130,11 +139,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!image) {
+    if (!image && images.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Property image is required.',
+          message: 'At least one property image is required.',
         },
         { status: 400 }
       );
@@ -179,13 +188,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const finalImages =
+      images.length > 0
+        ? images
+        : image
+        ? [image]
+        : [];
+
+    const coverImage = finalImages[0];
+
     const property = await prisma.property.create({
       data: {
         title,
         tag,
         price,
         location,
-        image,
+        image: coverImage,
+        images: finalImages,
         beds,
         baths,
         sqft,
@@ -200,14 +219,18 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-    } catch (error) {
-    console.error('GET /api/properties error:', error);
+  } catch (error) {
+    console.error('POST /api/properties error:', error);
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to load properties.',
-        error: error instanceof Error ? error.message : String(error),
+        message: 'Failed to create property.',
+        debug:
+          process.env.NODE_ENV !== 'production' &&
+          error instanceof Error
+            ? error.message
+            : undefined,
       },
       { status: 500 }
     );
