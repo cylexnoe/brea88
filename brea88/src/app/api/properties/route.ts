@@ -14,10 +14,14 @@ export async function GET() {
   } catch (error) {
     console.error('GET /api/properties error:', error);
 
+    const message =
+      error instanceof Error ? error.message : String(error);
+
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to load properties.',
+        debug: message,
       },
       { status: 500 }
     );
