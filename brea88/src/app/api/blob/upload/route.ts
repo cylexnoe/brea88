@@ -1,94 +1,96 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as HandleUploadBody;
+    const authenticated = await isAdminAuthenticated();
 
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async (
-        pathname,
-        clientPayload,
-        multipart
-      ) => {
-        let payload: {
-          type?: 'property' | 'profile';
-        } = {};
+    if (!authenticated) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unauthorized.',
+        },
+        { status: 401 }
+      );
+    }
 
-        if (clientPayload) {
-          try {
-            payload = JSON.parse(clientPayload);
-          } catch {
-            throw new Error('Invalid upload payload.');
-          }
-        }
+    const formData = await request.formData();
 
-        const uploadType = payload.type;
+    const file = formData.get('file');
 
-        if (
-          uploadType !== 'property' &&
-          uploadType !== 'profile'
-        ) {
-          throw new Error('Invalid upload type.');
-        }
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No image file was provided.',
+        },
+        { status: 400 }
+      );
+    }
 
-        const allowedExtensions = [
-          '.jpg',
-          '.jpeg',
-          '.png',
-          '.webp',
-        ];
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
 
-        const lowerPathname = pathname.toLowerCase();
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Only JPG, JPEG, and WebP images are allowed.',
+        },
+        { status: 400 }
+      );
+    }
 
-        const validExtension = allowedExtensions.some(
-          (extension) =>
-            lowerPathname.endsWith(extension)
-        );
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-        if (!validExtension) {
-          throw new Error(
-            'Only JPG, JPEG, PNG, and WebP images are allowed.'
-          );
-        }
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Image must be 5MB or smaller.',
+        },
+        { status: 400 }
+      );
+    }
 
-        return {
-          allowedContentTypes: [
-            'image/jpeg',
-            'image/png',
-            'image/webp',
-          ],
+    const extension =
+      file.type === 'image/png'
+        ? 'png'
+        : file.type === 'image/webp'
+        ? 'webp'
+        : 'jpg';
 
-          maximumSizeInBytes: 5 * 1024 * 1024,
+    const filename = `properties/${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
-          addRandomSuffix: true,
-        };
-      },
-
-      onUploadCompleted: async ({ blob }) => {
-        console.log(
-          'Image uploaded successfully:',
-          blob.url
-        );
-      },
+    const blob = await put(filename, file, {
+      access: 'public',
+      addRandomSuffix: true,
     });
 
-    return NextResponse.json(jsonResponse);
+    return NextResponse.json(
+      {
+        success: true,
+        url: blob.url,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Blob upload error:', error);
 
     return NextResponse.json(
       {
-        error:
+        success: false,
+        message:
           error instanceof Error
             ? error.message
             : 'Image upload failed.',
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

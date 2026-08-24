@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { upload } from '@vercel/blob/client';
 
 import {
   PlusCircle,
@@ -27,6 +26,20 @@ interface ImageItem {
   url: string;
   file?: File;
   source: 'upload' | 'url';
+}
+
+interface Property {
+  id?: number;
+  _id?: string;
+  title: string;
+  tag: string;
+  price: string;
+  location: string;
+  image: string;
+  images?: string[];
+  beds?: number | null;
+  baths?: number | null;
+  sqft?: number | null;
 }
 
 export default function AdminDashboard() {
@@ -54,7 +67,7 @@ export default function AdminDashboard() {
     'idle' | 'loading' | 'success' | 'error'
   >('idle');
 
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -63,17 +76,17 @@ export default function AdminDashboard() {
   // ==========================================
 
   const handleLogout = async () => {
-  try {
-    await fetch('/api/logout', {
-      method: 'POST',
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    router.replace('/');
-    router.refresh();
-  }
-};
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      router.replace('/');
+      router.refresh();
+    }
+  };
 
   // ==========================================
   // INPUT CHANGE
@@ -96,10 +109,17 @@ export default function AdminDashboard() {
 
   const fetchProperties = async () => {
     try {
-      const res = await fetch('/api/properties');
+      const res = await fetch('/api/properties', {
+        cache: 'no-store',
+      });
+
       const data = await res.json();
 
-      setProperties(data);
+      if (Array.isArray(data)) {
+        setProperties(data);
+      } else {
+        setProperties([]);
+      }
     } catch (error) {
       console.error('Failed to fetch properties:', error);
     } finally {
@@ -124,6 +144,7 @@ export default function AdminDashboard() {
 
     if (images.length + files.length > MAX_IMAGES) {
       alert(`You can upload a maximum of ${MAX_IMAGES} pictures.`);
+      e.target.value = '';
       return;
     }
 
@@ -161,7 +182,6 @@ export default function AdminDashboard() {
 
     setImages((prev) => [...prev, ...validImages]);
 
-    // Reset input so the same file can be selected again
     e.target.value = '';
   };
 
@@ -265,97 +285,129 @@ export default function AdminDashboard() {
   };
 
   // ==========================================
-  // SUBMIT
+  // UPLOAD IMAGE TO VERCEL BLOB
   // ==========================================
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const uploadImageToBlob = async (file: File) => {
+    const uploadFormData = new FormData();
 
-  if (images.length === 0) {
-    alert('Please add at least one property picture.');
-    return;
-  }
+    uploadFormData.append('file', file);
 
-  setStatus('loading');
-
-  try {
-    // Upload selected files to Vercel Blob first.
-    const uploadedImages = await Promise.all(
-      images.map(async (image) => {
-        // Images added through URL are already permanent URLs.
-        if (image.source === 'url' || !image.file) {
-          return image.url;
-        }
-
-        // Upload the actual file to Vercel Blob.
-        const blob = await upload(
-          `properties/${Date.now()}-${image.file.name}`,
-          image.file,
-          {
-            access: 'public',
-            handleUploadUrl: '/api/blob/upload',
-            clientPayload: JSON.stringify({
-              type: 'property',
-            }),
-          }
-        );
-
-        return blob.url;
-      })
-    );
-
-    // The first image is the cover image.
-    const coverImage = uploadedImages[0];
-
-    const response = await fetch('/api/properties', {
-      method: editingId ? 'PUT' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...formData,
-        image: coverImage,
-        images: uploadedImages,
-        id: editingId,
-      }),
+    const response = await fetch('/api/blob/upload', {
+      method: 'POST',
+      body: uploadFormData,
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || !data.success || !data.url) {
       throw new Error(
-        data?.message || 'Failed to save property.'
+        data?.message || 'Failed to upload image.'
       );
     }
 
-    setStatus('success');
+    return data.url as string;
+  };
 
-    await fetchProperties();
+  // ==========================================
+  // SUBMIT
+  // ==========================================
 
-    resetForm();
-  } catch (error) {
-    console.error('Property save error:', error);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    setStatus('error');
+    if (images.length === 0) {
+      alert('Please add at least one property picture.');
+      return;
+    }
 
-    alert(
-      error instanceof Error
-        ? error.message
-        : 'Failed to upload/save property.'
-    );
-  }
-};
+    setStatus('loading');
+
+    try {
+      const uploadedImages: string[] = [];
+
+      for (const image of images) {
+        if (image.source === 'url') {
+          uploadedImages.push(image.url);
+          continue;
+        }
+
+        if (!image.file) {
+          throw new Error('Image file is missing.');
+        }
+
+        const permanentUrl = await uploadImageToBlob(
+          image.file
+        );
+
+        uploadedImages.push(permanentUrl);
+      }
+
+      if (uploadedImages.length === 0) {
+        throw new Error('No valid property images were uploaded.');
+      }
+
+      const coverImage = uploadedImages[0];
+
+      const response = await fetch('/api/properties', {
+        method: editingId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          tag: formData.tag,
+          price: formData.price,
+          location: formData.location,
+          beds: formData.beds,
+          baths: formData.baths,
+          sqft: formData.sqft,
+          image: coverImage,
+          images: uploadedImages,
+          id: editingId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || 'Failed to save property.'
+        );
+      }
+
+      setStatus('success');
+
+      await fetchProperties();
+
+      resetForm();
+    } catch (error) {
+      console.error('Property save error:', error);
+
+      setStatus('error');
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to upload/save property.'
+      );
+    }
+  };
+
   // ==========================================
   // DELETE
   // ==========================================
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | number) => {
     if (!confirm('Delete this property?')) return;
 
     try {
-      const response = await fetch(`/api/properties/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/properties/${id}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Delete failed');
@@ -364,6 +416,7 @@ export default function AdminDashboard() {
       await fetchProperties();
     } catch (error) {
       console.error('Delete failed:', error);
+      alert('Failed to delete property.');
     }
   };
 
@@ -371,17 +424,36 @@ export default function AdminDashboard() {
   // EDIT
   // ==========================================
 
-  const handleEdit = (property: any) => {
-    setEditingId(property._id);
+  const handleEdit = (property: Property) => {
+    const propertyId =
+      property.id !== undefined
+        ? String(property.id)
+        : property._id
+        ? String(property._id)
+        : null;
+
+    setEditingId(propertyId);
 
     setFormData({
       title: property.title || '',
       tag: property.tag || 'Residential',
       price: property.price || '',
       location: property.location || '',
-      beds: property.beds || '',
-      baths: property.baths || '',
-      sqft: property.sqft || '',
+      beds:
+        property.beds !== null &&
+        property.beds !== undefined
+          ? String(property.beds)
+          : '',
+      baths:
+        property.baths !== null &&
+        property.baths !== undefined
+          ? String(property.baths)
+          : '',
+      sqft:
+        property.sqft !== null &&
+        property.sqft !== undefined
+          ? String(property.sqft)
+          : '',
     });
 
     const existingImages =
@@ -393,11 +465,13 @@ export default function AdminDashboard() {
         : [];
 
     setImages(
-      existingImages.map((url: string, index: number) => ({
-        id: `existing-${index}-${Date.now()}`,
-        url,
-        source: 'url',
-      }))
+      existingImages.map(
+        (url: string, index: number) => ({
+          id: `existing-${index}-${Date.now()}`,
+          url,
+          source: 'url',
+        })
+      )
     );
 
     setImageSource('url');
@@ -414,8 +488,6 @@ export default function AdminDashboard() {
 
       <div className="max-w-3xl mx-auto bg-slate-950 border border-slate-800 rounded-2xl shadow-xl p-8">
 
-
-
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
 
           <div className="flex items-center gap-3">
@@ -427,7 +499,6 @@ export default function AdminDashboard() {
             />
 
             <div>
-
               <h1 className="text-2xl font-black tracking-tight">
                 BREA 88 Admin Dashboard
               </h1>
@@ -435,7 +506,6 @@ export default function AdminDashboard() {
               <p className="text-xs text-slate-400">
                 Manage property listings and inventory.
               </p>
-
             </div>
 
           </div>
@@ -450,29 +520,19 @@ export default function AdminDashboard() {
 
         </div>
 
-      
-
         {status === 'success' && (
           <div className="mb-6 p-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-sm rounded-xl flex items-center gap-2">
-
             <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-
             Property listing processed successfully!
-
           </div>
         )}
 
         {status === 'error' && (
           <div className="mb-6 p-4 bg-rose-950/40 border border-rose-500/30 text-rose-300 text-sm rounded-xl flex items-center gap-2">
-
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
-
             Failed to process listing. Please check your information.
-
           </div>
         )}
-
- 
 
         <form
           onSubmit={handleSubmit}
@@ -481,10 +541,7 @@ export default function AdminDashboard() {
 
           <div className="grid sm:grid-cols-2 gap-6">
 
-            {/* PROPERTY TITLE */}
-
             <div className="sm:col-span-2">
-
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
                 Property / Project Title
               </label>
@@ -498,13 +555,9 @@ export default function AdminDashboard() {
                 className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition"
                 placeholder="e.g., Premium 2BR Penthouse Complex"
               />
-
             </div>
 
-            {/* CLASSIFICATION */}
-
             <div>
-
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
                 Classification Tag
               </label>
@@ -527,13 +580,9 @@ export default function AdminDashboard() {
                   Investment
                 </option>
               </select>
-
             </div>
 
-            {/* PRICE */}
-
             <div>
-
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
                 Price Tag
               </label>
@@ -555,10 +604,7 @@ export default function AdminDashboard() {
                 />
 
               </div>
-
             </div>
-
-            {/* LOCATION */}
 
             <div className="sm:col-span-2">
 
@@ -578,8 +624,6 @@ export default function AdminDashboard() {
 
             </div>
 
-
-
             <div className="sm:col-span-2">
 
               <div className="flex items-center justify-between mb-2">
@@ -593,8 +637,6 @@ export default function AdminDashboard() {
                 </span>
 
               </div>
-
-              {/* SOURCE DROPDOWN */}
 
               <div className="relative mb-4">
 
@@ -624,7 +666,6 @@ export default function AdminDashboard() {
 
               </div>
 
- 
               {imageSource === 'upload' && (
 
                 <div>
@@ -666,7 +707,6 @@ export default function AdminDashboard() {
                 </div>
 
               )}
-
 
               {imageSource === 'url' && (
 
@@ -711,7 +751,6 @@ export default function AdminDashboard() {
 
               )}
 
-
               {images.length > 0 && (
 
                 <div className="mt-5">
@@ -746,8 +785,6 @@ export default function AdminDashboard() {
                           }}
                         />
 
-                        {/* COVER */}
-
                         {index === 0 && (
 
                           <div className="absolute top-2 left-2 flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded-md text-[9px] font-bold uppercase">
@@ -760,15 +797,9 @@ export default function AdminDashboard() {
 
                         )}
 
-                        {/* NUMBER */}
-
                         <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded-md text-[10px] font-bold">
-
                           {index + 1}
-
                         </div>
-
-                        {/* ACTIONS */}
 
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
 
@@ -782,9 +813,7 @@ export default function AdminDashboard() {
                               className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition"
                               title="Set as cover"
                             >
-
                               <Star className="w-4 h-4" />
-
                             </button>
 
                           )}
@@ -797,9 +826,7 @@ export default function AdminDashboard() {
                             className="bg-red-600 hover:bg-red-700 p-2 rounded-lg transition"
                             title="Remove image"
                           >
-
                             <X className="w-4 h-4" />
-
                           </button>
 
                         </div>
@@ -814,8 +841,6 @@ export default function AdminDashboard() {
 
               )}
 
-              {/* HELP TEXT */}
-
               <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-500">
 
                 <ImageIcon className="w-3.5 h-3.5" />
@@ -827,8 +852,6 @@ export default function AdminDashboard() {
               </div>
 
             </div>
-
-            {/* BEDROOMS */}
 
             <div>
 
@@ -850,8 +873,6 @@ export default function AdminDashboard() {
 
             </div>
 
-            {/* BATHROOMS */}
-
             <div>
 
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
@@ -871,8 +892,6 @@ export default function AdminDashboard() {
               />
 
             </div>
-
-            {/* FLOOR AREA */}
 
             <div className="sm:col-span-2">
 
@@ -906,7 +925,6 @@ export default function AdminDashboard() {
 
           )}
 
-
           <button
             type="submit"
             disabled={status === 'loading'}
@@ -936,7 +954,6 @@ export default function AdminDashboard() {
 
         </form>
 
-
         <div className="mt-12">
 
           <h2 className="text-xl font-bold text-white mb-5">
@@ -946,9 +963,7 @@ export default function AdminDashboard() {
           {loading ? (
 
             <div className="flex justify-center py-10">
-
               <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
-
             </div>
 
           ) : properties.length === 0 ? (
@@ -1007,10 +1022,15 @@ export default function AdminDashboard() {
                         ? property.images[0]
                         : property.image;
 
+                    const propertyId =
+                      property.id !== undefined
+                        ? property.id
+                        : property._id;
+
                     return (
 
                       <tr
-                        key={property._id}
+                        key={String(propertyId)}
                         className="border-b border-slate-800 hover:bg-slate-900/50 transition"
                       >
 
@@ -1057,22 +1077,18 @@ export default function AdminDashboard() {
                               className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition"
                               title="Edit property"
                             >
-
                               <Pencil size={16} />
-
                             </button>
 
                             <button
                               type="button"
                               onClick={() =>
-                                handleDelete(property._id)
+                                handleDelete(propertyId!)
                               }
                               className="bg-red-600 hover:bg-red-700 p-2 rounded-lg transition"
                               title="Delete property"
                             >
-
                               <Trash2 size={16} />
-
                             </button>
 
                           </div>
@@ -1099,3 +1115,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
