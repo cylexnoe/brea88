@@ -7,6 +7,30 @@ datasource db {
   provider = "postgresql"
 }
 
+model Agent {
+  id           Int        @id @default(autoincrement())
+  fullName     String
+  email        String     @unique
+  passwordHash String
+  role         String     @default("Agent")
+  slug         String     @unique
+  phone        String?
+  profileImage String?
+  bio          String?
+  facebook     String?
+  messenger    String?
+  isActive     Boolean    @default(true)
+
+  properties   Property[]
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([role])
+  @@map("agents")
+}
+
 model Property {
   id        Int      @id @default(autoincrement())
   title     String
@@ -14,21 +38,21 @@ model Property {
   price     String
   location  String
 
-  // Cover image
   image     String
-
-  // All property images
   images    String[] @default([])
 
   beds      Int?
   baths     Int?
   sqft      Float?
 
+  agentId   Int?
+  agent     Agent?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tag])
   @@index([location])
+  @@index([agentId])
   @@map("properties")
 }
-
