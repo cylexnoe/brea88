@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { upload } from '@vercel/blob/client';
+
 import {
   PlusCircle,
   CheckCircle2,
@@ -267,64 +269,82 @@ export default function AdminDashboard() {
   // ==========================================
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (images.length === 0) {
-      alert('Please add at least one property picture.');
-      return;
+  if (images.length === 0) {
+    alert('Please add at least one property picture.');
+    return;
+  }
+
+  setStatus('loading');
+
+  try {
+    // Upload selected files to Vercel Blob first.
+    const uploadedImages = await Promise.all(
+      images.map(async (image) => {
+        // Images added through URL are already permanent URLs.
+        if (image.source === 'url' || !image.file) {
+          return image.url;
+        }
+
+        // Upload the actual file to Vercel Blob.
+        const blob = await upload(
+          `properties/${Date.now()}-${image.file.name}`,
+          image.file,
+          {
+            access: 'public',
+            handleUploadUrl: '/api/blob/upload',
+            clientPayload: JSON.stringify({
+              type: 'property',
+            }),
+          }
+        );
+
+        return blob.url;
+      })
+    );
+
+    // The first image is the cover image.
+    const coverImage = uploadedImages[0];
+
+    const response = await fetch('/api/properties', {
+      method: editingId ? 'PUT' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...formData,
+        image: coverImage,
+        images: uploadedImages,
+        id: editingId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message || 'Failed to save property.'
+      );
     }
 
-    setStatus('loading');
+    setStatus('success');
 
-    try {
-      /*
-       * IMPORTANT:
-       * Your current API uses JSON.
-       *
-       * This sends:
-       *
-       * images: [
-       *   "image-url-1",
-       *   "image-url-2",
-       *   "image-url-3"
-       * ]
-       *
-       * Uploaded files currently use temporary blob URLs.
-       *
-       * For production, use FormData + Cloudinary/Vercel Blob
-       * to permanently upload the actual files.
-       */
+    await fetchProperties();
 
-      const imageUrls = images.map((image) => image.url);
+    resetForm();
+  } catch (error) {
+    console.error('Property save error:', error);
 
-      const response = await fetch('/api/properties', {
-        method: editingId ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          images: imageUrls,
-          image: imageUrls[0],
-          id: editingId,
-        }),
-      });
+    setStatus('error');
 
-      if (!response.ok) {
-        throw new Error('Failed to save property');
-      }
-
-      setStatus('success');
-
-      await fetchProperties();
-
-      resetForm();
-    } catch (error) {
-      console.error(error);
-      setStatus('error');
-    }
-  };
-
+    alert(
+      error instanceof Error
+        ? error.message
+        : 'Failed to upload/save property.'
+    );
+  }
+};
   // ==========================================
   // DELETE
   // ==========================================
