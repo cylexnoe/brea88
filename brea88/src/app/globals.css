@@ -1,1 +1,91 @@
 @import "tailwindcss";
+
+:root {
+  --brea-blue: #0b2a6f;
+  --brea-blue-light: #2563eb;
+  --brea-ink: #0f172a;
+  --brea-muted: #64748b;
+  --brea-surface: #f8fafc;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--brea-surface);
+  color: var(--brea-ink);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--brea-blue);
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* Better keyboard accessibility */
+:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 3px;
+}
+
+/* Keep anchor sections below the sticky navbar */
+section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+/* Prevent iOS/Android from zooming into form inputs */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+@media (min-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: inherit;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

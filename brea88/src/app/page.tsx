@@ -133,15 +133,15 @@ export default function HomePage() {
           NAVIGATION
       ====================================================== */}
 
-      <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-          <div className="flex min-h-16 items-center justify-between gap-4 sm:min-h-20">
+          <div className="flex min-h-[68px] items-center justify-between gap-4 sm:min-h-[76px]">
 
             {/* LOGO */}
             <a
               href="#hero"
-              className="flex min-w-0 items-center gap-2 sm:gap-3"
+              className="group flex min-w-0 items-center gap-2 sm:gap-3"
             >
               <Image
                 src="/img/LOGO.png"
@@ -149,7 +149,7 @@ export default function HomePage() {
                 width={56}
                 height={56}
                 priority
-                className="h-10 w-10 shrink-0 rounded-full object-cover shadow-sm sm:h-12 sm:w-12 lg:h-14 lg:w-14"
+                className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md ring-2 ring-blue-50 transition-transform duration-300 group-hover:scale-105 sm:h-12 sm:w-12 lg:h-14 lg:w-14"
               />
 
               <div className="min-w-0">
@@ -284,11 +284,11 @@ export default function HomePage() {
           HERO
       ====================================================== */}
 
-      <section id="hero"className="relative overflow-hidden bg-slate-950 py-16 sm:py-20 md:py-28 lg:py-36">
+      <section id="hero"className="relative isolate overflow-hidden bg-slate-950 py-20 sm:py-24 md:py-32 lg:min-h-[680px] lg:py-36">
         <div className="absolute inset-0">
-          <Image src="/img/background.png" alt="" fill priority className="object-cover opacity-30"/>
+          <Image src="/img/background.png" alt="" fill priority className="object-cover object-center opacity-35"/>
 
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/50" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/40" />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -299,10 +299,10 @@ export default function HomePage() {
               BREA 88 Realty OPC
             </span>
 
-            <h1 className="mt-5 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+            <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.05] tracking-[-0.03em] sm:text-5xl md:text-6xl lg:text-7xl">
               Service with a Heart,
               <br />
-              <span className="text-blue-400">
+              <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
                 Building Trust from the Start.
               </span>
             </h1>
@@ -313,8 +313,8 @@ export default function HomePage() {
               and Compassion throughout the Philippines.
             </p>
 
-                    <div className="mt-7 w-full max-w-4xl">
-                  <div className="rounded-2xl border border-white/10 bg-white/95 p-3 shadow-2xl backdrop-blur-md sm:p-4">
+                    <div className="mt-9 w-full max-w-4xl sm:mt-10">
+                  <div className="rounded-2xl border border-white/20 bg-white/95 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-3">
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
 
@@ -325,7 +325,7 @@ export default function HomePage() {
                         <input
                           type="text"
                           placeholder="Search properties, locations, or keywords..."
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-transparent bg-slate-100 py-4 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-100"
                         />
                       </div>
 
@@ -355,7 +355,7 @@ export default function HomePage() {
 
       <section
         id="profile"
-        className="bg-slate-50 py-10 sm:py-14 lg:py-20"
+        className="relative overflow-hidden bg-slate-50 py-16 sm:py-20 lg:py-28"
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
@@ -364,19 +364,20 @@ export default function HomePage() {
             {/* COMPANY OVERVIEW */}
             <div className="flex lg:col-span-7">
 
-              <div className="flex w-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md sm:p-7 lg:p-8">
+              <div className="group flex w-full flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_10px_40px_rgba(15,23,42,0.06)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(15,23,42,0.10)] sm:p-8 lg:p-10">
 
-                <span className="text-xs font-bold uppercase tracking-[0.18em] text-blue-900">
-                  Corporate Profile
-                </span>
+                <div className="inline-flex w-fit items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-900">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                    Corporate Profile
+                </div>
 
-                <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+                <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
                   Company Overview
                 </h2>
 
-                <div className="mt-5 space-y-4">
+                <div className="mt-6 max-w-3xl space-y-5">
 
-                  <p className="text-sm leading-7 text-slate-600 sm:text-base">
+                  <p className="text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
                     BREA 88 Realty OPC is a duly registered real estate brokerage
                     company committed to providing professional, ethical, and
                     client-centered real estate services. Guided by our core
@@ -388,7 +389,7 @@ export default function HomePage() {
                     goals through integrity, expertise, and personalized service.
                   </p>
 
-                  <p className="text-sm leading-7 text-slate-600 sm:text-base">
+                  <p className="text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
                     Established in 2026, BREA 88 Realty OPC was founded to deliver
                     exceptional real estate solutions while building lasting
                     relationships with developers, investors, property owners, and
@@ -399,9 +400,9 @@ export default function HomePage() {
 
                 <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/40">
+                  <div className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-md">
 
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 transition-transform duration-300 group-hover:scale-105">
                       <FileText className="h-5 w-5 text-blue-900" />
                     </div>
 
@@ -443,16 +444,18 @@ export default function HomePage() {
             {/* VISION & MISSION */}
             <div className="flex lg:col-span-5">
 
-              <div className="flex h-full w-full flex-col rounded-2xl bg-blue-900 p-5 text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl sm:p-7 lg:p-8">
+              <div className="relative flex h-full w-full flex-col overflow-hidden rounded-3xl bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 p-6 text-white shadow-[0_20px_50px_rgba(30,64,175,0.20)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_25px_60px_rgba(30,64,175,0.28)] sm:p-8 lg:p-10">
+                  <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-blue-400/10 blur-3xl" />
 
+                  <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
                 <div className="flex items-center justify-between gap-4 border-b border-blue-800 pb-5">
 
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-300">
                       Our Direction
                     </p>
 
-                    <h3 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">
+                    <h3 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
                       Vision & Mission
                     </h3>
                   </div>
@@ -525,177 +528,504 @@ export default function HomePage() {
           CEO
       ====================================================== */}
 
-      <section
-        id="ceo"
-        className="bg-slate-900 py-16 text-white sm:py-20 lg:py-24"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section
+      id="ceo"
+      className="relative overflow-hidden bg-white py-16 sm:py-20 lg:py-28"
+    >
+      {/* Decorative background */}
+      <div className="pointer-events-none absolute -left-32 top-20 h-80 w-80 rounded-full bg-blue-100/50 blur-3xl" />
 
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
+      <div className="pointer-events-none absolute -right-32 bottom-0 h-80 w-80 rounded-full bg-slate-100 blur-3xl" />
 
-            <div className="lg:col-span-5">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-              <div className="relative h-[380px] overflow-hidden rounded-2xl border border-slate-800 bg-slate-800 sm:h-[480px]">
+        {/* SECTION HEADER */}
+        <div className="mx-auto max-w-2xl text-center">
+
+          <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-900">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+            Our Leadership
+          </span>
+
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+            Led with Purpose,
+            <span className="text-blue-900"> Driven by Service</span>
+          </h2>
+
+          <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base">
+            At BREA 88 Realty OPC, leadership means creating meaningful
+            relationships, delivering professional service, and putting
+            our clients first.
+          </p>
+
+        </div>
+
+
+        {/* LEADER CARD */}
+        <div className="mx-auto mt-12 max-w-5xl">
+
+          <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_15px_50px_rgba(15,23,42,0.08)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_25px_70px_rgba(15,23,42,0.12)]">
+
+            <div className="grid lg:grid-cols-2">
+
+
+              {/* =================================================
+                  LEADER IMAGE
+              ================================================== */}
+
+              <div className="relative min-h-[380px] overflow-hidden bg-slate-100 sm:min-h-[450px] lg:min-h-[560px]">
 
                 <Image
-                  src="/img/CEO.png"
-                  alt="Rodesa E. Estremos - CEO"
+                  src="/img/ceo.png"
+                  alt="Chief Executive Officer of BREA 88 Realty OPC"
                   fill
-                  className="object-cover grayscale contrast-125"
+                  className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
                 />
 
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-5 sm:p-6">
+                {/* Image overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
 
-                  <p className="text-lg font-bold">
-                    Rodesa E. Estremos, REB, REA
-                  </p>
+                {/* Bottom image label */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
 
-                  <p className="mt-1 text-xs font-semibold text-rose-400">
-                    Founder & Chief Executive Officer
-                  </p>
-
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7">
-
-              <span className="text-xs font-bold uppercase tracking-[0.18em] text-rose-500">
-                Founder Profile
-              </span>
-
-              <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                Executive Advisory
-              </h2>
-
-              <p className="mt-6 text-sm leading-7 text-slate-300 sm:text-base">
-                With eight (8) years of active,
-                multi-disciplinary experience in the
-                Philippine real estate market, Mrs. Estremos
-                has built an immaculate career foundation
-                across sales, marketing, client management,
-                and brokerage compliance operations.
-              </p>
-
-              <div className="mt-8 grid gap-4">
-
-                <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-5">
-
-                  <div className="flex gap-4">
-
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 font-bold text-rose-500">
-                      6
-                    </div>
-
-                    <div>
-                      <p className="font-bold text-white">
-                        6 Years Registered Salesperson
-                      </p>
-
-                      <p className="mt-2 text-sm leading-6 text-slate-400">
-                        Worked closely assisting home buyers
-                        in property selection while consistently
-                        beating sales pipelines for tier-1
-                        development builders.
-                      </p>
-                    </div>
-
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-300" />
+                    BREA 88 REALTY OPC
                   </div>
-                </div>
 
-                <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-5">
-
-                  <div className="flex gap-4">
-
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 font-bold text-blue-400">
-                      2
-                    </div>
-
-                    <div>
-                      <p className="font-bold text-white">
-                        2 Years Corporate Broker
-                      </p>
-
-                      <p className="mt-2 text-sm leading-6 text-slate-400">
-                        Practiced as a Licensed Corporate Broker
-                        developing core competencies in portfolio
-                        management, project planning, and notary
-                        compliance operations.
-                      </p>
-                    </div>
-
-                  </div>
                 </div>
 
               </div>
 
-              <div className="mt-8 border-t border-slate-800 pt-6">
 
-                <p className="text-sm italic leading-7 text-slate-400">
-                  “Driven by a passion for serving people and
-                  helping families achieve their property
-                  aspirations, she established BREA 88 Realty
-                  OPC with a vision of delivering professional
-                  real estate services founded on trust,
-                  excellence, and genuine care.”
+              {/* =================================================
+                  LEADER INFORMATION
+              ================================================== */}
+
+              <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-12">
+
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
+                  Chief Executive Officer
+                </span>
+
+                <h3 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                  Rodesa E Estremos
+                </h3>
+
+                <div className="mt-5 h-1 w-12 rounded-full bg-blue-900" />
+
+                <p className="mt-6 text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
+                  As the leader of BREA 88 Realty OPC, our commitment is
+                  to provide clients with professional real estate
+                  guidance built on integrity, trust, and genuine care.
                 </p>
 
+                <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
+                  Every property journey is different. Our goal is to
+                  understand each client's needs and help them make
+                  confident decisions while building relationships that
+                  last beyond the transaction.
+                </p>
+
+
+                {/* VALUES */}
+                <div className="mt-8 grid gap-3 sm:grid-cols-2">
+
+                  {/* VALUE 1 */}
+                  <div className="group/value rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/50">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-900">
+                        <ShieldCheck className="h-5 w-5" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">
+                          Integrity
+                        </p>
+
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                          Honest and transparent service
+                        </p>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* VALUE 2 */}
+                  <div className="group/value rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/50">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-900">
+                        <Heart className="h-5 w-5" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">
+                          Compassion
+                        </p>
+
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                          Service with a genuine heart
+                        </p>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* VALUE 3 */}
+                  <div className="group/value rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/50">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-900">
+                        <Award className="h-5 w-5" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">
+                          Excellence
+                        </p>
+
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                          Professional real estate solutions
+                        </p>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* VALUE 4 */}
+                  <div className="group/value rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-blue-200 hover:bg-blue-50/50">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-900">
+                        <CheckCircle className="h-5 w-5" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">
+                          Commitment
+                        </p>
+
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                          Focused on client success
+                        </p>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
               </div>
+
             </div>
 
           </div>
+
         </div>
-      </section>
+
+      </div>
+    </section>
 
       {/* =====================================================
           SERVICES
       ====================================================== */}
 
-      <section
-        id="services"
-        className="border-y border-slate-200/50 bg-slate-100 py-16 sm:py-20 lg:py-24"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section
+          id="services"
+          className="relative overflow-hidden bg-slate-50 py-16 sm:py-20 lg:py-28"
+        >
+          {/* Background decoration */}
+          <div className="pointer-events-none absolute -right-40 top-10 h-96 w-96 rounded-full bg-blue-100/50 blur-3xl" />
 
-          <div className="mx-auto mb-10 max-w-2xl text-center sm:mb-14">
+          <div className="pointer-events-none absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-slate-200/60 blur-3xl" />
 
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-blue-900">
-              Capabilities
-            </span>
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-            <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Professional Services Offered
-            </h2>
+            {/* SECTION HEADER */}
+            <div className="mx-auto max-w-3xl text-center">
 
-          </div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-900">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                What We Offer
+              </span>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+                Real Estate Services
+                <span className="text-blue-900"> Built Around You</span>
+              </h2>
 
-            {[
-              'Real Estate Brokerage',
-              'Residential Property Sales',
-              'Commercial Property Brokerage',
-              'Project Selling & Marketing',
-              'Property Investment Consultation',
-              'Property Acquisition Assistance',
-              'Lead Generation Asset Control',
-              'Real Estate Advisory Services',
-            ].map((service) => (
-              <div
-                key={service}
-                className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-md sm:p-6"
-              >
-                <Briefcase className="h-5 w-5 text-blue-900 transition group-hover:scale-110" />
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
+                From finding the right property to making confident real estate
+                decisions, BREA 88 Realty OPC provides professional support
+                throughout your property journey.
+              </p>
 
-                <p className="mt-4 text-sm font-bold leading-6 text-slate-800">
-                  {service}
-                </p>
+            </div>
+
+
+            {/* SERVICE GRID */}
+            <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+              {/* SERVICE 1 */}
+              <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.09)] sm:p-7">
+
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+                <div className="relative">
+
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-900 transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-900 group-hover:text-white">
+                    <Search className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black tracking-tight text-slate-900">
+                    Property Search
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Find residential, commercial, and investment properties
+                    that match your needs, preferences, and budget.
+                  </p>
+
+                  <a
+                    href="/marketplace"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
+                  >
+                    Browse Properties
+                    <span aria-hidden="true">→</span>
+                  </a>
+
+                </div>
+
               </div>
-            ))}
+
+
+              {/* SERVICE 2 */}
+              <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.09)] sm:p-7">
+
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+                <div className="relative">
+
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-900 transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-900 group-hover:text-white">
+                    <Building2 className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black tracking-tight text-slate-900">
+                    Property Marketing
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Professional property presentation and marketing designed
+                    to connect properties with the right buyers and investors.
+                  </p>
+
+                  <a
+                    href="#contact"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
+                  >
+                    Market Your Property
+                    <span aria-hidden="true">→</span>
+                  </a>
+
+                </div>
+
+              </div>
+
+
+              {/* SERVICE 3 */}
+              <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.09)] sm:p-7">
+
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+                <div className="relative">
+
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-900 transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-900 group-hover:text-white">
+                    <Briefcase className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black tracking-tight text-slate-900">
+                    Investment Guidance
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Explore property opportunities with guidance focused on
+                    your investment goals and long-term plans.
+                  </p>
+
+                  <a
+                    href="#contact"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
+                  >
+                    Discuss an Investment
+                    <span aria-hidden="true">→</span>
+                  </a>
+
+                </div>
+
+              </div>
+
+
+              {/* SERVICE 4 */}
+              <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.09)] sm:p-7">
+
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+                <div className="relative">
+
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-900 transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-900 group-hover:text-white">
+                    <FileText className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black tracking-tight text-slate-900">
+                    Property Assistance
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Get support throughout the property process, from initial
+                    inquiries to the important steps of your transaction.
+                  </p>
+
+                  <a
+                    href="#contact"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
+                  >
+                    Get Assistance
+                    <span aria-hidden="true">→</span>
+                  </a>
+
+                </div>
+
+              </div>
+
+
+              {/* SERVICE 5 */}
+              <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_20px_45px_rgba(15,23,42,0.09)] sm:p-7">
+
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-blue-50 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+
+                <div className="relative">
+
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-900 transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-900 group-hover:text-white">
+                    <MapPin className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black tracking-tight text-slate-900">
+                    Property Viewing
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    Schedule a property viewing and experience potential
+                    properties with assistance from our team.
+                  </p>
+
+                  <a
+                    href="#contact"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
+                  >
+                    Schedule a Viewing
+                    <span aria-hidden="true">→</span>
+                  </a>
+
+                </div>
+
+              </div>
+
+
+              {/* SERVICE 6 */}
+              <div className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-blue-950 p-6 text-white shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(30,64,175,0.20)] sm:p-7">
+
+                <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-400/10 blur-3xl" />
+
+                <div className="relative">
+
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-blue-200 ring-1 ring-white/10">
+                    <Phone className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mt-6 text-xl font-black tracking-tight">
+                    Personalized Consultation
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-blue-100/80">
+                    Have questions about buying, selling, or investing?
+                    Talk directly with our team and let us understand what
+                    you're looking for.
+                  </p>
+
+                  <a
+                    href="#contact"
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-blue-950 transition-all duration-300 hover:bg-blue-50"
+                  >
+                    Talk to Us
+                    <span aria-hidden="true">→</span>
+                  </a>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* BOTTOM CTA */}
+            <div className="mt-12 overflow-hidden rounded-3xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 p-7 shadow-xl sm:p-9 lg:p-10">
+
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+
+                <div className="max-w-2xl">
+
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-300">
+                    Ready to Find Your Property?
+                  </p>
+
+                  <h3 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    Let's find the right opportunity for you.
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-blue-100/75">
+                    Explore available properties or speak with our team
+                    about your real estate goals.
+                  </p>
+
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+
+                  <a
+                    href="/marketplace"
+                    className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-950 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-50"
+                  >
+                    View Properties
+                  </a>
+
+                  <a
+                    href="#contact"
+                    className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/15"
+                  >
+                    Contact Us
+                  </a>
+
+                </div>
+
+              </div>
+
+            </div>
 
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* =====================================================
           CORE VALUES
@@ -815,131 +1145,363 @@ export default function HomePage() {
           CONTACT
       ====================================================== */}
 
+      {/* =====================================================
+    CONTACT / LEAD GENERATION
+====================================================== */}
+
       <section
         id="contact"
-        className="bg-slate-900 py-16 text-white sm:py-20"
+        className="relative overflow-hidden bg-white py-16 sm:py-20 lg:py-28"
       >
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        {/* Background decoration */}
+        <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-100/50 blur-3xl" />
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-2xl sm:p-8 md:p-12">
+        <div className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-slate-100 blur-3xl" />
 
-            <div className="mx-auto mb-10 max-w-xl text-center">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-              <span className="text-xs font-bold uppercase tracking-[0.18em] text-blue-500">
-                Connect With Us
-              </span>
+          {/* SECTION HEADER */}
+          <div className="mx-auto max-w-3xl text-center">
 
-              <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-                Schedule an Advisory Session
-              </h2>
+            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-900">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              Get in Touch
+            </span>
 
-              <p className="mt-3 text-sm leading-6 text-slate-400">
-                Our office will follow up with verified
-                compliance details within 12 business hours.
-              </p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+              Let's Talk About Your
+              <span className="text-blue-900"> Property Goals</span>
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base sm:leading-8">
+              Whether you're looking to buy, sell, invest, or simply learn
+              more about a property, our team is ready to help.
+            </p>
+
+          </div>
+
+
+          {/* CONTACT CONTENT */}
+          <div className="mt-12 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:gap-8">
+
+
+            {/* =================================================
+                CONTACT INFORMATION
+            ================================================== */}
+
+            <div className="relative overflow-hidden rounded-3xl bg-blue-950 p-7 text-white shadow-[0_20px_50px_rgba(30,64,175,0.18)] sm:p-9 lg:p-10">
+
+              <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
+
+              <div className="relative">
+
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-300">
+                  BREA 88 Realty OPC
+                </p>
+
+                <h3 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+                  Your next property journey starts here.
+                </h3>
+
+                <p className="mt-4 text-sm leading-7 text-blue-100/75">
+                  Tell us what you're looking for and our team will help
+                  you explore the right property opportunities.
+                </p>
+
+
+                {/* CONTACT DETAILS */}
+                <div className="mt-8 space-y-4">
+
+                  {/* LOCATION */}
+                  <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-blue-300">
+                        Office
+                      </p>
+
+                      <p className="mt-1 text-sm leading-6 text-white">
+                        Cebu, Philippines
+                      </p>
+                    </div>
+
+                  </div>
+
+
+                  {/* PHONE */}
+                  <a
+                    href="tel:+639XXXXXXXXX"
+                    className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all duration-300 hover:bg-white/10"
+                  >
+
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200">
+                      <Phone className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-blue-300">
+                        Phone
+                      </p>
+
+                      <p className="mt-1 text-sm leading-6 text-white">
+                        Contact our team
+                      </p>
+                    </div>
+
+                  </a>
+
+
+                  {/* EMAIL */}
+                  <a
+                    href="mailto:info@brea88realty.com"
+                    className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all duration-300 hover:bg-white/10"
+                  >
+
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200">
+                      <Mail className="h-5 w-5" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wider text-blue-300">
+                        Email
+                      </p>
+
+                      <p className="mt-1 break-all text-sm leading-6 text-white">
+                        info@brea88realty.com
+                      </p>
+                    </div>
+
+                  </a>
+
+                </div>
+
+
+                {/* TRUST MESSAGE */}
+                <div className="mt-8 border-t border-white/10 pt-7">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-400/10 text-blue-200">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-bold text-white">
+                        Professional & Client-Focused
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-blue-100/60">
+                        Your property goals are our priority.
+                      </p>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
 
             </div>
 
-            {submitStatus === 'success' && (
-              <div className="mb-6 rounded-xl border border-emerald-500/40 bg-emerald-950/50 p-4 text-center text-sm font-semibold text-emerald-200">
-                Thank you! Your corporate inquiry has been
-                routed straight to our office inbox.
-              </div>
-            )}
 
-            {submitStatus === 'error' && (
-              <div className="mb-6 rounded-xl border border-rose-500/40 bg-rose-950/50 p-4 text-center text-sm font-semibold text-rose-200">
-                Something went wrong. Please check your
-                connection or contact us directly.
-              </div>
-            )}
+            {/* =================================================
+                INQUIRY FORM
+            ================================================== */}
 
-            <form
-              ref={formRef}
-              onSubmit={sendEmail}
-              className="grid grid-cols-1 gap-5 md:grid-cols-2"
-            >
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_15px_50px_rgba(15,23,42,0.07)] sm:p-8 lg:p-10">
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">
-                  Full Name
-                </label>
 
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  placeholder="Full Name"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                />
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
+                  Property Inquiry
+                </p>
+
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                  Send us a message
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Fill out the form below and our team will get back to you.
+                </p>
+
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">
-                  Email Address
-                </label>
 
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="Email Address"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                />
-              </div>
+              {/* =================================================
+                  FORM
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">
-                  Contact Number
-                </label>
+                  IMPORTANT:
+                  Keep your existing form field names and
+                  sendEmail() handler if they already exist.
+              ================================================== */}
 
-                <input
-                  type="tel"
-                  name="contact_number"
-                  required
-                  placeholder="Phone Number"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">
-                  Preferred Location
-                </label>
-
-                <input
-                  type="text"
-                  name="prefer_location"
-                  required
-                  placeholder="Metro Manila, Cebu..."
-                  className="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="mb-2 block text-sm font-semibold text-slate-300">
-                  Message
-                </label>
-
-                <textarea
-                  name="message"
-                  rows={5}
-                  required
-                  placeholder="Your inquiry..."
-                  className="w-full resize-none rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex w-full items-center justify-center rounded-xl bg-blue-700 py-3.5 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-600 hover:shadow-blue-900/30 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
+              <form
+                onSubmit={sendEmail}
+                className="mt-8 space-y-5"
               >
-                {isSubmitting ? 'Sending...' : 'Submit Inquiry'}
-              </button>
 
-            </form>
+                {/* NAME */}
+                <div>
+
+                  <label
+                    htmlFor="contact-name"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Full Name
+                  </label>
+
+                  <input
+                    id="contact-name"
+                    type="text"
+                    name="user_name"
+                    required
+                    placeholder="Enter your full name"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+
+                </div>
+
+
+                {/* EMAIL */}
+                <div>
+
+                  <label
+                    htmlFor="contact-email"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Email Address
+                  </label>
+
+                  <input
+                    id="contact-email"
+                    type="email"
+                    name="user_email"
+                    required
+                    placeholder="you@example.com"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+
+                </div>
+
+
+                {/* PHONE */}
+                <div>
+
+                  <label
+                    htmlFor="contact-phone"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Phone Number
+                  </label>
+
+                  <input
+                    id="contact-phone"
+                    type="tel"
+                    name="phone"
+                    placeholder="+63 9XX XXX XXXX"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+
+                </div>
+
+
+                {/* INTEREST */}
+                <div>
+
+                  <label
+                    htmlFor="contact-interest"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    I'm interested in
+                  </label>
+
+                  <select
+                    id="contact-interest"
+                    name="interest"
+                    className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Select an option
+                    </option>
+
+                    <option value="buying">
+                      Buying a Property
+                    </option>
+
+                    <option value="selling">
+                      Selling a Property
+                    </option>
+
+                    <option value="investment">
+                      Property Investment
+                    </option>
+
+                    <option value="viewing">
+                      Property Viewing
+                    </option>
+
+                    <option value="general">
+                      General Inquiry
+                    </option>
+                  </select>
+
+                </div>
+
+
+                {/* MESSAGE */}
+                <div>
+
+                  <label
+                    htmlFor="contact-message"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Message
+                  </label>
+
+                  <textarea
+                    id="contact-message"
+                    name="message"
+                    required
+                    rows={5}
+                    placeholder="Tell us what you're looking for..."
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm leading-6 text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+
+                </div>
+
+
+                {/* SUBMIT */}
+                <button
+                  type="submit"
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl active:translate-y-0"
+                >
+                  Send Inquiry
+
+                  <span
+                    aria-hidden="true"
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    →
+                  </span>
+                </button>
+
+
+                <p className="text-center text-[11px] leading-5 text-slate-400">
+                  By submitting this form, you agree to be contacted regarding
+                  your inquiry.
+                </p>
+
+              </form>
+
+            </div>
+
           </div>
+
         </div>
       </section>
 
