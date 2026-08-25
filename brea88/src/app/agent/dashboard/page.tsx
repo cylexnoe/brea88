@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import ButterflyLoader from '@/components/ButterflyLoader';
 import {
   Building2,
   Home,
@@ -167,18 +168,8 @@ const navigation = [
   */
 
 if (loading || !agent) {
-return ( <main className="flex min-h-screen items-center justify-center bg-slate-950"> <div className="flex flex-col items-center gap-4 text-white"> <Loader2
-         size={36}
-         className="animate-spin text-blue-400"
-       />
-
-
-      <p className="text-sm text-slate-400">
-        Loading agent dashboard...
-      </p>
-    </div>
-  </main>
-);
+return <ButterflyLoader />
+;
 
 
 }
