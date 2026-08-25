@@ -3,17 +3,18 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-Building2,
-Home,
-User,
-LogOut,
-Menu,
-X,
-ChevronRight,
-Loader2,
-Mail,
-Phone,
-BriefcaseBusiness,
+  Building2,
+  Home,
+  User,
+  LogOut,
+  Menu,
+  X,
+  ChevronRight,
+  Loader2,
+  Mail,
+  Phone,
+  BriefcaseBusiness,
+  LayoutDashboard,
 } from 'lucide-react';
 
 type Agent = {
@@ -136,21 +137,26 @@ try {
   */
 
 const navigation = [
-{
-name: 'Dashboard',
-href: '/agent/dashboard',
-icon: Home,
-},
-{
-name: 'Properties',
-href: '/marketplace',
-icon: Building2,
-},
-{
-name: 'Profile',
-href: '/profile',
-icon: User,
-},
+  {
+    name: 'Home',
+    href: '/',
+    icon: Home,
+  },
+  {
+    name: 'Dashboard',
+    href: '/agent/dashboard',
+    icon: LayoutDashboard,
+  },
+  {
+    name: 'Properties',
+    href: '/marketplace',
+    icon: Building2,
+  },
+  {
+    name: 'Profile',
+    href: '/profile',
+    icon: User,
+  },
 ];
 
 /*
