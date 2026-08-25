@@ -590,7 +590,7 @@ export default function AdminDashboard() {
               <div className="flex items-center w-full bg-slate-900 rounded-lg border border-slate-800 focus-within:border-blue-500 transition overflow-hidden">
 
                 <span className="px-4 text-white text-sm font-bold border-r border-slate-800">
-                  Γé▒
+                  ₱
                 </span>
 
                 <input
@@ -1058,7 +1058,7 @@ export default function AdminDashboard() {
                         </td>
 
                         <td className="font-semibold text-blue-400 pr-4">
-                          Γé▒{property.price}
+                          ₱{property.price}
                         </td>
 
                         <td className="text-slate-400 pr-4">
