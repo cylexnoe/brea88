@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useRef, useState } from 'react';
 import Image from 'next/image';
@@ -15,7 +15,6 @@ import {
   Eye,
   EyeOff,
   X,
-  User,
   Menu,
   Building2,
   Phone,
@@ -170,6 +169,7 @@ export default function HomePage() {
             </a>
 
             {/* DESKTOP NAV */}
+                        {/* DESKTOP NAV */}
             <div className="hidden items-center gap-5 text-sm font-semibold text-slate-600 lg:flex xl:gap-7">
               <a
                 href="#hero"
@@ -205,84 +205,8 @@ export default function HomePage() {
               >
                 Contact Us
               </a>
-            </div>
-
-            {/* DESKTOP ACTIONS */}
-            <div className="hidden items-center gap-3 lg:flex">  
-
-              <a
-                href="/profile"
-                className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold text-blue-900 transition hover:bg-blue-50"
-              >
-                <User className="h-4 w-4" />
-                Profile
-              </a>
-            </div>
-
-            {/* MOBILE MENU */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-lg p-2 text-slate-700 transition hover:bg-slate-100 lg:hidden"
-              aria-label="Toggle navigation"
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-
-          </div>
-
-          {/* MOBILE NAVIGATION */}
-          {mobileMenuOpen && (
-            <div className="border-t border-slate-100 py-4 lg:hidden">
-              <div className="grid gap-1">
-
-                {[
-                  ['Home', '#hero'],
-                  ['About Us', '#profile'],
-                  ['Leadership', '#ceo'],
-                  ['Services', '#services'],
-                  ['Contact Us', '#contact'],
-                ].map(([label, href]) => (
-                  <a
-                    key={href}
-                    href={href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="rounded-lg px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-blue-900"
-                  >
-                    {label}
-                  </a>
-                ))}
-
-                <div className="mt-2 grid gap-2 border-t border-slate-100 pt-3">
-
-                  <a
-                    href="/marketplace"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-lg bg-blue-900 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-blue-800"
-                  >
-                    <Building2 className="h-4 w-4" />
-                    Property For You
-                  </a>
-
-                  <a
-                    href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold text-blue-900 transition hover:bg-blue-50"
-                  >
-                    <User className="h-4 w-4" />
-                    Profile
-                  </a>
-
-                </div>
               </div>
             </div>
-          )}
-
         </div>
       </nav>
 
@@ -389,7 +313,7 @@ export default function HomePage() {
                     client-centered real estate services. Guided by our core
                     principle,
                     <strong className="text-blue-900">
-                      {' '}“Service with a Heart,”
+                      {' '}â€œService with a Heart,â€
                     </strong>{' '}
                     we are dedicated to helping clients achieve their real estate
                     goals through integrity, expertise, and personalized service.
@@ -498,14 +422,14 @@ export default function HomePage() {
                       'Building long-term partnerships based on trust, transparency, and mutual success.',
                       'Assisting clients in making informed and rewarding property investment decisions.',
                       'Supporting developer partners through effective project marketing and sales strategies.',
-                      'Providing “Service with a Heart” in every transaction and client engagement.',
+                      'Providing â€œService with a Heartâ€ in every transaction and client engagement.',
                     ].map((item) => (
                       <li
                         key={item}
                         className="flex items-start gap-3"
                       >
                         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs text-white">
-                          ✓
+                          âœ“
                         </span>
 
                         <span>{item}</span>
@@ -519,7 +443,7 @@ export default function HomePage() {
                   <div className="h-px w-full bg-blue-800" />
 
                   <p className="mt-4 text-xs font-medium text-blue-300">
-                    BREA 88 REALTY OPC — Service with a Heart
+                    BREA 88 REALTY OPC â€” Service with a Heart
                   </p>
                 </div>
 
@@ -810,7 +734,7 @@ export default function HomePage() {
                     className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                   >
                     Browse Properties
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">â†’</span>
                   </a>
 
                 </div>
@@ -843,7 +767,7 @@ export default function HomePage() {
                     className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                   >
                     Market Your Property
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">â†’</span>
                   </a>
 
                 </div>
@@ -876,7 +800,7 @@ export default function HomePage() {
                     className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                   >
                     Discuss an Investment
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">â†’</span>
                   </a>
 
                 </div>
@@ -909,7 +833,7 @@ export default function HomePage() {
                     className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                   >
                     Get Assistance
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">â†’</span>
                   </a>
 
                 </div>
@@ -942,7 +866,7 @@ export default function HomePage() {
                     className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                   >
                     Schedule a Viewing
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">â†’</span>
                   </a>
 
                 </div>
@@ -976,7 +900,7 @@ export default function HomePage() {
                     className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-blue-950 transition-all duration-300 hover:bg-blue-50"
                   >
                     Talk to Us
-                    <span aria-hidden="true">→</span>
+                    <span aria-hidden="true">â†’</span>
                   </a>
 
                 </div>
@@ -1121,7 +1045,7 @@ export default function HomePage() {
                 'SEC and BIR Registered Company (2026)',
                 'Led by an experienced Licensed Real Estate Broker',
                 'Strong commitment to ethical and professional practices',
-                'Personalized client care through “Service with a Heart”',
+                'Personalized client care through â€œService with a Heartâ€',
                 'Dedicated to achieving sales targets & developer objectives',
                 'Professional, reliable, and results-oriented framework',
               ].map((text) => (
@@ -1456,20 +1380,20 @@ export default function HomePage() {
                         aria-hidden="true"
                         className="transition-transform duration-300 group-hover:translate-x-1"
                       >
-                        →
+                        â†’
                       </span>
                     </>
                   )}
                 </button>
                                   {submitStatus === 'success' && !isSubmitting && (
                     <div className="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-center text-sm font-semibold text-green-700">
-                      ✓ Inquiry sent successfully! We'll get back to you soon.
+                      âœ“ Inquiry sent successfully! We'll get back to you soon.
                     </div>
                   )}
 
                   {submitStatus === 'error' && !isSubmitting && (
                     <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
-                      ✕ Failed to send your inquiry. Please try again.
+                      âœ• Failed to send your inquiry. Please try again.
                     </div>
                   )}
 
@@ -1565,7 +1489,7 @@ export default function HomePage() {
                       onChange={(e) =>
                         setAdminPassword(e.target.value)
                       }
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-sm outline-none transition focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
                     />
 
@@ -1751,7 +1675,7 @@ export default function HomePage() {
           <div className="mt-8 flex flex-col gap-4 border-t border-slate-900 pt-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
 
             <p className="text-[10px] text-slate-500 sm:text-[11px]">
-              © {new Date().getFullYear()} BREA 88
+              Â© {new Date().getFullYear()} BREA 88
               REALTY OPC. All rights reserved.
             </p>
 

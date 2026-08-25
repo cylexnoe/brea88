@@ -5,12 +5,8 @@ import crypto from 'crypto';
 const ADMIN_SESSION_COOKIE = 'admin_session';
 const AGENT_SESSION_COOKIE = 'agent_session';
 
-const ADMIN_SESSION_DURATION = 60 * 60 * 2 * 1000;
-const AGENT_SESSION_DURATION = 1000 * 60 * 60 * 24 * 30;
-
-/* =========================================================
-   ADMIN SESSION
-========================================================= */
+const ADMIN_SESSION_DURATION = 60 * 60 * 2 * 1000; // 2 hours
+const AGENT_SESSION_DURATION = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 function isValidAdminSession(
   token: string | undefined
@@ -78,10 +74,6 @@ function isValidAdminSession(
   );
 }
 
-/* =========================================================
-   AGENT SESSION
-========================================================= */
-
 function isValidAgentSession(
   token: string | undefined
 ): boolean {
@@ -107,8 +99,16 @@ function isValidAgentSession(
   if (
     !Number.isInteger(agentId) ||
     agentId <= 0 ||
-    !Number.isFinite(timestamp) ||
-    !signature
+    !Number.isFinite(timestamp)
+  ) {
+    return false;
+  }
+
+  const age = Date.now() - timestamp;
+
+  if (
+    age < 0 ||
+    age > AGENT_SESSION_DURATION
   ) {
     return false;
   }
@@ -143,31 +143,11 @@ function isValidAgentSession(
     return false;
   }
 
-  if (
-    !crypto.timingSafeEqual(
-      actualBuffer,
-      expectedBuffer
-    )
-  ) {
-    return false;
-  }
-
-  const age =
-    Date.now() - timestamp;
-
-  if (
-    age < 0 ||
-    age > AGENT_SESSION_DURATION
-  ) {
-    return false;
-  }
-
-  return true;
+  return crypto.timingSafeEqual(
+    actualBuffer,
+    expectedBuffer
+  );
 }
-
-/* =========================================================
-   PROXY
-========================================================= */
 
 export function proxy(
   request: NextRequest
@@ -175,9 +155,11 @@ export function proxy(
   const { pathname } =
     request.nextUrl;
 
-  /* =======================================================
-     ADMIN PROTECTION
-  ======================================================= */
+  /*
+   * =========================================================
+   * ADMIN PROTECTION
+   * =========================================================
+   */
 
   if (
     pathname.startsWith('/admin')
@@ -209,22 +191,29 @@ export function proxy(
     }
   }
 
-  /* =======================================================
-     AGENT / BROKER PROFILE PROTECTION
-  ======================================================= */
+  /*
+   * =========================================================
+   * AGENT / BROKER PROTECTION
+   * =========================================================
+   *
+   * /profile is the private agent/broker profile.
+   *
+   * Clients who are not logged in as an agent/broker
+   * cannot access this route.
+   */
 
   if (
     pathname === '/profile' ||
     pathname.startsWith('/profile/')
   ) {
-    const agentSession =
+    const agentSessionToken =
       request.cookies.get(
         AGENT_SESSION_COOKIE
       )?.value;
 
     if (
       !isValidAgentSession(
-        agentSession
+        agentSessionToken
       )
     ) {
       const loginUrl =
@@ -247,14 +236,9 @@ export function proxy(
   return NextResponse.next();
 }
 
-/* =========================================================
-   MATCHER
-========================================================= */
-
 export const config = {
   matcher: [
     '/admin/:path*',
-    '/profile',
     '/profile/:path*',
   ],
 };
