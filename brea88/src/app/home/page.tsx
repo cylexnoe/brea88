@@ -2114,15 +2114,6 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] sm:text-[11px]">
-
-              <button
-                type="button"
-                onClick={() => setShowLoginModal(true)}
-                className="text-slate-400 transition hover:text-blue-400"
-              >
-                Admin
-              </button>
-
               <a
                 href="#privacy"
                 className="text-slate-400 transition hover:text-white"
