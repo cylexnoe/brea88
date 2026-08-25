@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import {
   Search,
@@ -19,13 +19,101 @@ import {
   Building2,
   Phone,
   Mail,
-  Loader2
+  Loader2,
+  User,
+  LogOut,
+  ChevronRight,
+  Home
 } from 'lucide-react';
 
 import { PROPERTIES } from '../data';
 import emailjs from '@emailjs/browser';
 
 export default function HomePage() {
+  const [agent, setAgent] = useState<{
+    id: number;
+    fullName: string;
+    email: string;
+    role: string;
+    slug: string;
+    phone: string | null;
+    profileImage: string | null;
+    bio: string | null;
+    facebook: string | null;
+    messenger: string | null;
+    isActive: boolean;
+  } | null>(null);
+
+  const [agentLoading, setAgentLoading] = useState(true);
+  const [agentLoggingOut, setAgentLoggingOut] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAgentSession = async () => {
+      try {
+        const response = await fetch('/api/agent/me', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          if (mounted) {
+            setAgent(null);
+            setAgentLoading(false);
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (
+          mounted &&
+          data?.success &&
+          data?.agent &&
+          data.agent.isActive
+        ) {
+          setAgent(data.agent);
+        } else if (mounted) {
+          setAgent(null);
+        }
+      } catch (error) {
+        console.error('Agent session check failed:', error);
+
+        if (mounted) {
+          setAgent(null);
+        }
+      } finally {
+        if (mounted) {
+          setAgentLoading(false);
+        }
+      }
+    };
+
+    checkAgentSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+    const handleAgentLogout = async () => {
+    if (agentLoggingOut) return;
+
+    setAgentLoggingOut(true);
+
+    try {
+      await fetch('/api/agent/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Agent logout error:', error);
+    } finally {
+      window.location.href = '/home';
+    }
+  };
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [filter, setFilter] = useState<string>('All');
 
@@ -138,77 +226,423 @@ export default function HomePage() {
           NAVIGATION
       ====================================================== */}
 
-      <nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+{/* =====================================================
+    NAVIGATION
+====================================================== */}
 
-          <div className="flex min-h-[68px] items-center justify-between gap-4 sm:min-h-[76px]">
+<nav className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-            {/* LOGO */}
-            <a
-              href="#hero"
-              className="group flex min-w-0 items-center gap-2 sm:gap-3"
-            >
-              <Image
-                src="/img/LOGO.png"
-                alt="BREA 88 Realty OPC"
-                width={56}
-                height={56}
-                priority
-                className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md ring-2 ring-blue-50 transition-transform duration-300 group-hover:scale-105 sm:h-12 sm:w-12 lg:h-14 lg:w-14"
+    <div className="flex min-h-[68px] items-center justify-between gap-4 sm:min-h-[76px]">
+
+      {/* LOGO */}
+      <a
+        href="#hero"
+        className="group flex min-w-0 items-center gap-2 sm:gap-3"
+      >
+        <Image
+          src="/img/LOGO.png"
+          alt="BREA 88 Realty OPC"
+          width={56}
+          height={56}
+          priority
+          className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md ring-2 ring-blue-50 transition-transform duration-300 group-hover:scale-105 sm:h-12 sm:w-12 lg:h-14 lg:w-14"
+        />
+
+        <div className="min-w-0">
+          <p className="truncate text-xs font-black tracking-tight text-blue-900 sm:text-base lg:text-xl">
+            BREA 88 REALTY OPC
+          </p>
+
+          <p className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.15em] text-slate-500 sm:text-[9px]">
+            Service with a Heart
+          </p>
+        </div>
+      </a>
+
+      {/* =================================================
+          CLIENT NAVIGATION
+          Shown when NOT logged in as an agent
+      ================================================== */}
+
+      {!agent && !agentLoading && (
+        <div className="hidden items-center gap-5 text-sm font-semibold text-slate-600 lg:flex xl:gap-7">
+
+          <a
+            href="#hero"
+            className="transition hover:text-blue-700"
+          >
+            Home
+          </a>
+
+          <a
+            href="#profile"
+            className="transition hover:text-blue-700"
+          >
+            About Us
+          </a>
+
+          <a
+            href="#ceo"
+            className="transition hover:text-blue-700"
+          >
+            Leadership
+          </a>
+
+          <a
+            href="#services"
+            className="transition hover:text-blue-700"
+          >
+            Services
+          </a>
+
+          <a
+            href="#contact"
+            className="transition hover:text-blue-700"
+          >
+            Contact Us
+          </a>
+
+        </div>
+      )}
+
+      {/* =================================================
+          AGENT / BROKER NAVIGATION
+          Shown ONLY when authenticated
+      ================================================== */}
+
+      {agent && !agentLoading && (
+        <div className="hidden items-center gap-1 md:flex">
+
+          <a
+            href="/home"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </a>
+
+          <a
+            href="/agent/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-blue-950"
+          >
+            <Briefcase className="h-4 w-4" />
+            Dashboard
+          </a>
+
+          <a
+            href="/marketplace"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-blue-950"
+          >
+            <Building2 className="h-4 w-4" />
+            Properties
+          </a>
+
+          <a
+            href="/profile"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-blue-950"
+          >
+            <User className="h-4 w-4" />
+            Profile
+          </a>
+
+        </div>
+      )}
+
+      {/* =================================================
+          AGENT ACCOUNT
+      ================================================== */}
+
+      {agent && !agentLoading && (
+        <div className="hidden items-center gap-3 md:flex">
+
+          <a
+            href="/profile"
+            className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-slate-100"
+          >
+
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-100">
+
+              {agent.profileImage ? (
+                <img
+                  src={agent.profileImage}
+                  alt={agent.fullName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User
+                  size={18}
+                  className="text-slate-400"
+                />
+              )}
+
+            </div>
+
+            <div className="max-w-[140px] text-left">
+
+              <p className="truncate text-sm font-bold text-slate-900">
+                {agent.fullName}
+              </p>
+
+              <p className="truncate text-[11px] text-slate-500">
+                {agent.role}
+              </p>
+
+            </div>
+
+          </a>
+
+          <button
+            type="button"
+            onClick={handleAgentLogout}
+            disabled={agentLoggingOut}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+
+            {agentLoggingOut ? (
+              <Loader2
+                size={17}
+                className="animate-spin"
               />
+            ) : (
+              <LogOut size={17} />
+            )}
+
+            <span className="hidden xl:inline">
+              Logout
+            </span>
+
+          </button>
+
+        </div>
+      )}
+
+      {/* =================================================
+          MOBILE MENU
+      ================================================== */}
+
+      <button
+        type="button"
+        onClick={() =>
+          setMobileMenuOpen(
+            previous => !previous
+          )
+        }
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 lg:hidden"
+        aria-label="Toggle navigation"
+      >
+        {mobileMenuOpen ? (
+          <X size={21} />
+        ) : (
+          <Menu size={21} />
+        )}
+      </button>
+
+    </div>
+
+  </div>
+
+  {/* =====================================================
+      MOBILE NAVIGATION
+  ====================================================== */}
+
+  {mobileMenuOpen && (
+    <div className="border-t border-slate-200 bg-white lg:hidden">
+
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+
+        {/* ===============================================
+            AGENT MOBILE NAVIGATION
+        ================================================ */}
+
+        {agent && !agentLoading ? (
+          <>
+            {/* AGENT ACCOUNT */}
+
+            <div className="mb-3 flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white">
+
+                {agent.profileImage ? (
+                  <img
+                    src={agent.profileImage}
+                    alt={agent.fullName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User
+                    size={20}
+                    className="text-slate-400"
+                  />
+                )}
+
+              </div>
 
               <div className="min-w-0">
-                <p className="truncate text-xs font-black tracking-tight text-blue-900 sm:text-base lg:text-xl">
-                  BREA 88 REALTY OPC
+
+                <p className="truncate text-sm font-bold text-slate-900">
+                  {agent.fullName}
                 </p>
 
-                <p className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.15em] text-slate-500 sm:text-[9px]">
-                  Service with a Heart
+                <p className="truncate text-xs text-slate-500">
+                  {agent.role}
                 </p>
+
               </div>
-            </a>
 
-            {/* DESKTOP NAV */}
-                        {/* DESKTOP NAV */}
-            <div className="hidden items-center gap-5 text-sm font-semibold text-slate-600 lg:flex xl:gap-7">
+            </div>
+
+            <div className="space-y-1">
+
+              <a
+                href="/home"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl bg-blue-950 px-4 py-3 text-left text-sm font-semibold text-white"
+              >
+                <Home size={18} />
+
+                <span className="flex-1">
+                  Home
+                </span>
+
+                <ChevronRight
+                  size={17}
+                  className="opacity-50"
+                />
+              </a>
+
+              <a
+                href="/agent/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                <Briefcase size={18} />
+
+                <span className="flex-1">
+                  Dashboard
+                </span>
+
+                <ChevronRight
+                  size={17}
+                  className="opacity-50"
+                />
+              </a>
+
+              <a
+                href="/marketplace"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                <Building2 size={18} />
+
+                <span className="flex-1">
+                  Properties
+                </span>
+
+                <ChevronRight
+                  size={17}
+                  className="opacity-50"
+                />
+              </a>
+
+              <a
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                <User size={18} />
+
+                <span className="flex-1">
+                  Profile
+                </span>
+
+                <ChevronRight
+                  size={17}
+                  className="opacity-50"
+                />
+              </a>
+
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAgentLogout}
+              disabled={agentLoggingOut}
+              className="mt-3 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+            >
+
+              {agentLoggingOut ? (
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
+              ) : (
+                <LogOut size={18} />
+              )}
+
+              Logout
+
+            </button>
+          </>
+        ) : (
+          <>
+            {/* =============================================
+                CLIENT MOBILE NAVIGATION
+            ============================================== */}
+
+            <div className="space-y-1">
+
               <a
                 href="#hero"
-                className="transition hover:text-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Home
               </a>
 
               <a
                 href="#profile"
-                className="transition hover:text-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 About Us
               </a>
 
               <a
                 href="#ceo"
-                className="transition hover:text-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Leadership
               </a>
 
               <a
                 href="#services"
-                className="transition hover:text-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Services
               </a>
 
               <a
                 href="#contact"
-                className="transition hover:text-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Contact Us
               </a>
-              </div>
+
             </div>
-        </div>
-      </nav>
+          </>
+        )}
+
+      </div>
+
+    </div>
+  )}
+
+</nav>
+
 
       {/* =====================================================
           HERO
