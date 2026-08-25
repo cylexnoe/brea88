@@ -582,7 +582,7 @@ export default function HomePage() {
               <div className="relative min-h-[380px] overflow-hidden bg-slate-100 sm:min-h-[450px] lg:min-h-[560px]">
 
                 <Image
-                  src="/img/ceo.png"
+                  src="/img/CEO.png"
                   alt="Chief Executive Officer of BREA 88 Realty OPC"
                   fill
                   className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
