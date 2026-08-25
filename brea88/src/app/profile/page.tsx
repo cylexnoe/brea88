@@ -179,16 +179,14 @@ export default function ProfilePage() {
           BACK BUTTON
       ====================================================== */}
 
-      <div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
-        >
-          <ChevronLeft size={18} />
-          Back
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-blue-950 active:scale-[0.98]"
+      >
+        <ChevronLeft size={18} strokeWidth={2.2} />
+        <span>Back</span>
+      </button>
 
       {/* =====================================================
           PAGE HEADER
