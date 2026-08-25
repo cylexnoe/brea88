@@ -747,7 +747,7 @@ export default function HomePage() {
                     client-centered real estate services. Guided by our core
                     principle,
                     <strong className="text-blue-900">
-                      {' '}“Service with a Heart,”
+                      {' '}“Service with a Heart,”
                     </strong>{' '}
                     we are dedicated to helping clients achieve their real estate
                     goals through integrity, expertise, and personalized service.
@@ -856,7 +856,7 @@ export default function HomePage() {
                       'Building long-term partnerships based on trust, transparency, and mutual success.',
                       'Assisting clients in making informed and rewarding property investment decisions.',
                       'Supporting developer partners through effective project marketing and sales strategies.',
-                      'Providing “Service with a Heart” in every transaction and client engagement.',
+                      'Providing “Service with a Heart” in every transaction and client engagement.',
                     ].map((item) => (
                       <li
                         key={item}
@@ -1479,7 +1479,7 @@ export default function HomePage() {
                 'SEC and BIR Registered Company (2026)',
                 'Led by an experienced Licensed Real Estate Broker',
                 'Strong commitment to ethical and professional practices',
-                'Personalized client care through “Service with a Heart”',
+                'Personalized client care through “Service with a Heart”',
                 'Dedicated to achieving sales targets & developer objectives',
                 'Professional, reliable, and results-oriented framework',
               ].map((text) => (
