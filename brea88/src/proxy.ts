@@ -8,7 +8,11 @@ const AGENT_SESSION_COOKIE = 'agent_session';
 const ADMIN_SESSION_DURATION = 60 * 60 * 2 * 1000;
 const AGENT_SESSION_DURATION = 1000 * 60 * 60 * 24 * 30;
 
-function isValidAdminSessionToken(
+/* =========================================================
+   ADMIN SESSION
+========================================================= */
+
+function isValidAdminSession(
   token: string | undefined
 ): boolean {
   if (!token) {
@@ -74,7 +78,11 @@ function isValidAdminSessionToken(
   );
 }
 
-function isValidAgentSessionToken(
+/* =========================================================
+   AGENT SESSION
+========================================================= */
+
+function isValidAgentSession(
   token: string | undefined
 ): boolean {
   if (!token) {
@@ -88,32 +96,19 @@ function isValidAgentSessionToken(
   }
 
   const [
-    agentId,
-    timestamp,
+    agentIdString,
+    timestampString,
     signature,
   ] = parts;
 
-  if (!agentId || !timestamp || !signature) {
-    return false;
-  }
-
-  const agentIdNumber = Number(agentId);
-  const timestampNumber = Number(timestamp);
+  const agentId = Number(agentIdString);
+  const timestamp = Number(timestampString);
 
   if (
-    !Number.isInteger(agentIdNumber) ||
-    agentIdNumber <= 0 ||
-    !Number.isFinite(timestampNumber)
-  ) {
-    return false;
-  }
-
-  const age =
-    Date.now() - timestampNumber;
-
-  if (
-    age < 0 ||
-    age > AGENT_SESSION_DURATION
+    !Number.isInteger(agentId) ||
+    agentId <= 0 ||
+    !Number.isFinite(timestamp) ||
+    !signature
   ) {
     return false;
   }
@@ -148,34 +143,60 @@ function isValidAgentSessionToken(
     return false;
   }
 
-  return crypto.timingSafeEqual(
-    actualBuffer,
-    expectedBuffer
-  );
+  if (
+    !crypto.timingSafeEqual(
+      actualBuffer,
+      expectedBuffer
+    )
+  ) {
+    return false;
+  }
+
+  const age =
+    Date.now() - timestamp;
+
+  if (
+    age < 0 ||
+    age > AGENT_SESSION_DURATION
+  ) {
+    return false;
+  }
+
+  return true;
 }
+
+/* =========================================================
+   PROXY
+========================================================= */
 
 export function proxy(
   request: NextRequest
 ) {
-  const { pathname } = request.nextUrl;
+  const { pathname } =
+    request.nextUrl;
 
-  // =====================================================
-  // ADMIN PROTECTION
-  // =====================================================
+  /* =======================================================
+     ADMIN PROTECTION
+  ======================================================= */
 
-  if (pathname.startsWith('/admin')) {
+  if (
+    pathname.startsWith('/admin')
+  ) {
     const sessionToken =
       request.cookies.get(
         ADMIN_SESSION_COOKIE
       )?.value;
 
     if (
-      !isValidAdminSessionToken(
+      !isValidAdminSession(
         sessionToken
       )
     ) {
       const loginUrl =
-        new URL('/', request.url);
+        new URL(
+          '/',
+          request.url
+        );
 
       loginUrl.searchParams.set(
         'auth',
@@ -188,19 +209,22 @@ export function proxy(
     }
   }
 
-  // =====================================================
-  // AGENT / BROKER PROTECTION
-  // =====================================================
+  /* =======================================================
+     AGENT / BROKER PROFILE PROTECTION
+  ======================================================= */
 
-  if (pathname === '/profile') {
-    const sessionToken =
+  if (
+    pathname === '/profile' ||
+    pathname.startsWith('/profile/')
+  ) {
+    const agentSession =
       request.cookies.get(
         AGENT_SESSION_COOKIE
       )?.value;
 
     if (
-      !isValidAgentSessionToken(
-        sessionToken
+      !isValidAgentSession(
+        agentSession
       )
     ) {
       const loginUrl =
@@ -208,6 +232,11 @@ export function proxy(
           '/agent/login',
           request.url
         );
+
+      loginUrl.searchParams.set(
+        'auth',
+        'required'
+      );
 
       return NextResponse.redirect(
         loginUrl
@@ -218,9 +247,14 @@ export function proxy(
   return NextResponse.next();
 }
 
+/* =========================================================
+   MATCHER
+========================================================= */
+
 export const config = {
   matcher: [
     '/admin/:path*',
     '/profile',
+    '/profile/:path*',
   ],
 };
