@@ -176,10 +176,11 @@ export default function ProfilePage() {
       />
 
       {/* =====================================================
-          BACK BUTTON
+          PAGE HEADER
       ====================================================== */}
 
-      <div className="border-b border-slate-200 bg-white">
+      <section className="border-b border-slate-200 bg-white">
+        <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <button
             type="button"
@@ -195,12 +196,6 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
-
-      {/* =====================================================
-          PAGE HEADER
-      ====================================================== */}
-
-      <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-8 lg:px-8">
           <p className="text-sm font-medium text-slate-500">
             Account
