@@ -139,7 +139,7 @@ try {
 const navigation = [
   {
     name: 'Home',
-    href: '/',
+    href: '/home',
     icon: Home,
   },
   {
