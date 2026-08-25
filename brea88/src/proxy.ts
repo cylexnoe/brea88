@@ -5,8 +5,11 @@ import crypto from 'crypto';
 const ADMIN_SESSION_COOKIE = 'admin_session';
 const AGENT_SESSION_COOKIE = 'agent_session';
 
-const ADMIN_SESSION_DURATION = 60 * 60 * 2 * 1000; // 2 hours
-const AGENT_SESSION_DURATION = 1000 * 60 * 60 * 24 * 30; // 30 days
+const ADMIN_SESSION_DURATION =
+  60 * 60 * 2 * 1000; // 2 hours
+
+const AGENT_SESSION_DURATION =
+  1000 * 60 * 60 * 24 * 30; // 30 days
 
 function isValidAdminSession(
   token: string | undefined
@@ -33,7 +36,8 @@ function isValidAdminSession(
     return false;
   }
 
-  const age = Date.now() - timestampNumber;
+  const age =
+    Date.now() - timestampNumber;
 
   if (
     age < 0 ||
@@ -93,8 +97,11 @@ function isValidAgentSession(
     signature,
   ] = parts;
 
-  const agentId = Number(agentIdString);
-  const timestamp = Number(timestampString);
+  const agentId =
+    Number(agentIdString);
+
+  const timestamp =
+    Number(timestampString);
 
   if (
     !Number.isInteger(agentId) ||
@@ -104,7 +111,8 @@ function isValidAgentSession(
     return false;
   }
 
-  const age = Date.now() - timestamp;
+  const age =
+    Date.now() - timestamp;
 
   if (
     age < 0 ||
@@ -157,12 +165,38 @@ export function proxy(
 
   /*
    * =========================================================
+   * ADMIN LOGIN
+   * =========================================================
+   *
+   * /admin is intentionally PUBLIC.
+   *
+   * This allows you to manually type:
+   *
+   * https://your-domain.com/admin
+   *
+   * and see the Admin Login page.
+   */
+
+  if (pathname === '/admin') {
+    return NextResponse.next();
+  }
+
+  /*
+   * =========================================================
    * ADMIN PROTECTION
    * =========================================================
+   *
+   * Everything underneath /admin is protected.
+   *
+   * Examples:
+   *
+   * /admin/dashboard
+   * /admin/api/properties
+   * /admin/settings
    */
 
   if (
-    pathname.startsWith('/admin')
+    pathname.startsWith('/admin/')
   ) {
     const sessionToken =
       request.cookies.get(
@@ -176,7 +210,7 @@ export function proxy(
     ) {
       const loginUrl =
         new URL(
-          '/',
+          '/admin',
           request.url
         );
 
@@ -193,13 +227,13 @@ export function proxy(
 
   /*
    * =========================================================
-   * AGENT / BROKER PROTECTION
+   * AGENT / BROKER PROFILE PROTECTION
    * =========================================================
    *
-   * /profile is the private agent/broker profile.
+   * /profile is private.
    *
-   * Clients who are not logged in as an agent/broker
-   * cannot access this route.
+   * Only authenticated agents/brokers
+   * can access it.
    */
 
   if (
