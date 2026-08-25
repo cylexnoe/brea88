@@ -495,22 +495,6 @@ return ( <main className="min-h-screen bg-slate-50 text-slate-900">
 
         </div>
 
-        <button
-          type="button"
-          onClick={() =>
-            router.push('/profile')
-          }
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-950 transition hover:bg-blue-50 active:scale-[0.98]"
-        >
-
-          <User size={18} />
-
-          View Profile
-
-          <ChevronRight size={17} />
-
-        </button>
-
       </div>
 
     </div>
@@ -621,85 +605,55 @@ return ( <main className="min-h-screen bg-slate-50 text-slate-900">
 
       </div>
 
-      {/* QUICK ACTIONS */}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    {/* QUICK ACTIONS */}
 
-        <h2 className="text-lg font-bold text-slate-900">
-          Quick Actions
-        </h2>
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
-        <p className="mt-1 text-sm text-slate-500">
-          Manage your agent account.
-        </p>
+    <h2 className="text-lg font-bold text-slate-900">
+        Quick Actions
+    </h2>
 
-        <div className="mt-5 space-y-2">
+    <p className="mt-1 text-sm text-slate-500">
+        Manage your agent account.
+    </p>
 
-          <button
-            type="button"
-            onClick={() =>
-              router.push('/profile')
-            }
-            className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
-          >
+    <div className="mt-5 space-y-2">
 
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-900">
-              <User size={17} />
-            </div>
+        <button
+        type="button"
+        onClick={() =>
+            router.push('/marketplace')
+        }
+        className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+        >
 
-            <div className="min-w-0 flex-1">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-900">
+            <Building2 size={17} />
+        </div>
 
-              <p className="text-sm font-semibold">
-                Edit Profile
-              </p>
+        <div className="min-w-0 flex-1">
 
-              <p className="text-xs text-slate-500">
-                Update your information
-              </p>
+            <p className="text-sm font-semibold">
+            Properties
+            </p>
 
-            </div>
-
-            <ChevronRight
-              size={17}
-              className="text-slate-400"
-            />
-
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              router.push('/marketplace')
-            }
-            className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
-          >
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-900">
-              <Building2 size={17} />
-            </div>
-
-            <div className="min-w-0 flex-1">
-
-              <p className="text-sm font-semibold">
-                Properties
-              </p>
-
-              <p className="text-xs text-slate-500">
-                View property listings
-              </p>
-
-            </div>
-
-            <ChevronRight
-              size={17}
-              className="text-slate-400"
-            />
-
-          </button>
+            <p className="text-xs text-slate-500">
+            View property listings
+            </p>
 
         </div>
 
-      </div>
+        <ChevronRight
+            size={17}
+            className="text-slate-400"
+        />
+
+        </button>
+
+    </div>
+
+    </div>
 
     </div>
 
