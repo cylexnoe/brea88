@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 const SESSION_COOKIE = 'agent_session';
 
@@ -128,6 +129,29 @@ export async function isAgentAuthenticated() {
     await getCurrentAgentId();
 
   return agentId !== null;
+}
+
+/* NEW */
+export async function getAgentFromSession() {
+  const agentId =
+    await getCurrentAgentId();
+
+  if (!agentId) {
+    return null;
+  }
+
+  const agent =
+    await prisma.agent.findUnique({
+      where: {
+        id: agentId,
+      },
+    });
+
+  if (!agent || !agent.isActive) {
+    return null;
+  }
+
+  return agent;
 }
 
 export function setAgentSessionCookie(

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -26,10 +26,10 @@ import {
 export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [profile, setProfile] = useState({
     fullName: 'Cylex Noe Catadman',
@@ -135,6 +135,30 @@ export default function ProfilePage() {
     setProfileImage(null);
     setImageError('');
   };
+  
+    useEffect(() => {
+      const checkAuthentication = async () => {
+        try {
+          const response = await fetch('/api/agent/me', {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-store',
+          });
+
+          if (!response.ok) {
+            router.replace('/agent/login');
+            return;
+          }
+
+          setCheckingAuth(false);
+        } catch (error) {
+          console.error('Authentication check failed:', error);
+          router.replace('/agent/login');
+        }
+      };
+
+      checkAuthentication();
+    }, [router]);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
