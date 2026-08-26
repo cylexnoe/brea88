@@ -73,7 +73,7 @@ export default function MarketplacePage() {
 
             <div className="flex justify-end mb-4">
               <a
-                href="/"
+                href="/home"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-white transition"
               >
                 <CircleArrowLeft className="w-8 h-8" />
