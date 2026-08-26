@@ -15,6 +15,7 @@ model Agent {
   role         String     @default("Agent")
   slug         String     @unique
   phone        String?
+  address      String?
   profileImage String?
   bio          String?
   facebook     String?

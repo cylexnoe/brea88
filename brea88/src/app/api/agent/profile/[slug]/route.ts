@@ -34,8 +34,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Agent profile not found.',
+          message: 'Agent profile not found.',
         },
         { status: 404 }
       );
@@ -50,17 +49,15 @@ export async function GET(
         role: agent.role,
         slug: agent.slug,
         phone: agent.phone,
-        profileImage:
-          agent.profileImage,
+        address: agent.address,
+        profileImage: agent.profileImage,
         bio: agent.bio,
-        facebook:
-          agent.facebook,
-        messenger:
-          agent.messenger,
+        facebook: agent.facebook,
+        messenger: agent.messenger,
       },
-      properties:
-        agent.properties,
+      properties: agent.properties,
     });
+
   } catch (error) {
     console.error(
       'Agent profile error:',

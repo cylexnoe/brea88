@@ -613,6 +613,7 @@ export const AgentScalarFieldEnum = {
   role: 'role',
   slug: 'slug',
   phone: 'phone',
+  address: 'address',
   profileImage: 'profileImage',
   bio: 'bio',
   facebook: 'facebook',

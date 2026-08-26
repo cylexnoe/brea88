@@ -19,8 +19,12 @@ import {
   Camera,
   X,
   Check,
+  Copy,
   Image as ImageIcon,
   Trash2,
+  Link,
+  CheckCircle2,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -30,12 +34,21 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [agentSlug, setAgentSlug] = useState('');
+  const [agentRole, setAgentRole] = useState('Real Estate Agent');
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  const [profile, setProfile] = useState({
-    fullName: 'Cylex Noe Catadman',
-    email: 'cylexnoe@example.com',
-    phone: '+63 9XX XXX XXXX',
-    address: 'Cebu City, Cebu, Philippines',
+    const [profile, setProfile] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    role: '',
+    slug: '',
+    bio: '',
+    facebook: '',
+    messenger: '',
+    profileImage: null as string | null,
   });
 
   const [editForm, setEditForm] = useState(profile);
@@ -54,10 +67,34 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    setProfile(editForm);
+  const handleSave = async () => {
+  try {
+    const response = await fetch('/api/agent/profile/update', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(editForm),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data?.message || 'Failed to update profile.');
+      return;
+    }
+
+    setProfile(data.agent);
+    setEditForm(data.agent);
     setIsEditing(false);
-  };
+
+    alert('Profile updated successfully.');
+  } catch (error) {
+    console.error('Profile update error:', error);
+    alert('Unable to update profile.');
+  }
+};
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -78,54 +115,83 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
-  const handleImageSelect = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
+  const handleImageSelect = async (
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file = e.target.files?.[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    setImageError('');
+  setImageError('');
 
-    const allowedTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/webp',
-    ];
+  const allowedTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+  ];
 
-    if (!allowedTypes.includes(file.type)) {
-      setImageError(
-        'Please select a JPG, PNG, or WebP image.'
-      );
-
-      e.target.value = '';
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      setImageError(
-        'Image size must be less than 5MB.'
-      );
-
-      e.target.value = '';
-      return;
-    }
-
-    const imageUrl = URL.createObjectURL(file);
-
-    setProfileImage((previousImage) => {
-      if (previousImage) {
-        URL.revokeObjectURL(previousImage);
-      }
-
-      return imageUrl;
-    });
+  if (!allowedTypes.includes(file.type)) {
+    setImageError(
+      'Please select a JPG, PNG, or WebP image.'
+    );
 
     e.target.value = '';
-  };
+    return;
+  }
+
+  const maxSize = 5 * 1024 * 1024;
+
+  if (file.size > maxSize) {
+    setImageError(
+      'Image size must be less than 5MB.'
+    );
+
+    e.target.value = '';
+    return;
+  }
+
+  try {
+    setImageError('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(
+      '/api/agent/profile/upload',
+      {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data?.message ||
+          'Profile image upload failed.'
+      );
+    }
+
+    setProfileImage(data.url);
+
+  } catch (error) {
+    console.error(
+      'Profile image upload error:',
+      error
+    );
+
+    setImageError(
+      error instanceof Error
+        ? error.message
+        : 'Profile image upload failed.'
+    );
+  } finally {
+    e.target.value = '';
+  }
+};
 
   const handleRemoveImage = () => {
     if (profileImage) {
@@ -136,8 +202,8 @@ export default function ProfilePage() {
     setImageError('');
   };
   
-    useEffect(() => {
-      const checkAuthentication = async () => {
+     useEffect(() => {
+      const loadAgentProfile = async () => {
         try {
           const response = await fetch('/api/agent/me', {
             method: 'GET',
@@ -145,20 +211,68 @@ export default function ProfilePage() {
             cache: 'no-store',
           });
 
-          if (!response.ok) {
+          const data = await response.json();
+
+          if (!response.ok || !data?.agent) {
             router.replace('/agent/login');
             return;
           }
 
+          const agent = data.agent;
+
+          const agentProfile = {
+            fullName: agent.fullName ?? '',
+            email: agent.email ?? '',
+            phone: agent.phone ?? '',
+            address: agent.address ?? '',
+            role: agent.role ?? '',
+            slug: agent.slug ?? '',
+            bio: agent.bio ?? '',
+            facebook: agent.facebook ?? '',
+            messenger: agent.messenger ?? '',
+            profileImage: agent.profileImage ?? null,
+          };
+
+          setProfile(agentProfile);
+          setEditForm(agentProfile);
+          setProfileImage(agent.profileImage ?? null);
           setCheckingAuth(false);
         } catch (error) {
-          console.error('Authentication check failed:', error);
+          console.error(
+            'Authentication check failed:',
+            error
+          );
+
           router.replace('/agent/login');
         }
       };
 
-      checkAuthentication();
+      loadAgentProfile();
     }, [router]);
+
+    const publicAgentUrl =
+      agentSlug && typeof window !== 'undefined'
+        ? `${window.location.origin}/agent/${agentSlug}`
+        : '';
+
+    const handleCopyAgentLink = async () => {
+      if (!publicAgentUrl) return;
+
+      try {
+        await navigator.clipboard.writeText(publicAgentUrl);
+
+        setCopiedLink(true);
+
+        setTimeout(() => {
+          setCopiedLink(false);
+        }, 2000);
+      } catch (error) {
+        console.error(
+          'Failed to copy agent link:',
+          error
+        );
+      }
+    };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -226,228 +340,258 @@ export default function ProfilePage() {
           <div className="space-y-6 lg:col-span-2">
 
             {/* =================================================
-                PROFILE HEADER
-            ================================================== */}
+    PROFILE HEADER
+================================================== */}
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+<div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-              {/* COVER */}
-              <div className="h-24 bg-slate-900 sm:h-32 md:h-36" />
+  {/* COVER */}
+  <div className="h-24 bg-slate-900 sm:h-32 md:h-36" />
 
-              <div className="px-5 pb-6 sm:px-7">
+  <div className="px-5 pb-6 sm:px-7">
 
-                <div className="-mt-14 flex flex-col gap-5 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+    <div className="-mt-14 flex flex-col gap-5 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
 
-                  {/* USER */}
-                  <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
+      {/* USER */}
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end">
 
-                    {/* PROFILE IMAGE */}
-                    <div className="relative">
+        {/* PROFILE IMAGE */}
+        <div className="relative">
 
-                      <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md sm:h-32 sm:w-32">
+          <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md sm:h-32 sm:w-32">
 
-                        {profileImage ? (
-                          <img
-                            src={profileImage}
-                            alt="Profile"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <User
-                            size={52}
-                            strokeWidth={1.5}
-                            className="text-slate-400"
-                          />
-                        )}
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <User
+                size={52}
+                strokeWidth={1.5}
+                className="text-slate-400"
+              />
+            )}
 
-                      </div>
+          </div>
 
-                      {/* CAMERA */}
-                      <button
-                        type="button"
-                        onClick={handleCameraClick}
-                        className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white shadow-md transition hover:bg-slate-800 active:scale-95"
-                        aria-label="Change profile picture"
-                        title="Change profile picture"
-                      >
-                        <Camera size={16} />
-                      </button>
+        </div>
 
-                    </div>
+        {/* USER INFORMATION */}
+        <div className="min-w-0 pb-1">
 
-                    {/* USER INFORMATION */}
-                    <div className="min-w-0 pb-1">
+          <h2 className="text-xl font-bold sm:text-2xl">
+            {profile.fullName}
+          </h2>
 
-                      <h2 className="text-xl font-bold sm:text-2xl">
-                        {profile.fullName}
-                      </h2>
+          <div className="mt-1 flex max-w-full items-center gap-2 text-sm text-slate-500">
 
-                      <div className="mt-1 flex max-w-full items-center gap-2 text-sm text-slate-500">
+            <Mail
+              size={15}
+              className="shrink-0"
+            />
 
-                        <Mail
-                          size={15}
-                          className="shrink-0"
-                        />
+            <span className="truncate">
+              {profile.email}
+            </span>
 
-                        <span className="truncate">
-                          {profile.email}
-                        </span>
+          </div>
 
-                      </div>
+        </div>
 
-                    </div>
+      </div>
 
-                  </div>
+      {/* EDIT */}
+      <button
+        type="button"
+        onClick={handleEdit}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] sm:w-auto"
+      >
+        <Pencil size={16} />
+        Edit Profile
+      </button>
 
-                  {/* EDIT */}
-                  <button
-                    type="button"
-                    onClick={handleEdit}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] sm:w-auto"
-                  >
-                    <Pencil size={16} />
-                    Edit Profile
-                  </button>
+    </div>
 
-                </div>
+  </div>
 
-                {/* IMAGE CONTROLS */}
-                <div className="mt-5">
+</div>
 
-                  <div className="flex flex-wrap items-center gap-2">
 
-                    <button
-                      type="button"
-                      onClick={handleCameraClick}
-                      className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                    >
-                      <ImageIcon size={15} />
+{/* =================================================
+    PERSONAL INFORMATION
+================================================== */}
 
-                      {profileImage
-                        ? 'Change Photo'
-                        : 'Add Photo'}
-                    </button>
+<div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
 
-                    {profileImage && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                      >
-                        <Trash2 size={15} />
-                        Remove
-                      </button>
-                    )}
+  <div className="mb-6">
 
-                  </div>
+    <h2 className="text-lg font-bold">
+      Personal Information
+    </h2>
 
-                  <p className="mt-2 text-xs text-slate-400">
-                    JPG, PNG, or WebP. Maximum file size: 5MB.
-                  </p>
+    <p className="mt-1 text-sm text-slate-500">
+      Your basic personal information.
+    </p>
 
-                  {imageError && (
-                    <p className="mt-2 text-xs font-medium text-red-600">
-                      {imageError}
-                    </p>
-                  )}
+  </div>
 
-                </div>
+  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-              </div>
+    {/* FULL NAME */}
+    <div>
 
-            </div>
+      <label className="mb-2 block text-sm font-medium text-slate-600">
+        Full Name
+      </label>
 
-            {/* =================================================
-                PERSONAL INFORMATION
-            ================================================== */}
+      <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+        <User
+          size={18}
+          className="shrink-0 text-slate-400"
+        />
 
-              <div className="mb-6">
+        <span className="truncate text-sm font-medium">
+          {profile.fullName}
+        </span>
 
-                <h2 className="text-lg font-bold">
-                  Personal Information
-                </h2>
+      </div>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Your basic personal information.
-                </p>
+    </div>
 
-              </div>
 
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    {/* EMAIL */}
+    <div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-600">
-                    Full Name
-                  </label>
+      <label className="mb-2 block text-sm font-medium text-slate-600">
+        Email
+      </label>
 
-                  <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
-                    <User
-                      size={18}
-                      className="shrink-0 text-slate-400"
-                    />
+      <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
 
-                    <span className="truncate text-sm font-medium">
-                      {profile.fullName}
-                    </span>
-                  </div>
-                </div>
+        <Mail
+          size={18}
+          className="shrink-0 text-slate-400"
+        />
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-600">
-                    Email
-                  </label>
+        <span className="truncate text-sm font-medium">
+          {profile.email}
+        </span>
 
-                  <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
-                    <Mail
-                      size={18}
-                      className="shrink-0 text-slate-400"
-                    />
+      </div>
 
-                    <span className="truncate text-sm font-medium">
-                      {profile.email}
-                    </span>
-                  </div>
-                </div>
+    </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-600">
-                    Phone
-                  </label>
 
-                  <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
-                    <Phone
-                      size={18}
-                      className="shrink-0 text-slate-400"
-                    />
+    {/* PHONE */}
+    <div>
 
-                    <span className="truncate text-sm font-medium">
-                      {profile.phone}
-                    </span>
-                  </div>
-                </div>
+      <label className="mb-2 block text-sm font-medium text-slate-600">
+        Phone
+      </label>
 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-600">
-                    Address
-                  </label>
+      <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
 
-                  <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
-                    <MapPin
-                      size={18}
-                      className="shrink-0 text-slate-400"
-                    />
+        <Phone
+          size={18}
+          className="shrink-0 text-slate-400"
+        />
 
-                    <span className="truncate text-sm font-medium">
-                      {profile.address}
-                    </span>
-                  </div>
-                </div>
+        <span className="truncate text-sm font-medium">
+          {profile.phone}
+        </span>
 
-              </div>
+      </div>
 
-            </div>
+    </div>
+
+
+    {/* ADDRESS */}
+    <div>
+
+      <label className="mb-2 block text-sm font-medium text-slate-600">
+        Address
+      </label>
+
+      <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4">
+
+        <MapPin
+          size={18}
+          className="shrink-0 text-slate-400"
+        />
+
+        <span className="truncate text-sm font-medium">
+          {profile.address}
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+      {/* PUBLIC AGENT LINK */}
+<div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+  <div className="flex items-start gap-4">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+      <User size={19} className="text-blue-700" />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <h2 className="text-lg font-bold">
+        Your Public Agent Link
+      </h2>
+
+      <p className="mt-1 text-sm text-slate-500">
+        Copy this link and use it in your Facebook post captions.
+      </p>
+
+      {profile.slug ? (
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            readOnly
+            value={`${window.location.origin}/agent/${profile.slug}`}
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-600 outline-none"
+          />
+
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(
+                  `${window.location.origin}/agent/${profile.slug}`
+                );
+
+                alert('Agent link copied!');
+              } catch (error) {
+                console.error('Copy link error:', error);
+                alert('Unable to copy the link.');
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 active:scale-[0.98]"
+          >
+            Copy Link
+          </button>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-800">
+            Your public agent link is not available yet.
+          </p>
+
+          <p className="mt-1 text-xs text-amber-700">
+            Your agent account does not currently have a slug.
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
 
             {/* =================================================
                 ACTIVITY

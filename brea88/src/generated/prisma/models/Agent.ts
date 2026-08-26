@@ -42,6 +42,7 @@ export type AgentMinAggregateOutputType = {
   role: string | null
   slug: string | null
   phone: string | null
+  address: string | null
   profileImage: string | null
   bio: string | null
   facebook: string | null
@@ -59,6 +60,7 @@ export type AgentMaxAggregateOutputType = {
   role: string | null
   slug: string | null
   phone: string | null
+  address: string | null
   profileImage: string | null
   bio: string | null
   facebook: string | null
@@ -76,6 +78,7 @@ export type AgentCountAggregateOutputType = {
   role: number
   slug: number
   phone: number
+  address: number
   profileImage: number
   bio: number
   facebook: number
@@ -103,6 +106,7 @@ export type AgentMinAggregateInputType = {
   role?: true
   slug?: true
   phone?: true
+  address?: true
   profileImage?: true
   bio?: true
   facebook?: true
@@ -120,6 +124,7 @@ export type AgentMaxAggregateInputType = {
   role?: true
   slug?: true
   phone?: true
+  address?: true
   profileImage?: true
   bio?: true
   facebook?: true
@@ -137,6 +142,7 @@ export type AgentCountAggregateInputType = {
   role?: true
   slug?: true
   phone?: true
+  address?: true
   profileImage?: true
   bio?: true
   facebook?: true
@@ -241,6 +247,7 @@ export type AgentGroupByOutputType = {
   role: string
   slug: string
   phone: string | null
+  address: string | null
   profileImage: string | null
   bio: string | null
   facebook: string | null
@@ -281,6 +288,7 @@ export type AgentWhereInput = {
   role?: Prisma.StringFilter<"Agent"> | string
   slug?: Prisma.StringFilter<"Agent"> | string
   phone?: Prisma.StringNullableFilter<"Agent"> | string | null
+  address?: Prisma.StringNullableFilter<"Agent"> | string | null
   profileImage?: Prisma.StringNullableFilter<"Agent"> | string | null
   bio?: Prisma.StringNullableFilter<"Agent"> | string | null
   facebook?: Prisma.StringNullableFilter<"Agent"> | string | null
@@ -299,6 +307,7 @@ export type AgentOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
   profileImage?: Prisma.SortOrderInput | Prisma.SortOrder
   bio?: Prisma.SortOrderInput | Prisma.SortOrder
   facebook?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -320,6 +329,7 @@ export type AgentWhereUniqueInput = Prisma.AtLeast<{
   passwordHash?: Prisma.StringFilter<"Agent"> | string
   role?: Prisma.StringFilter<"Agent"> | string
   phone?: Prisma.StringNullableFilter<"Agent"> | string | null
+  address?: Prisma.StringNullableFilter<"Agent"> | string | null
   profileImage?: Prisma.StringNullableFilter<"Agent"> | string | null
   bio?: Prisma.StringNullableFilter<"Agent"> | string | null
   facebook?: Prisma.StringNullableFilter<"Agent"> | string | null
@@ -338,6 +348,7 @@ export type AgentOrderByWithAggregationInput = {
   role?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
   profileImage?: Prisma.SortOrderInput | Prisma.SortOrder
   bio?: Prisma.SortOrderInput | Prisma.SortOrder
   facebook?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -363,6 +374,7 @@ export type AgentScalarWhereWithAggregatesInput = {
   role?: Prisma.StringWithAggregatesFilter<"Agent"> | string
   slug?: Prisma.StringWithAggregatesFilter<"Agent"> | string
   phone?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
+  address?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
   profileImage?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
   bio?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
   facebook?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
@@ -379,6 +391,7 @@ export type AgentCreateInput = {
   role?: string
   slug: string
   phone?: string | null
+  address?: string | null
   profileImage?: string | null
   bio?: string | null
   facebook?: string | null
@@ -397,6 +410,7 @@ export type AgentUncheckedCreateInput = {
   role?: string
   slug: string
   phone?: string | null
+  address?: string | null
   profileImage?: string | null
   bio?: string | null
   facebook?: string | null
@@ -414,6 +428,7 @@ export type AgentUpdateInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -432,6 +447,7 @@ export type AgentUncheckedUpdateInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -450,6 +466,7 @@ export type AgentCreateManyInput = {
   role?: string
   slug: string
   phone?: string | null
+  address?: string | null
   profileImage?: string | null
   bio?: string | null
   facebook?: string | null
@@ -466,6 +483,7 @@ export type AgentUpdateManyMutationInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -483,6 +501,7 @@ export type AgentUncheckedUpdateManyInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -500,6 +519,7 @@ export type AgentCountOrderByAggregateInput = {
   role?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   profileImage?: Prisma.SortOrder
   bio?: Prisma.SortOrder
   facebook?: Prisma.SortOrder
@@ -521,6 +541,7 @@ export type AgentMaxOrderByAggregateInput = {
   role?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   profileImage?: Prisma.SortOrder
   bio?: Prisma.SortOrder
   facebook?: Prisma.SortOrder
@@ -538,6 +559,7 @@ export type AgentMinOrderByAggregateInput = {
   role?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  address?: Prisma.SortOrder
   profileImage?: Prisma.SortOrder
   bio?: Prisma.SortOrder
   facebook?: Prisma.SortOrder
@@ -603,6 +625,7 @@ export type AgentCreateWithoutPropertiesInput = {
   role?: string
   slug: string
   phone?: string | null
+  address?: string | null
   profileImage?: string | null
   bio?: string | null
   facebook?: string | null
@@ -620,6 +643,7 @@ export type AgentUncheckedCreateWithoutPropertiesInput = {
   role?: string
   slug: string
   phone?: string | null
+  address?: string | null
   profileImage?: string | null
   bio?: string | null
   facebook?: string | null
@@ -652,6 +676,7 @@ export type AgentUpdateWithoutPropertiesInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -669,6 +694,7 @@ export type AgentUncheckedUpdateWithoutPropertiesInput = {
   role?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -717,6 +743,7 @@ export type AgentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   role?: boolean
   slug?: boolean
   phone?: boolean
+  address?: boolean
   profileImage?: boolean
   bio?: boolean
   facebook?: boolean
@@ -736,6 +763,7 @@ export type AgentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   role?: boolean
   slug?: boolean
   phone?: boolean
+  address?: boolean
   profileImage?: boolean
   bio?: boolean
   facebook?: boolean
@@ -753,6 +781,7 @@ export type AgentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   role?: boolean
   slug?: boolean
   phone?: boolean
+  address?: boolean
   profileImage?: boolean
   bio?: boolean
   facebook?: boolean
@@ -770,6 +799,7 @@ export type AgentSelectScalar = {
   role?: boolean
   slug?: boolean
   phone?: boolean
+  address?: boolean
   profileImage?: boolean
   bio?: boolean
   facebook?: boolean
@@ -779,7 +809,7 @@ export type AgentSelectScalar = {
   updatedAt?: boolean
 }
 
-export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "passwordHash" | "role" | "slug" | "phone" | "profileImage" | "bio" | "facebook" | "messenger" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["agent"]>
+export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "passwordHash" | "role" | "slug" | "phone" | "address" | "profileImage" | "bio" | "facebook" | "messenger" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["agent"]>
 export type AgentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   properties?: boolean | Prisma.Agent$propertiesArgs<ExtArgs>
   _count?: boolean | Prisma.AgentCountOutputTypeDefaultArgs<ExtArgs>
@@ -800,6 +830,7 @@ export type $AgentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     role: string
     slug: string
     phone: string | null
+    address: string | null
     profileImage: string | null
     bio: string | null
     facebook: string | null
@@ -1238,6 +1269,7 @@ export interface AgentFieldRefs {
   readonly role: Prisma.FieldRef<"Agent", 'String'>
   readonly slug: Prisma.FieldRef<"Agent", 'String'>
   readonly phone: Prisma.FieldRef<"Agent", 'String'>
+  readonly address: Prisma.FieldRef<"Agent", 'String'>
   readonly profileImage: Prisma.FieldRef<"Agent", 'String'>
   readonly bio: Prisma.FieldRef<"Agent", 'String'>
   readonly facebook: Prisma.FieldRef<"Agent", 'String'>

@@ -27,6 +27,7 @@ export async function GET() {
         role: true,
         slug: true,
         phone: true,
+        address: true,
         profileImage: true,
         bio: true,
         facebook: true,
