@@ -51,6 +51,22 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        agent: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            slug: true,
+            phone: true,
+            profileImage: true,
+            bio: true,
+            facebook: true,
+            messenger: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(properties);
