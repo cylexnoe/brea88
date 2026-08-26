@@ -357,7 +357,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           title: formData.title,
           tag: formData.tag,
-          price: formData.price,
+           price: formData.price.replace(/,/g, ''),
           location: formData.location,
           beds: formData.beds,
           baths: formData.baths,
@@ -484,9 +484,15 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-black text-green-400 py-8 px-4 sm:px-6 lg:px-8 font-mono">
+      <div className="pointer-events-none fixed inset-0">
+         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,100,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,100,0.04)_1px,transparent_1px)] bg-[size:30px_30px]" />
+         <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-green-500/5 blur-[120px]" />
 
-      <div className="max-w-3xl mx-auto bg-slate-950 border border-slate-800 rounded-2xl shadow-xl p-8">
+        <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-emerald-500/5 blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-5xl overflow-hidden rounded-2xl border border-green-500/30 bg-[#030d08]/95 shadow-[0_0_60px_rgba(0,255,100,0.08)] p-5 sm:p-8">
 
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
 
@@ -495,16 +501,16 @@ export default function AdminDashboard() {
             <img
               src="/img/LOGO.png"
               alt="BREA 88 Logo"
-              className="w-20 h-20 rounded-full object-cover shadow-sm"
+              className="h-16 w-16 rounded-full object-cover border border-green-500/50 shadow-[0_0_25px_rgba(0,255,100,0.25)] sm:h-20 sm:w-20"
             />
 
             <div>
-              <h1 className="text-2xl font-black tracking-tight">
-                BREA 88 Admin Dashboard
+              <h1 className="text-xl font-black tracking-wider text-green-400 sm:text-2xl">
+                BREA_88 // ADMIN_TERMINAL
               </h1>
 
-              <p className="text-xs text-slate-400">
-                Manage property listings and inventory.
+              <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-green-700 sm:text-xs">
+                Secure Property Management System // Access Level: ADMIN
               </p>
             </div>
 
@@ -512,7 +518,7 @@ export default function AdminDashboard() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
+            className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-400 transition hover:bg-red-500/20 hover:shadow-[0_0_20px_rgba(255,0,0,0.15)]"
           >
             <LogOut className="w-4 h-4" />
             Logout
@@ -542,7 +548,7 @@ export default function AdminDashboard() {
           <div className="grid sm:grid-cols-2 gap-6">
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Property / Project Title
               </label>
 
@@ -552,13 +558,13 @@ export default function AdminDashboard() {
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition"
+                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
                 placeholder="e.g., Premium 2BR Penthouse Complex"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Classification Tag
               </label>
 
@@ -566,8 +572,7 @@ export default function AdminDashboard() {
                 name="tag"
                 value={formData.tag}
                 onChange={handleInputChange}
-                className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition cursor-pointer"
-              >
+                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition cursor-pointer">
                 <option value="Residential">
                   Residential
                 </option>
@@ -583,32 +588,46 @@ export default function AdminDashboard() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Price Tag
               </label>
 
-              <div className="flex items-center w-full bg-slate-900 rounded-lg border border-slate-800 focus-within:border-blue-500 transition overflow-hidden">
+              <div className="flex items-center w-full bg-black rounded-lg border border-green-500/30 focus-within:border-green-400 transition overflow-hidden">
 
-                <span className="px-4 text-white text-sm font-bold border-r border-slate-800">
+                <span className="px-4 text-green-400 text-sm font-bold border-r border-green-500/30">
                   ₱
                 </span>
 
                 <input
-                  required
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  className="flex-1 bg-transparent text-white px-4 py-2.5 outline-none text-sm font-medium"
-                  placeholder="1,000,000"
-                />
+                    required
+                    type="text"
+                    inputMode="numeric"
+                    name="price"
+                    value={formData.price}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/,/g, '');
+
+                      if (!/^\d*$/.test(rawValue)) return;
+
+                      const formattedValue = rawValue
+                        ? Number(rawValue).toLocaleString('en-US')
+                        : '';
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        price: formattedValue,
+                      }));
+                    }}
+                    className="flex-1 bg-transparent text-green-400 px-4 py-2.5 outline-none text-sm font-medium font-mono"
+                    placeholder="Enter price (e.g., 2500000)"
+                  />
 
               </div>
             </div>
 
             <div className="sm:col-span-2">
 
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Geographic Location
               </label>
 
@@ -618,7 +637,7 @@ export default function AdminDashboard() {
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition"
+                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
                 placeholder="e.g., IT Park, Lahug, Cebu City"
               />
 
@@ -647,7 +666,7 @@ export default function AdminDashboard() {
                       e.target.value as 'upload' | 'url'
                     )
                   }
-                  className="w-full appearance-none bg-slate-900 text-white px-4 py-3 pr-10 rounded-xl border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition cursor-pointer"
+                  className="w-full appearance-none bg-black text-green-400 px-4 py-3 pr-10 rounded-xl border border-green-500/30 outline-none focus:border-green-400 text-sm font-medium transition cursor-pointer"
                 >
 
                   <option value="upload">
@@ -660,8 +679,8 @@ export default function AdminDashboard() {
 
                 </select>
 
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  Γû╝
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-green-500">
+                  ▼
                 </div>
 
               </div>
@@ -681,25 +700,25 @@ export default function AdminDashboard() {
 
                   <label
                     htmlFor="property-image-upload"
-                    className="group flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-slate-700 rounded-2xl bg-slate-900 hover:bg-slate-800 hover:border-blue-500 transition-all duration-300 cursor-pointer"
+                    className="group flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-green-500/40 rounded-2xl bg-black hover:bg-green-950/20 hover:border-green-400 transition-all duration-300 cursor-pointer"
                   >
 
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                    <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition">
 
-                      <Upload className="w-6 h-6 text-blue-400" />
+                      <Upload className="w-6 h-6 text-green-400" />
 
                     </div>
 
-                    <p className="text-sm font-bold text-white">
-                      Add Property Pictures
+                    <p className="text-sm font-bold text-green-400 font-mono">
+                      &gt; ADD PROPERTY PICTURES
                     </p>
 
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-green-500 mt-1">
                       Select multiple images at once
                     </p>
 
-                    <p className="text-[10px] text-slate-600 mt-3 uppercase font-semibold">
-                      JPG ΓÇó PNG ΓÇó WEBP ΓÇó Maximum 5MB each
+                    <p className="text-[10px] text-green-600 mt-3 uppercase font-semibold">
+                      Allow Drag & Drop
                     </p>
 
                   </label>
@@ -710,13 +729,12 @@ export default function AdminDashboard() {
 
               {imageSource === 'url' && (
 
-                <div className="flex gap-2">
+               <div className="flex gap-2">
 
-                  <div className="flex flex-1 items-center bg-slate-900 rounded-xl border border-slate-800 focus-within:border-blue-500 transition overflow-hidden">
+                <div className="flex flex-1 items-center bg-black rounded-xl border border-green-500/30 focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-400/10 transition overflow-hidden">
 
-                    <div className="px-4 text-slate-400 border-r border-slate-800">
-
-                      <LinkIcon className="w-4 h-4" />
+                  <div className="px-4 text-green-500 border-r border-green-500/20">
+                      <LinkIcon className="w-4 h-4 text-green-400" />
 
                     </div>
 
@@ -732,7 +750,7 @@ export default function AdminDashboard() {
                           addImageUrl();
                         }
                       }}
-                      className="flex-1 bg-transparent text-white px-4 py-3 outline-none text-sm"
+                      className="flex-1 bg-transparent text-green-400 px-4 py-3 outline-none text-sm font-mono placeholder:text-green-900"
                       placeholder="https://example.com/property.jpg"
                     />
 
@@ -742,7 +760,7 @@ export default function AdminDashboard() {
                     type="button"
                     onClick={addImageUrl}
                     disabled={images.length >= MAX_IMAGES}
-                    className="px-5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl font-bold text-sm transition"
+                    className="px-5 bg-green-500 hover:bg-green-400 disabled:bg-green-950 disabled:text-green-800 text-black rounded-xl font-black text-sm font-mono transition"
                   >
                     Add
                   </button>
@@ -787,7 +805,7 @@ export default function AdminDashboard() {
 
                         {index === 0 && (
 
-                          <div className="absolute top-2 left-2 flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded-md text-[9px] font-bold uppercase">
+                          <div className="absolute top-2 left-2 flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-md text-[9px] font-bold uppercase">
 
                             <Star className="w-3 h-3 fill-current" />
 
@@ -810,7 +828,7 @@ export default function AdminDashboard() {
                               onClick={() =>
                                 setCoverImage(image.id)
                               }
-                              className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition"
+                              className="rounded-lg border border-green-500/40 bg-green-500/10 p-2 text-green-400 transition hover:bg-green-500/20 hover:shadow-[0_0_15px_rgba(0,255,100,0.15)]"
                               title="Set as cover"
                             >
                               <Star className="w-4 h-4" />
@@ -855,7 +873,7 @@ export default function AdminDashboard() {
 
             <div>
 
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Bedrooms Count
                 <span className="text-slate-600 ml-1">
                   (Optional)
@@ -867,7 +885,7 @@ export default function AdminDashboard() {
                 name="beds"
                 value={formData.beds}
                 onChange={handleInputChange}
-                className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition"
+                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
                 placeholder="e.g., 2"
               />
 
@@ -875,7 +893,7 @@ export default function AdminDashboard() {
 
             <div>
 
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Bathrooms Count
                 <span className="text-slate-600 ml-1">
                   (Optional)
@@ -887,7 +905,7 @@ export default function AdminDashboard() {
                 name="baths"
                 value={formData.baths}
                 onChange={handleInputChange}
-                className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition"
+                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
                 placeholder="e.g., 2"
               />
 
@@ -895,7 +913,7 @@ export default function AdminDashboard() {
 
             <div className="sm:col-span-2">
 
-              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide">
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
                 Floor Area Space (sqm)
               </label>
 
@@ -905,7 +923,7 @@ export default function AdminDashboard() {
                 name="sqft"
                 value={formData.sqft}
                 onChange={handleInputChange}
-                className="w-full bg-slate-900 text-white px-4 py-2.5 rounded-lg border border-slate-800 outline-none focus:border-blue-500 text-sm font-medium transition"
+                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
                 placeholder="e.g., 75"
               />
 
@@ -928,7 +946,7 @@ export default function AdminDashboard() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold uppercase tracking-wider py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-green-400/60 bg-green-500/10 py-4 text-xs font-black uppercase tracking-[0.2em] text-green-400 shadow-[0_0_25px_rgba(0,255,100,0.08)] transition hover:bg-green-500/20 hover:shadow-[0_0_30px_rgba(0,255,100,0.18)] disabled:cursor-not-allowed disabled:opacity-50"
           >
 
             {status === 'loading' ? (
@@ -956,8 +974,8 @@ export default function AdminDashboard() {
 
         <div className="mt-12">
 
-          <h2 className="text-xl font-bold text-white mb-5">
-            Property Listings
+          <h2 className="mb-5 text-lg font-black uppercase tracking-[0.2em] text-green-400">
+            <span className="text-green-700">&gt;</span> PROPERTY_DATABASE
           </h2>
 
           {loading ? (
@@ -980,11 +998,11 @@ export default function AdminDashboard() {
 
           ) : (
 
-            <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <div className="overflow-x-auto rounded-xl border border-green-900/70 bg-black/30">
 
               <table className="w-full text-sm">
 
-                <thead className="bg-slate-900">
+                <thead className="border-b border-green-900 bg-green-950/20">
 
                   <tr>
 
@@ -1031,7 +1049,7 @@ export default function AdminDashboard() {
 
                       <tr
                         key={String(propertyId)}
-                        className="border-b border-slate-800 hover:bg-slate-900/50 transition"
+                        className="border-b border-green-950 transition hover:bg-green-500/5"
                       >
 
                         <td className="p-2">
@@ -1074,7 +1092,7 @@ export default function AdminDashboard() {
                               onClick={() =>
                                 handleEdit(property)
                               }
-                              className="bg-blue-600 hover:bg-blue-700 p-2 rounded-lg transition"
+                              className="rounded-lg border border-green-500/40 bg-green-500/10 p-2 text-green-400 transition hover:bg-green-500/20 hover:shadow-[0_0_15px_rgba(0,255,100,0.15)]"
                               title="Edit property"
                             >
                               <Pencil size={16} />
