@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -9,13 +9,31 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
-  Loader2,
   LogOut,
   Upload,
   Link as LinkIcon,
   Image as ImageIcon,
   X,
   Star,
+  Building2,
+  Home,
+  MapPin,
+  BedDouble,
+  Bath,
+  Maximize,
+  Search,
+  LayoutDashboard,
+  Menu,
+  ChevronDown,
+  RefreshCw,
+  CircleDollarSign,
+  Activity,
+  Database,
+  ShieldCheck,
+  Eye,
+  Settings,
+  Bell,
+  Loader2,
 } from 'lucide-react';
 
 const MAX_IMAGES = 10;
@@ -42,6 +60,68 @@ interface Property {
   sqft?: number | null;
 }
 
+type Status = 'idle' | 'loading' | 'success' | 'error';
+
+/* =========================================================
+   CIRCUIT BOARD LOADER
+   Inspired by the Uiverse loader linked by the user.
+   ========================================================= */
+
+function CircuitLoader({
+  text = 'Loading...',
+  fullscreen = false,
+}: {
+  text?: string;
+  fullscreen?: boolean;
+}) {
+  return (
+    <div
+      className={
+        fullscreen
+          ? 'fixed inset-0 z-[999] flex items-center justify-center bg-slate-950'
+          : 'flex flex-col items-center justify-center py-12'
+      }
+    >
+      <div className="circuit-loader">
+        <div className="chip">
+          <div className="chip-core">
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+
+        <div className="pin pin-1" />
+        <div className="pin pin-2" />
+        <div className="pin pin-3" />
+        <div className="pin pin-4" />
+        <div className="pin pin-5" />
+        <div className="pin pin-6" />
+        <div className="pin pin-7" />
+        <div className="pin pin-8" />
+
+        <div className="circuit-line line-1" />
+        <div className="circuit-line line-2" />
+        <div className="circuit-line line-3" />
+        <div className="circuit-line line-4" />
+      </div>
+
+      <p className="mt-6 text-sm font-semibold text-slate-500">
+        {text}
+      </p>
+
+      <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-slate-700">
+        BREA 88 REALTY
+      </p>
+    </div>
+  );
+}
+
+/* =========================================================
+   MAIN DASHBOARD
+   ========================================================= */
+
 export default function AdminDashboard() {
   const router = useRouter();
 
@@ -63,17 +143,54 @@ export default function AdminDashboard() {
 
   const [imageUrl, setImageUrl] = useState('');
 
-  const [status, setStatus] = useState<
-    'idle' | 'loading' | 'success' | 'error'
-  >('idle');
+  const [status, setStatus] = useState<Status>('idle');
 
   const [properties, setProperties] = useState<Property[]>([]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [activeSection, setActiveSection] = useState<
+    'overview' | 'properties' | 'settings'
+  >('overview');
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  /* =========================================================
+     WELCOME VOICE
+     ========================================================= */
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if ('speechSynthesis' in window) {
+        const welcomeMessage = new SpeechSynthesisUtterance(
+          'Hi Cylex! Welcome to Brea88 Realty Admin Dashboard.'
+        );
+
+        welcomeMessage.rate = 0.9;
+        welcomeMessage.pitch = 1;
+        welcomeMessage.volume = 1;
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(welcomeMessage);
+      }
+    }, 700);
+
+    return () => {
+      window.clearTimeout(timer);
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  /* =========================================================
+     LOGOUT
+     ========================================================= */
 
   const handleLogout = async () => {
     try {
@@ -88,9 +205,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // ==========================================
-  // INPUT CHANGE
-  // ==========================================
+  /* =========================================================
+     INPUT CHANGE
+     ========================================================= */
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -103,12 +220,14 @@ export default function AdminDashboard() {
     }));
   };
 
-  // ==========================================
-  // FETCH PROPERTIES
-  // ==========================================
+  /* =========================================================
+     FETCH PROPERTIES
+     ========================================================= */
 
   const fetchProperties = async () => {
     try {
+      setLoading(true);
+
       const res = await fetch('/api/properties', {
         cache: 'no-store',
       });
@@ -122,6 +241,7 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch properties:', error);
+      setProperties([]);
     } finally {
       setLoading(false);
     }
@@ -131,9 +251,44 @@ export default function AdminDashboard() {
     fetchProperties();
   }, []);
 
-  // ==========================================
-  // HANDLE MULTIPLE IMAGE UPLOAD
-  // ==========================================
+  /* =========================================================
+     FILTERED PROPERTIES
+     ========================================================= */
+
+  const filteredProperties = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+
+    if (!term) return properties;
+
+    return properties.filter((property) => {
+      return (
+        property.title?.toLowerCase().includes(term) ||
+        property.location?.toLowerCase().includes(term) ||
+        property.tag?.toLowerCase().includes(term) ||
+        property.price?.toLowerCase().includes(term)
+      );
+    });
+  }, [properties, searchTerm]);
+
+  /* =========================================================
+     STATISTICS
+     ========================================================= */
+
+  const residentialCount = properties.filter(
+    (property) => property.tag === 'Residential'
+  ).length;
+
+  const commercialCount = properties.filter(
+    (property) => property.tag === 'Commercial'
+  ).length;
+
+  const investmentCount = properties.filter(
+    (property) => property.tag === 'Investment'
+  ).length;
+
+  /* =========================================================
+     IMAGE UPLOAD
+     ========================================================= */
 
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -185,9 +340,9 @@ export default function AdminDashboard() {
     e.target.value = '';
   };
 
-  // ==========================================
-  // ADD IMAGE URL
-  // ==========================================
+  /* =========================================================
+     ADD IMAGE URL
+     ========================================================= */
 
   const addImageUrl = () => {
     const trimmedUrl = imageUrl.trim();
@@ -216,9 +371,9 @@ export default function AdminDashboard() {
     setImageUrl('');
   };
 
-  // ==========================================
-  // REMOVE IMAGE
-  // ==========================================
+  /* =========================================================
+     REMOVE IMAGE
+     ========================================================= */
 
   const removeImage = (id: string) => {
     setImages((prev) => {
@@ -235,9 +390,9 @@ export default function AdminDashboard() {
     });
   };
 
-  // ==========================================
-  // SET COVER IMAGE
-  // ==========================================
+  /* =========================================================
+     SET COVER IMAGE
+     ========================================================= */
 
   const setCoverImage = (id: string) => {
     setImages((prev) => {
@@ -252,9 +407,9 @@ export default function AdminDashboard() {
     });
   };
 
-  // ==========================================
-  // RESET FORM
-  // ==========================================
+  /* =========================================================
+     RESET FORM
+     ========================================================= */
 
   const resetForm = () => {
     images.forEach((image) => {
@@ -284,9 +439,9 @@ export default function AdminDashboard() {
     setStatus('idle');
   };
 
-  // ==========================================
-  // UPLOAD IMAGE TO VERCEL BLOB
-  // ==========================================
+  /* =========================================================
+     UPLOAD IMAGE TO VERCEL BLOB
+     ========================================================= */
 
   const uploadImageToBlob = async (file: File) => {
     const uploadFormData = new FormData();
@@ -309,12 +464,22 @@ export default function AdminDashboard() {
     return data.url as string;
   };
 
-  // ==========================================
-  // SUBMIT
-  // ==========================================
+  /* =========================================================
+     SUBMIT PROPERTY
+     ========================================================= */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.title.trim()) {
+      alert('Please enter a property title.');
+      return;
+    }
+
+    if (!formData.location.trim()) {
+      alert('Please enter a property location.');
+      return;
+    }
 
     if (images.length === 0) {
       alert('Please add at least one property picture.');
@@ -344,7 +509,9 @@ export default function AdminDashboard() {
       }
 
       if (uploadedImages.length === 0) {
-        throw new Error('No valid property images were uploaded.');
+        throw new Error(
+          'No valid property images were uploaded.'
+        );
       }
 
       const coverImage = uploadedImages[0];
@@ -357,7 +524,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           title: formData.title,
           tag: formData.tag,
-           price: formData.price.replace(/,/g, ''),
+          price: formData.price.replace(/,/g, ''),
           location: formData.location,
           beds: formData.beds,
           baths: formData.baths,
@@ -381,6 +548,13 @@ export default function AdminDashboard() {
       await fetchProperties();
 
       resetForm();
+
+      setActiveSection('properties');
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
     } catch (error) {
       console.error('Property save error:', error);
 
@@ -394,12 +568,14 @@ export default function AdminDashboard() {
     }
   };
 
-  // ==========================================
-  // DELETE
-  // ==========================================
+  /* =========================================================
+     DELETE
+     ========================================================= */
 
   const handleDelete = async (id: string | number) => {
-    if (!confirm('Delete this property?')) return;
+    if (!confirm('Are you sure you want to delete this property?')) {
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -420,9 +596,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // ==========================================
-  // EDIT
-  // ==========================================
+  /* =========================================================
+     EDIT
+     ========================================================= */
 
   const handleEdit = (property: Property) => {
     const propertyId =
@@ -437,7 +613,11 @@ export default function AdminDashboard() {
     setFormData({
       title: property.title || '',
       tag: property.tag || 'Residential',
-      price: property.price || '',
+      price: property.price
+        ? Number(
+            String(property.price).replace(/,/g, '')
+          ).toLocaleString('en-US')
+        : '',
       location: property.location || '',
       beds:
         property.beds !== null &&
@@ -476,6 +656,9 @@ export default function AdminDashboard() {
 
     setImageSource('url');
     setImageUrl('');
+    setStatus('idle');
+
+    setActiveSection('overview');
 
     window.scrollTo({
       top: 0,
@@ -483,671 +666,2263 @@ export default function AdminDashboard() {
     });
   };
 
-   useEffect(() => {
-    const welcomeMessage = new SpeechSynthesisUtterance(
-      'Hi Cylex! Welcome to Brea88 Realty Admin Dashboard.'
+  /* =========================================================
+     NAVIGATION
+     ========================================================= */
+
+  const navigate = (
+    section: 'overview' | 'properties' | 'settings'
+  ) => {
+    setActiveSection(section);
+    setSidebarOpen(false);
+
+    if (section === 'overview') {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  /* =========================================================
+     INITIAL LOADING
+     ========================================================= */
+
+  if (loading && properties.length === 0) {
+    return (
+      <>
+        <CircuitLoader
+          fullscreen
+          text="Initializing admin dashboard..."
+        />
+
+        <style jsx global>{`
+          .circuit-loader {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            transform-style: preserve-3d;
+            animation: circuitFloat 3s ease-in-out infinite;
+          }
+
+          .chip {
+            position: absolute;
+            left: 25px;
+            top: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: linear-gradient(
+              145deg,
+              #1e293b,
+              #020617
+            );
+            border: 2px solid #334155;
+            box-shadow:
+              0 0 0 5px rgba(59, 130, 246, 0.05),
+              0 0 35px rgba(37, 99, 235, 0.25),
+              inset 0 0 20px rgba(59, 130, 246, 0.1);
+            z-index: 3;
+          }
+
+          .chip-core {
+            position: absolute;
+            inset: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+          }
+
+          .chip-core span {
+            border-radius: 3px;
+            background: #2563eb;
+            box-shadow: 0 0 10px #2563eb;
+            animation: chipPulse 1.4s ease-in-out infinite;
+          }
+
+          .chip-core span:nth-child(2) {
+            animation-delay: 0.15s;
+          }
+
+          .chip-core span:nth-child(3) {
+            animation-delay: 0.3s;
+          }
+
+          .chip-core span:nth-child(4) {
+            animation-delay: 0.45s;
+          }
+
+          .pin {
+            position: absolute;
+            width: 18px;
+            height: 3px;
+            border-radius: 2px;
+            background: #475569;
+            z-index: 1;
+          }
+
+          .pin-1 {
+            left: 8px;
+            top: 32px;
+          }
+
+          .pin-2 {
+            left: 84px;
+            top: 32px;
+          }
+
+          .pin-3 {
+            left: 8px;
+            top: 47px;
+          }
+
+          .pin-4 {
+            left: 84px;
+            top: 47px;
+          }
+
+          .pin-5 {
+            left: 32px;
+            top: 8px;
+            transform: rotate(90deg);
+          }
+
+          .pin-6 {
+            left: 62px;
+            top: 8px;
+            transform: rotate(90deg);
+          }
+
+          .pin-7 {
+            left: 32px;
+            top: 84px;
+            transform: rotate(90deg);
+          }
+
+          .pin-8 {
+            left: 62px;
+            top: 84px;
+            transform: rotate(90deg);
+          }
+
+          .circuit-line {
+            position: absolute;
+            background: #2563eb;
+            opacity: 0.5;
+            box-shadow: 0 0 8px #2563eb;
+            animation: linePulse 1.5s ease-in-out infinite;
+          }
+
+          .line-1 {
+            left: 0;
+            top: 33px;
+            width: 28px;
+            height: 1px;
+          }
+
+          .line-2 {
+            right: 0;
+            top: 48px;
+            width: 28px;
+            height: 1px;
+            animation-delay: 0.3s;
+          }
+
+          .line-3 {
+            left: 33px;
+            top: 0;
+            width: 1px;
+            height: 28px;
+            animation-delay: 0.6s;
+          }
+
+          .line-4 {
+            right: 33px;
+            bottom: 0;
+            width: 1px;
+            height: 28px;
+            animation-delay: 0.9s;
+          }
+
+          @keyframes chipPulse {
+            0%,
+            100% {
+              opacity: 0.35;
+              transform: scale(0.85);
+            }
+
+            50% {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+
+          @keyframes linePulse {
+            0%,
+            100% {
+              opacity: 0.2;
+            }
+
+            50% {
+              opacity: 1;
+            }
+          }
+
+          @keyframes circuitFloat {
+            0%,
+            100% {
+              transform: translateY(0) rotateX(0deg);
+            }
+
+            50% {
+              transform: translateY(-8px) rotateX(4deg);
+            }
+          }
+        `}</style>
+      </>
     );
+  }
 
-    welcomeMessage.rate = 0.9;
-    welcomeMessage.pitch = 1;
-    welcomeMessage.volume = 1;
-
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(welcomeMessage);
-
-    return () => {
-      window.speechSynthesis.cancel();
-    };
-  }, []);
+  /* =========================================================
+     RETURN
+     ========================================================= */
 
   return (
-    <div className="min-h-screen bg-black text-green-400 py-8 px-4 sm:px-6 lg:px-8 font-mono">
-      <div className="pointer-events-none fixed inset-0">
-         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,100,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,100,0.04)_1px,transparent_1px)] bg-[size:30px_30px]" />
-         <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-green-500/5 blur-[120px]" />
+    <div className="min-h-screen bg-slate-50 text-slate-900">
 
-        <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-emerald-500/5 blur-[100px]" />
-      </div>
+      {/* =====================================================
+          MOBILE OVERLAY
+          ===================================================== */}
 
-      <div className="relative z-10 mx-auto max-w-5xl overflow-hidden rounded-2xl border border-green-500/30 bg-[#030d08]/95 shadow-[0_0_60px_rgba(0,255,100,0.08)] p-5 sm:p-8">
+      {sidebarOpen && (
+        <button
+          aria-label="Close menu"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
+        />
+      )}
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-6 mb-8">
+      {/* =====================================================
+          SIDEBAR
+          ===================================================== */}
+
+      <aside
+        className={`
+          fixed left-0 top-0 z-50 flex h-screen w-72 flex-col
+          border-r border-slate-200 bg-white
+          transition-transform duration-300
+          lg:translate-x-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+
+        {/* LOGO */}
+
+        <div className="flex h-20 items-center border-b border-slate-100 px-6">
 
           <div className="flex items-center gap-3">
 
-            <img
-              src="/img/LOGO.png"
-              alt="BREA 88 Logo"
-              className="h-16 w-16 rounded-full object-cover border border-green-500/50 shadow-[0_0_25px_rgba(0,255,100,0.25)] sm:h-20 sm:w-20"
-            />
+            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-slate-900 shadow-lg">
+
+              <img
+                src="/img/LOGO.png"
+                alt="BREA 88 REALTY"
+                className="h-full w-full object-cover"
+              />
+
+            </div>
 
             <div>
-              <h1 className="text-xl font-black tracking-wider text-green-400 sm:text-2xl">
-                BREA_88 // ADMIN_TERMINAL
-              </h1>
-
-              <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-green-700 sm:text-xs">
-                Secure Property Management System // Access Level: ADMIN
+              <p className="text-sm font-black tracking-tight text-slate-900">
+                BREA 88
               </p>
+
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                Realty
+              </p>
+            </div>
+
+          </div>
+
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="ml-auto rounded-lg p-2 text-slate-400 hover:bg-slate-100 lg:hidden"
+          >
+            <X size={18} />
+          </button>
+
+        </div>
+
+        {/* NAVIGATION */}
+
+        <div className="flex-1 px-4 py-6">
+
+          <p className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            Main Menu
+          </p>
+
+          <nav className="space-y-1">
+
+            <button
+              onClick={() => navigate('overview')}
+              className={`
+                flex w-full items-center gap-3 rounded-xl px-3 py-3
+                text-sm font-semibold transition
+                ${
+                  activeSection === 'overview'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }
+              `}
+            >
+              <LayoutDashboard size={18} />
+              Dashboard
+            </button>
+
+            <button
+              onClick={() => navigate('properties')}
+              className={`
+                flex w-full items-center gap-3 rounded-xl px-3 py-3
+                text-sm font-semibold transition
+                ${
+                  activeSection === 'properties'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }
+              `}
+            >
+              <Building2 size={18} />
+              Properties
+
+              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                {properties.length}
+              </span>
+            </button>
+
+          </nav>
+
+          <p className="mt-8 px-3 pb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            System
+          </p>
+
+          <nav className="space-y-1">
+
+            <button
+              onClick={() => navigate('settings')}
+              className={`
+                flex w-full items-center gap-3 rounded-xl px-3 py-3
+                text-sm font-semibold transition
+                ${
+                  activeSection === 'settings'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }
+              `}
+            >
+              <Settings size={18} />
+              Settings
+            </button>
+
+          </nav>
+
+        </div>
+
+        {/* ADMIN CARD */}
+
+        <div className="border-t border-slate-100 p-4">
+
+          <div className="mb-3 rounded-xl bg-slate-50 p-3">
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                <ShieldCheck size={18} />
+              </div>
+
+              <div className="min-w-0">
+
+                <p className="truncate text-xs font-bold text-slate-900">
+                  Administrator
+                </p>
+
+                <div className="mt-0.5 flex items-center gap-1.5">
+
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
+                  <span className="text-[10px] text-slate-500">
+                    Online
+                  </span>
+
+                </div>
+
+              </div>
+
             </div>
 
           </div>
 
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-red-400 transition hover:bg-red-500/20 hover:shadow-[0_0_20px_rgba(255,0,0,0.15)]"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
           >
-            <LogOut className="w-4 h-4" />
-            Logout
+            <LogOut size={15} />
+            Sign Out
           </button>
 
         </div>
 
-        {status === 'success' && (
-          <div className="mb-6 p-4 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-sm rounded-xl flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-            Property listing processed successfully!
-          </div>
-        )}
+      </aside>
 
-        {status === 'error' && (
-          <div className="mb-6 p-4 bg-rose-950/40 border border-rose-500/30 text-rose-300 text-sm rounded-xl flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
-            Failed to process listing. Please check your information.
-          </div>
-        )}
+      {/* =====================================================
+          MAIN
+          ===================================================== */}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
+      <main className="lg:pl-72">
 
-          <div className="grid sm:grid-cols-2 gap-6">
+        {/* ===================================================
+            TOP NAV
+            =================================================== */}
 
-            <div className="sm:col-span-2">
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Property / Project Title
-              </label>
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
 
-              <input
-                required
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
-                placeholder="e.g., Premium 2BR Penthouse Complex"
-              />
-            </div>
+          <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
 
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Classification Tag
-              </label>
+            <div className="flex items-center gap-3">
 
-              <select
-                name="tag"
-                value={formData.tag}
-                onChange={handleInputChange}
-                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition cursor-pointer">
-                <option value="Residential">
-                  Residential
-                </option>
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-xl border border-slate-200 p-2.5 text-slate-600 hover:bg-slate-50 lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
 
-                <option value="Commercial">
-                  Commercial
-                </option>
+              <div>
 
-                <option value="Investment">
-                  Investment
-                </option>
-              </select>
-            </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                  BREA 88 REALTY
+                </p>
 
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Price Tag
-              </label>
-
-              <div className="flex items-center w-full bg-black rounded-lg border border-green-500/30 focus-within:border-green-400 transition overflow-hidden">
-
-                <span className="px-4 text-green-400 text-sm font-bold border-r border-green-500/30">
-                  ₱
-                </span>
-
-                <input
-                    required
-                    type="text"
-                    inputMode="numeric"
-                    name="price"
-                    value={formData.price}
-                    onChange={(e) => {
-                      const rawValue = e.target.value.replace(/,/g, '');
-
-                      if (!/^\d*$/.test(rawValue)) return;
-
-                      const formattedValue = rawValue
-                        ? Number(rawValue).toLocaleString('en-US')
-                        : '';
-
-                      setFormData((prev) => ({
-                        ...prev,
-                        price: formattedValue,
-                      }));
-                    }}
-                    className="flex-1 bg-transparent text-green-400 px-4 py-2.5 outline-none text-sm font-medium font-mono"
-                    placeholder="Enter price (e.g., 2500000)"
-                  />
-
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Geographic Location
-              </label>
-
-              <input
-                required
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
-                placeholder="e.g., IT Park, Lahug, Cebu City"
-              />
-
-            </div>
-
-            <div className="sm:col-span-2">
-
-              <div className="flex items-center justify-between mb-2">
-
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide">
-                  Property Pictures
-                </label>
-
-                <span className="text-[11px] text-slate-500">
-                  {images.length}/{MAX_IMAGES} pictures
-                </span>
+                <h1 className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">
+                  Admin Dashboard
+                </h1>
 
               </div>
 
-              <div className="relative mb-4">
+            </div>
 
-                <select
-                  value={imageSource}
-                  onChange={(e) =>
-                    setImageSource(
-                      e.target.value as 'upload' | 'url'
-                    )
-                  }
-                  className="w-full appearance-none bg-black text-green-400 px-4 py-3 pr-10 rounded-xl border border-green-500/30 outline-none focus:border-green-400 text-sm font-medium transition cursor-pointer"
-                >
+            <div className="flex items-center gap-2 sm:gap-4">
 
-                  <option value="upload">
-                    Upload Pictures from Device
-                  </option>
+              <button
+                className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                title="Notifications"
+              >
+                <Bell size={18} />
 
-                  <option value="url">
-                    Add Picture Using URL
-                  </option>
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-blue-600" />
+              </button>
 
-                </select>
+              <div className="hidden h-8 w-px bg-slate-200 sm:block" />
 
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-green-500">
-                  ▼
+              <div className="hidden items-center gap-2 sm:flex">
+
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">
+                  A
                 </div>
 
+                <div className="hidden md:block">
+
+                  <p className="text-xs font-bold text-slate-900">
+                    Admin
+                  </p>
+
+                  <p className="text-[10px] text-slate-400">
+                    Administrator
+                  </p>
+
+                </div>
+
+                <ChevronDown
+                  size={15}
+                  className="text-slate-400"
+                />
+
               </div>
 
-              {imageSource === 'upload' && (
+            </div>
+
+          </div>
+
+        </header>
+
+        {/* ===================================================
+            CONTENT
+            =================================================== */}
+
+        <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+
+          {/* =================================================
+              PAGE INTRO
+              ================================================= */}
+
+          <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+
+            <div>
+
+              <p className="mb-1 text-xs font-semibold text-slate-400">
+                Welcome back, Admin
+              </p>
+
+              <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                Property Management
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Manage your BREA 88 REALTY property listings.
+              </p>
+
+            </div>
+
+            <div className="flex gap-2">
+
+              <button
+                onClick={fetchProperties}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
+              >
+                <RefreshCw size={15} />
+                Refresh
+              </button>
+
+              <button
+                onClick={() => {
+                  resetForm();
+                  setActiveSection('overview');
+
+                  window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth',
+                  });
+                }}
+                className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+              >
+                <PlusCircle size={16} />
+                Add Property
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* =================================================
+              SUCCESS / ERROR
+              ================================================= */}
+
+          {status === 'success' && (
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+
+              <CheckCircle2
+                size={20}
+                className="shrink-0"
+              />
+
+              <div>
+
+                <p className="font-bold">
+                  Property saved successfully.
+                </p>
+
+                <p className="mt-0.5 text-xs text-emerald-600">
+                  Your property listing has been updated.
+                </p>
+
+              </div>
+
+              <button
+                onClick={() => setStatus('idle')}
+                className="ml-auto rounded-lg p-1 hover:bg-emerald-100"
+              >
+                <X size={15} />
+              </button>
+
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+
+              <AlertCircle
+                size={20}
+                className="shrink-0"
+              />
+
+              <div>
+
+                <p className="font-bold">
+                  Something went wrong.
+                </p>
+
+                <p className="mt-0.5 text-xs text-red-600">
+                  Please check the information and try again.
+                </p>
+
+              </div>
+
+              <button
+                onClick={() => setStatus('idle')}
+                className="ml-auto rounded-lg p-1 hover:bg-red-100"
+              >
+                <X size={15} />
+              </button>
+
+            </div>
+          )}
+
+          {/* =================================================
+              STAT CARDS
+              ================================================= */}
+
+          <div className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+            {/* TOTAL */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+              <div className="flex items-start justify-between">
 
                 <div>
 
-                  <input
-                    id="property-image-upload"
-                    type="file"
-                    multiple
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
+                  <p className="text-xs font-semibold text-slate-500">
+                    Total Listings
+                  </p>
 
-                  <label
-                    htmlFor="property-image-upload"
-                    className="group flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-green-500/40 rounded-2xl bg-black hover:bg-green-950/20 hover:border-green-400 transition-all duration-300 cursor-pointer"
-                  >
-
-                    <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition">
-
-                      <Upload className="w-6 h-6 text-green-400" />
-
-                    </div>
-
-                    <p className="text-sm font-bold text-green-400 font-mono">
-                      &gt; ADD PROPERTY PICTURES
-                    </p>
-
-                    <p className="text-xs text-green-500 mt-1">
-                      Select multiple images at once
-                    </p>
-
-                    <p className="text-[10px] text-green-600 mt-3 uppercase font-semibold">
-                      Allow Drag & Drop
-                    </p>
-
-                  </label>
+                  <p className="mt-2 text-3xl font-black text-slate-900">
+                    {properties.length}
+                  </p>
 
                 </div>
 
-              )}
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <Building2 size={21} />
+                </div>
 
-              {imageSource === 'url' && (
+              </div>
 
-               <div className="flex gap-2">
+              <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600">
 
-                <div className="flex flex-1 items-center bg-black rounded-xl border border-green-500/30 focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-400/10 transition overflow-hidden">
+                <Activity size={12} />
 
-                  <div className="px-4 text-green-500 border-r border-green-500/20">
-                      <LinkIcon className="w-4 h-4 text-green-400" />
+                Live database
 
-                    </div>
+              </div>
+
+            </div>
+
+            {/* RESIDENTIAL */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+              <div className="flex items-start justify-between">
+
+                <div>
+
+                  <p className="text-xs font-semibold text-slate-500">
+                    Residential
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black text-slate-900">
+                    {residentialCount}
+                  </p>
+
+                </div>
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <Home size={21} />
+                </div>
+
+              </div>
+
+              <p className="mt-4 text-[10px] font-semibold text-slate-400">
+                Residential properties
+              </p>
+
+            </div>
+
+            {/* COMMERCIAL */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+              <div className="flex items-start justify-between">
+
+                <div>
+
+                  <p className="text-xs font-semibold text-slate-500">
+                    Commercial
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black text-slate-900">
+                    {commercialCount}
+                  </p>
+
+                </div>
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                  <Database size={21} />
+                </div>
+
+              </div>
+
+              <p className="mt-4 text-[10px] font-semibold text-slate-400">
+                Commercial properties
+              </p>
+
+            </div>
+
+            {/* INVESTMENT */}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+              <div className="flex items-start justify-between">
+
+                <div>
+
+                  <p className="text-xs font-semibold text-slate-500">
+                    Investment
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black text-slate-900">
+                    {investmentCount}
+                  </p>
+
+                </div>
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <CircleDollarSign size={21} />
+                </div>
+
+              </div>
+
+              <p className="mt-4 text-[10px] font-semibold text-slate-400">
+                Investment opportunities
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* =================================================
+              OVERVIEW / FORM
+              ================================================= */}
+
+          {activeSection === 'overview' && (
+
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+              {/* FORM HEADER */}
+
+              <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-5 sm:px-7 md:flex-row md:items-center md:justify-between">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    {editingId ? (
+                      <Pencil size={18} />
+                    ) : (
+                      <PlusCircle size={18} />
+                    )}
+                  </div>
+
+                  <div>
+
+                    <h3 className="text-base font-black text-slate-900">
+                      {editingId
+                        ? 'Edit Property'
+                        : 'Add New Property'}
+                    </h3>
+
+                    <p className="text-xs text-slate-400">
+                      {editingId
+                        ? 'Update your property listing information.'
+                        : 'Create a new listing for the marketplace.'}
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    <X size={14} />
+                    Cancel Editing
+                  </button>
+                )}
+
+              </div>
+
+              {/* FORM */}
+
+              <form
+                onSubmit={handleSubmit}
+                className="p-5 sm:p-7"
+              >
+
+                <div className="grid gap-5 sm:grid-cols-2">
+
+                  {/* TITLE */}
+
+                  <div className="sm:col-span-2">
+
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Property / Project Title
+                    </label>
 
                     <input
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) =>
-                        setImageUrl(e.target.value)
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addImageUrl();
-                        }
-                      }}
-                      className="flex-1 bg-transparent text-green-400 px-4 py-3 outline-none text-sm font-mono placeholder:text-green-900"
-                      placeholder="https://example.com/property.jpg"
+                      required
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      placeholder="e.g. Premium 2BR Penthouse"
                     />
 
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={addImageUrl}
-                    disabled={images.length >= MAX_IMAGES}
-                    className="px-5 bg-green-500 hover:bg-green-400 disabled:bg-green-950 disabled:text-green-800 text-black rounded-xl font-black text-sm font-mono transition"
-                  >
-                    Add
-                  </button>
+                  {/* TAG */}
 
-                </div>
+                  <div>
 
-              )}
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Classification
+                    </label>
 
-              {images.length > 0 && (
+                    <div className="relative">
 
-                <div className="mt-5">
+                      <select
+                        name="tag"
+                        value={formData.tag}
+                        onChange={handleInputChange}
+                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      >
+                        <option value="Residential">
+                          Residential
+                        </option>
 
-                  <div className="flex items-center justify-between mb-3">
+                        <option value="Commercial">
+                          Commercial
+                        </option>
 
-                    <p className="text-xs font-bold text-slate-400 uppercase">
-                      Selected Pictures
-                    </p>
+                        <option value="Investment">
+                          Investment
+                        </option>
+                      </select>
 
-                    <p className="text-[10px] text-slate-600">
-                      First image = Cover Photo
-                    </p>
+                      <ChevronDown
+                        size={16}
+                        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+
+                    </div>
 
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {/* PRICE */}
 
-                    {images.map((image, index) => (
+                  <div>
 
-                      <div
-                        key={image.id}
-                        className="relative group aspect-[4/3] rounded-xl overflow-hidden border border-slate-800 bg-slate-900"
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Property Price
+                    </label>
+
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+
+                      <div className="flex items-center border-r border-slate-200 px-4 text-sm font-bold text-slate-500">
+                        ₱
+                      </div>
+
+                      <input
+                        required
+                        type="text"
+                        inputMode="numeric"
+                        name="price"
+                        value={formData.price}
+                        onChange={(e) => {
+                          const rawValue =
+                            e.target.value.replace(
+                              /,/g,
+                              ''
+                            );
+
+                          if (!/^\d*$/.test(rawValue)) {
+                            return;
+                          }
+
+                          const formattedValue = rawValue
+                            ? Number(rawValue).toLocaleString(
+                                'en-US'
+                              )
+                            : '';
+
+                          setFormData((prev) => ({
+                            ...prev,
+                            price: formattedValue,
+                          }));
+                        }}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-300"
+                        placeholder="2,500,000"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* LOCATION */}
+
+                  <div className="sm:col-span-2">
+
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Location
+                    </label>
+
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+
+                      <div className="flex items-center border-r border-slate-200 px-4 text-slate-400">
+                        <MapPin size={17} />
+                      </div>
+
+                      <input
+                        required
+                        type="text"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-300"
+                        placeholder="e.g. IT Park, Lahug, Cebu City"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* BEDROOMS */}
+
+                  <div>
+
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Bedrooms
+                      <span className="ml-1 font-normal text-slate-400">
+                        Optional
+                      </span>
+                    </label>
+
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+
+                      <div className="flex items-center border-r border-slate-200 px-4 text-slate-400">
+                        <BedDouble size={17} />
+                      </div>
+
+                      <input
+                        type="number"
+                        min="0"
+                        name="beds"
+                        value={formData.beds}
+                        onChange={handleInputChange}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-300"
+                        placeholder="2"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* BATHROOMS */}
+
+                  <div>
+
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Bathrooms
+                      <span className="ml-1 font-normal text-slate-400">
+                        Optional
+                      </span>
+                    </label>
+
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+
+                      <div className="flex items-center border-r border-slate-200 px-4 text-slate-400">
+                        <Bath size={17} />
+                      </div>
+
+                      <input
+                        type="number"
+                        min="0"
+                        name="baths"
+                        value={formData.baths}
+                        onChange={handleInputChange}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-300"
+                        placeholder="2"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* FLOOR AREA */}
+
+                  <div className="sm:col-span-2">
+
+                    <label className="mb-2 block text-xs font-bold text-slate-700">
+                      Floor Area
+                      <span className="ml-1 font-normal text-slate-400">
+                        sqm
+                      </span>
+                    </label>
+
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+
+                      <div className="flex items-center border-r border-slate-200 px-4 text-slate-400">
+                        <Maximize size={17} />
+                      </div>
+
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        name="sqft"
+                        value={formData.sqft}
+                        onChange={handleInputChange}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-300"
+                        placeholder="75"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  {/* =================================================
+                      IMAGE SECTION
+                      ================================================= */}
+
+                  <div className="sm:col-span-2">
+
+                    <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+
+                      <div>
+
+                        <label className="block text-xs font-bold text-slate-700">
+                          Property Pictures
+                        </label>
+
+                        <p className="mt-0.5 text-[11px] text-slate-400">
+                          Upload up to {MAX_IMAGES} images.
+                          First image becomes the cover.
+                        </p>
+
+                      </div>
+
+                      <span className="text-xs font-bold text-slate-400">
+                        {images.length}/{MAX_IMAGES}
+                      </span>
+
+                    </div>
+
+                    {/* SOURCE */}
+
+                    <div className="mb-4 flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1">
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageSource('upload')
+                        }
+                        className={`
+                          flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-bold transition
+                          ${
+                            imageSource === 'upload'
+                              ? 'bg-white text-blue-600 shadow-sm'
+                              : 'text-slate-500 hover:text-slate-900'
+                          }
+                        `}
                       >
+                        <Upload size={15} />
+                        Upload Files
+                      </button>
 
-                        <img
-                          src={image.url}
-                          alt={`Property ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.opacity = '0.3';
-                          }}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageSource('url')
+                        }
+                        className={`
+                          flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-bold transition
+                          ${
+                            imageSource === 'url'
+                              ? 'bg-white text-blue-600 shadow-sm'
+                              : 'text-slate-500 hover:text-slate-900'
+                          }
+                        `}
+                      >
+                        <LinkIcon size={15} />
+                        Image URL
+                      </button>
+
+                    </div>
+
+                    {/* UPLOAD */}
+
+                    {imageSource === 'upload' && (
+
+                      <div>
+
+                        <input
+                          id="property-image-upload"
+                          type="file"
+                          multiple
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          onChange={handleImageUpload}
+                          className="hidden"
                         />
 
-                        {index === 0 && (
+                        <label
+                          htmlFor="property-image-upload"
+                          className="group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 transition hover:border-blue-300 hover:bg-blue-50/40"
+                        >
 
-                          <div className="absolute top-2 left-2 flex items-center gap-1 bg-green-600 text-white px-2 py-1 rounded-md text-[9px] font-bold uppercase">
-
-                            <Star className="w-3 h-3 fill-current" />
-
-                            Cover
-
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm transition group-hover:scale-105">
+                            <Upload size={22} />
                           </div>
 
-                        )}
+                          <p className="text-sm font-bold text-slate-700">
+                            Upload property pictures
+                          </p>
 
-                        <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded-md text-[10px] font-bold">
-                          {index + 1}
+                          <p className="mt-1 text-xs text-slate-400">
+                            Click to select multiple images
+                          </p>
+
+                          <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            JPG • PNG • WEBP • Max 5MB each
+                          </p>
+
+                        </label>
+
+                      </div>
+
+                    )}
+
+                    {/* URL */}
+
+                    {imageSource === 'url' && (
+
+                      <div className="flex flex-col gap-2 sm:flex-row">
+
+                        <div className="flex min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+
+                          <div className="flex items-center border-r border-slate-200 px-4 text-slate-400">
+                            <LinkIcon size={16} />
+                          </div>
+
+                          <input
+                            type="url"
+                            value={imageUrl}
+                            onChange={(e) =>
+                              setImageUrl(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addImageUrl();
+                              }
+                            }}
+                            className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-300"
+                            placeholder="https://example.com/property.jpg"
+                          />
+
                         </div>
 
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={addImageUrl}
+                          disabled={
+                            images.length >= MAX_IMAGES
+                          }
+                          className="rounded-xl bg-blue-600 px-5 py-3 text-xs font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Add Image
+                        </button>
 
-                          {index !== 0 && (
+                      </div>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setCoverImage(image.id)
-                              }
-                              className="rounded-lg border border-green-500/40 bg-green-500/10 p-2 text-green-400 transition hover:bg-green-500/20 hover:shadow-[0_0_15px_rgba(0,255,100,0.15)]"
-                              title="Set as cover"
+                    )}
+
+                    {/* IMAGE PREVIEW */}
+
+                    {images.length > 0 && (
+
+                      <div className="mt-5">
+
+                        <div className="mb-3 flex items-center justify-between">
+
+                          <p className="text-xs font-bold text-slate-700">
+                            Selected Pictures
+                          </p>
+
+                          <p className="text-[10px] text-slate-400">
+                            First image = Cover
+                          </p>
+
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+
+                          {images.map((image, index) => (
+
+                            <div
+                              key={image.id}
+                              className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
                             >
-                              <Star className="w-4 h-4" />
-                            </button>
 
-                          )}
+                              <img
+                                src={image.url}
+                                alt={`Property ${index + 1}`}
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                onError={(e) => {
+                                  e.currentTarget.style.opacity =
+                                    '0.3';
+                                }}
+                              />
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeImage(image.id)
-                            }
-                            className="bg-red-600 hover:bg-red-700 p-2 rounded-lg transition"
-                            title="Remove image"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                              {index === 0 && (
+                                <div className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-blue-600 px-2 py-1 text-[9px] font-bold text-white">
+                                  <Star
+                                    size={10}
+                                    className="fill-current"
+                                  />
+                                  Cover
+                                </div>
+                              )}
+
+                              <div className="absolute bottom-2 left-2 rounded-md bg-slate-950/70 px-2 py-1 text-[10px] font-bold text-white">
+                                {index + 1}
+                              </div>
+
+                              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/50 opacity-0 transition group-hover:opacity-100">
+
+                                {index !== 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setCoverImage(
+                                        image.id
+                                      )
+                                    }
+                                    className="rounded-lg bg-white p-2 text-blue-600 shadow-lg transition hover:bg-blue-50"
+                                    title="Set as cover"
+                                  >
+                                    <Star
+                                      size={15}
+                                    />
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeImage(
+                                      image.id
+                                    )
+                                  }
+                                  className="rounded-lg bg-red-600 p-2 text-white shadow-lg transition hover:bg-red-700"
+                                  title="Remove image"
+                                >
+                                  <X size={15} />
+                                </button>
+
+                              </div>
+
+                            </div>
+
+                          ))}
 
                         </div>
 
                       </div>
 
-                    ))}
+                    )}
 
                   </div>
 
                 </div>
 
-              )}
+                {/* SUBMIT */}
 
-              <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-500">
+                <div className="mt-7 flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
 
-                <ImageIcon className="w-3.5 h-3.5" />
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="rounded-xl border border-slate-200 px-6 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  )}
 
-                <span>
-                  Add up to {MAX_IMAGES} pictures. The first picture will be used as the cover photo.
-                </span>
+                  <button
+                    type="submit"
+                    disabled={status === 'loading'}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3 text-xs font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
 
-              </div>
+                    {status === 'loading' ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className="animate-spin"
+                        />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        {editingId ? (
+                          <Pencil size={16} />
+                        ) : (
+                          <PlusCircle size={16} />
+                        )}
 
-            </div>
+                        {editingId
+                          ? 'Update Property'
+                          : 'Publish Property'}
+                      </>
+                    )}
 
-            <div>
+                  </button>
 
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Bedrooms Count
-                <span className="text-slate-600 ml-1">
-                  (Optional)
-                </span>
-              </label>
+                </div>
 
-              <input
-                type="number"
-                name="beds"
-                value={formData.beds}
-                onChange={handleInputChange}
-                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
-                placeholder="e.g., 2"
-              />
+              </form>
 
-            </div>
-
-            <div>
-
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Bathrooms Count
-                <span className="text-slate-600 ml-1">
-                  (Optional)
-                </span>
-              </label>
-
-              <input
-                type="number"
-                name="baths"
-                value={formData.baths}
-                onChange={handleInputChange}
-                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
-                placeholder="e.g., 2"
-              />
-
-            </div>
-
-            <div className="sm:col-span-2">
-
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.2em] text-green-700">
-                Floor Area Space (sqm)
-              </label>
-
-              <input
-                required
-                type="number"
-                name="sqft"
-                value={formData.sqft}
-                onChange={handleInputChange}
-                className="w-full bg-black text-green-400 px-4 py-3 rounded-lg border border-green-500/30 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-400/20 placeholder:text-green-900 text-sm font-mono transition"
-                placeholder="e.g., 75"
-              />
-
-            </div>
-
-          </div>
-
-          {editingId && (
-
-            <button
-              type="button"
-              onClick={resetForm}
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-semibold transition"
-            >
-              Cancel Edit
-            </button>
+            </section>
 
           )}
 
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-green-400/60 bg-green-500/10 py-4 text-xs font-black uppercase tracking-[0.2em] text-green-400 shadow-[0_0_25px_rgba(0,255,100,0.08)] transition hover:bg-green-500/20 hover:shadow-[0_0_30px_rgba(0,255,100,0.18)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          {/* =================================================
+              PROPERTIES
+              ================================================= */}
 
-            {status === 'loading' ? (
+          {activeSection === 'properties' && (
 
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Processing...
-              </>
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            ) : (
+              <div className="border-b border-slate-100 p-5 sm:p-6">
 
-              <>
-                <PlusCircle className="w-4 h-4" />
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-                {editingId
-                  ? 'Update Property'
-                  : 'Publish Listing'}
-              </>
+                  <div>
 
-            )}
+                    <h3 className="text-base font-black text-slate-900">
+                      Property Database
+                    </h3>
 
-          </button>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Manage all published property listings.
+                    </p>
 
-        </form>
+                  </div>
 
-        <div className="mt-12">
+                  <div className="relative w-full lg:max-w-sm">
 
-          <h2 className="mb-5 text-lg font-black uppercase tracking-[0.2em] text-green-400">
-            <span className="text-green-700">&gt;</span> PROPERTY_DATABASE
-          </h2>
+                    <Search
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
 
-          {loading ? (
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) =>
+                        setSearchTerm(e.target.value)
+                      }
+                      placeholder="Search properties..."
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    />
 
-            <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
-            </div>
+                  </div>
 
-          ) : properties.length === 0 ? (
+                </div>
 
-            <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl">
+              </div>
 
-              <ImageIcon className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+              {loading ? (
 
-              <p className="text-sm text-slate-500">
-                No property listings yet.
-              </p>
+                <CircuitLoader text="Loading properties..." />
 
-            </div>
+              ) : filteredProperties.length === 0 ? (
 
-          ) : (
+                <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
 
-            <div className="overflow-x-auto rounded-xl border border-green-900/70 bg-black/30">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <ImageIcon size={24} />
+                  </div>
 
-              <table className="w-full text-sm">
+                  <h4 className="text-sm font-bold text-slate-700">
+                    No properties found
+                  </h4>
 
-                <thead className="border-b border-green-900 bg-green-950/20">
+                  <p className="mt-1 max-w-sm text-xs text-slate-400">
+                    {searchTerm
+                      ? 'Try changing your search term.'
+                      : 'Your property listings will appear here.'}
+                  </p>
 
-                  <tr>
+                </div>
 
-                    <th className="p-3 text-left">
-                      Image
-                    </th>
+              ) : (
 
-                    <th className="text-left">
-                      Title
-                    </th>
+                <>
 
-                    <th className="text-left">
-                      Price
-                    </th>
+                  {/* DESKTOP TABLE */}
 
-                    <th className="text-left">
-                      Location
-                    </th>
+                  <div className="hidden overflow-x-auto md:block">
 
-                    <th className="text-left">
-                      Action
-                    </th>
+                    <table className="w-full">
 
-                  </tr>
+                      <thead className="border-b border-slate-100 bg-slate-50/70">
 
-                </thead>
+                        <tr>
 
-                <tbody>
+                          <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Property
+                          </th>
 
-                  {properties.map((property) => {
+                          <th className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Category
+                          </th>
 
-                    const coverImage =
-                      Array.isArray(property.images) &&
-                      property.images.length > 0
-                        ? property.images[0]
-                        : property.image;
+                          <th className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Price
+                          </th>
 
-                    const propertyId =
-                      property.id !== undefined
-                        ? property.id
-                        : property._id;
+                          <th className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Location
+                          </th>
 
-                    return (
+                          <th className="px-4 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Details
+                          </th>
 
-                      <tr
-                        key={String(propertyId)}
-                        className="border-b border-green-950 transition hover:bg-green-500/5"
-                      >
+                          <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Actions
+                          </th>
 
-                        <td className="p-2">
+                        </tr>
 
-                          <img
-                            src={
-                              coverImage ||
-                              '/placeholder-property.jpg'
-                            }
-                            alt={property.title}
-                            className="w-20 h-14 rounded-lg object-cover"
-                            onError={(e) => {
-                              (
-                                e.target as HTMLImageElement
-                              ).src =
-                                '/placeholder-property.jpg';
-                            }}
-                          />
+                      </thead>
 
-                        </td>
+                      <tbody>
 
-                        <td className="font-medium pr-4">
-                          {property.title}
-                        </td>
+                        {filteredProperties.map(
+                          (property) => {
 
-                        <td className="font-semibold text-blue-400 pr-4">
-                          ₱{property.price}
-                        </td>
+                            const coverImage =
+                              Array.isArray(
+                                property.images
+                              ) &&
+                              property.images.length > 0
+                                ? property.images[0]
+                                : property.image;
 
-                        <td className="text-slate-400 pr-4">
-                          {property.location}
-                        </td>
+                            const propertyId =
+                              property.id !== undefined
+                                ? property.id
+                                : property._id;
 
-                        <td>
+                            return (
 
-                          <div className="flex gap-2">
+                              <tr
+                                key={String(
+                                  propertyId
+                                )}
+                                className="border-b border-slate-100 transition hover:bg-slate-50/70"
+                              >
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleEdit(property)
-                              }
-                              className="rounded-lg border border-green-500/40 bg-green-500/10 p-2 text-green-400 transition hover:bg-green-500/20 hover:shadow-[0_0_15px_rgba(0,255,100,0.15)]"
-                              title="Edit property"
-                            >
-                              <Pencil size={16} />
-                            </button>
+                                {/* PROPERTY */}
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleDelete(propertyId!)
-                              }
-                              className="bg-red-600 hover:bg-red-700 p-2 rounded-lg transition"
-                              title="Delete property"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                                <td className="px-6 py-4">
+
+                                  <div className="flex min-w-[240px] items-center gap-3">
+
+                                    <img
+                                      src={
+                                        coverImage ||
+                                        '/placeholder-property.jpg'
+                                      }
+                                      alt={
+                                        property.title
+                                      }
+                                      className="h-14 w-20 rounded-xl object-cover"
+                                      onError={(
+                                        e
+                                      ) => {
+                                        (
+                                          e.currentTarget as HTMLImageElement
+                                        ).src =
+                                          '/placeholder-property.jpg';
+                                      }}
+                                    />
+
+                                    <div className="min-w-0">
+
+                                      <p className="truncate text-xs font-bold text-slate-900">
+                                        {
+                                          property.title
+                                        }
+                                      </p>
+
+                                      <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
+
+                                        <MapPin
+                                          size={10}
+                                        />
+
+                                        {
+                                          property.location
+                                        }
+
+                                      </p>
+
+                                    </div>
+
+                                  </div>
+
+                                </td>
+
+                                {/* CATEGORY */}
+
+                                <td className="px-4 py-4">
+
+                                  <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-600">
+                                    {property.tag}
+                                  </span>
+
+                                </td>
+
+                                {/* PRICE */}
+
+                                <td className="whitespace-nowrap px-4 py-4">
+
+                                  <p className="text-xs font-black text-slate-900">
+                                    ₱
+                                    {Number(
+                                      String(
+                                        property.price
+                                      ).replace(
+                                        /,/g,
+                                        ''
+                                      )
+                                    ).toLocaleString(
+                                      'en-US'
+                                    )}
+                                  </p>
+
+                                </td>
+
+                                {/* LOCATION */}
+
+                                <td className="max-w-[180px] px-4 py-4">
+
+                                  <p className="truncate text-xs text-slate-500">
+                                    {
+                                      property.location
+                                    }
+                                  </p>
+
+                                </td>
+
+                                {/* DETAILS */}
+
+                                <td className="px-4 py-4">
+
+                                  <div className="flex items-center gap-3 text-[10px] text-slate-400">
+
+                                    {property.beds !==
+                                      null &&
+                                      property.beds !==
+                                        undefined && (
+                                        <span className="flex items-center gap-1">
+                                          <BedDouble
+                                            size={
+                                              12
+                                            }
+                                          />
+                                          {
+                                            property.beds
+                                          }
+                                        </span>
+                                      )}
+
+                                    {property.baths !==
+                                      null &&
+                                      property.baths !==
+                                        undefined && (
+                                        <span className="flex items-center gap-1">
+                                          <Bath
+                                            size={
+                                              12
+                                            }
+                                          />
+                                          {
+                                            property.baths
+                                          }
+                                        </span>
+                                      )}
+
+                                    {property.sqft !==
+                                      null &&
+                                      property.sqft !==
+                                        undefined && (
+                                        <span className="flex items-center gap-1">
+                                          <Maximize
+                                            size={
+                                              12
+                                            }
+                                          />
+                                          {
+                                            property.sqft
+                                          }
+                                        </span>
+                                      )}
+
+                                  </div>
+
+                                </td>
+
+                                {/* ACTIONS */}
+
+                                <td className="px-6 py-4">
+
+                                  <div className="flex justify-end gap-2">
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleEdit(
+                                          property
+                                        )
+                                      }
+                                      className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                      title="Edit property"
+                                    >
+                                      <Pencil
+                                        size={
+                                          15
+                                        }
+                                      />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDelete(
+                                          propertyId!
+                                        )
+                                      }
+                                      className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                      title="Delete property"
+                                    >
+                                      <Trash2
+                                        size={
+                                          15
+                                        }
+                                      />
+                                    </button>
+
+                                  </div>
+
+                                </td>
+
+                              </tr>
+
+                            );
+                          }
+                        )}
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+
+                  {/* MOBILE CARDS */}
+
+                  <div className="space-y-3 p-4 md:hidden">
+
+                    {filteredProperties.map(
+                      (property) => {
+
+                        const coverImage =
+                          Array.isArray(
+                            property.images
+                          ) &&
+                          property.images.length > 0
+                            ? property.images[0]
+                            : property.image;
+
+                        const propertyId =
+                          property.id !== undefined
+                            ? property.id
+                            : property._id;
+
+                        return (
+
+                          <div
+                            key={String(
+                              propertyId
+                            )}
+                            className="overflow-hidden rounded-xl border border-slate-200"
+                          >
+
+                            <div className="flex gap-3 p-3">
+
+                              <img
+                                src={
+                                  coverImage ||
+                                  '/placeholder-property.jpg'
+                                }
+                                alt={
+                                  property.title
+                                }
+                                className="h-20 w-24 shrink-0 rounded-lg object-cover"
+                                onError={(
+                                  e
+                                ) => {
+                                  (
+                                    e.currentTarget as HTMLImageElement
+                                  ).src =
+                                    '/placeholder-property.jpg';
+                                }}
+                              />
+
+                              <div className="min-w-0 flex-1">
+
+                                <div className="mb-1 flex items-start justify-between gap-2">
+
+                                  <h4 className="line-clamp-2 text-xs font-bold text-slate-900">
+                                    {
+                                      property.title
+                                    }
+                                  </h4>
+
+                                  <span className="shrink-0 rounded-full bg-blue-50 px-2 py-1 text-[8px] font-bold text-blue-600">
+                                    {
+                                      property.tag
+                                    }
+                                  </span>
+
+                                </div>
+
+                                <p className="text-sm font-black text-slate-900">
+                                  ₱
+                                  {Number(
+                                    String(
+                                      property.price
+                                    ).replace(
+                                      /,/g,
+                                      ''
+                                    )
+                                  ).toLocaleString(
+                                    'en-US'
+                                  )}
+                                </p>
+
+                                <p className="mt-1 flex items-center gap-1 truncate text-[10px] text-slate-400">
+                                  <MapPin
+                                    size={10}
+                                  />
+                                  {
+                                    property.location
+                                  }
+                                </p>
+
+                              </div>
+
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-3 py-2">
+
+                              <div className="flex gap-3 text-[10px] text-slate-400">
+
+                                {property.beds !==
+                                  null &&
+                                  property.beds !==
+                                    undefined && (
+                                    <span className="flex items-center gap-1">
+                                      <BedDouble
+                                        size={
+                                          11
+                                        }
+                                      />
+                                      {
+                                        property.beds
+                                      }
+                                    </span>
+                                  )}
+
+                                {property.baths !==
+                                  null &&
+                                  property.baths !==
+                                    undefined && (
+                                    <span className="flex items-center gap-1">
+                                      <Bath
+                                        size={
+                                          11
+                                        }
+                                      />
+                                      {
+                                        property.baths
+                                      }
+                                    </span>
+                                  )}
+
+                                {property.sqft !==
+                                  null &&
+                                  property.sqft !==
+                                    undefined && (
+                                    <span className="flex items-center gap-1">
+                                      <Maximize
+                                        size={
+                                          11
+                                        }
+                                      />
+                                      {
+                                        property.sqft
+                                      }{' '}
+                                      sqm
+                                    </span>
+                                  )}
+
+                              </div>
+
+                              <div className="flex gap-1">
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleEdit(
+                                      property
+                                    )
+                                  }
+                                  className="rounded-lg p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                                >
+                                  <Pencil
+                                    size={14}
+                                  />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDelete(
+                                      propertyId!
+                                    )
+                                  }
+                                  className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                                >
+                                  <Trash2
+                                    size={14}
+                                  />
+                                </button>
+
+                              </div>
+
+                            </div>
 
                           </div>
 
-                        </td>
+                        );
+                      }
+                    )}
 
-                      </tr>
+                  </div>
 
-                    );
-                  })}
+                </>
 
-                </tbody>
+              )}
 
-              </table>
+            </section>
 
-            </div>
+          )}
+
+          {/* =================================================
+              SETTINGS
+              ================================================= */}
+
+          {activeSection === 'settings' && (
+
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+              <div className="border-b border-slate-100 p-6">
+
+                <div className="flex items-center gap-3">
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                    <Settings size={18} />
+                  </div>
+
+                  <div>
+
+                    <h3 className="text-base font-black text-slate-900">
+                      Admin Settings
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-400">
+                      Dashboard and account configuration.
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-2">
+
+                <div className="rounded-xl border border-slate-200 p-5">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <ShieldCheck size={18} />
+                    </div>
+
+                    <div>
+
+                      <p className="text-sm font-bold text-slate-900">
+                        Admin Security
+                      </p>
+
+                      <p className="text-xs text-slate-400">
+                        Protected administrator session
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-5 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2.5">
+
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+                    <span className="text-xs font-bold text-emerald-700">
+                      Security status: Active
+                    </span>
+
+                  </div>
+
+                </div>
+
+                <div className="rounded-xl border border-slate-200 p-5">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                      <Eye size={18} />
+                    </div>
+
+                    <div>
+
+                      <p className="text-sm font-bold text-slate-900">
+                        Marketplace
+                      </p>
+
+                      <p className="text-xs text-slate-400">
+                        Public property listings
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push('/marketplace')
+                    }
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                  >
+                    <Eye size={14} />
+                    View Marketplace
+                  </button>
+
+                </div>
+
+                <div className="rounded-xl border border-slate-200 p-5 lg:col-span-2">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                      <Bell size={18} />
+                    </div>
+
+                    <div>
+
+                      <p className="text-sm font-bold text-slate-900">
+                        Welcome Voice
+                      </p>
+
+                      <p className="text-xs text-slate-400">
+                        Browser voice greeting on dashboard entry
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="mt-4 rounded-lg bg-slate-50 p-3">
+
+                    <p className="text-xs text-slate-500">
+                      "Hi Cylex! Welcome to Brea88 Realty Admin
+                      Dashboard."
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </section>
 
           )}
 
         </div>
 
-      </div>
+        {/* ===================================================
+            FOOTER
+            =================================================== */}
 
+        <footer className="border-t border-slate-200 bg-white">
+
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-2 px-4 py-5 text-center sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 lg:text-left">
+
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+              BREA 88 REALTY OPC
+            </p>
+
+            <p className="text-[10px] text-slate-400">
+              Admin Management System
+            </p>
+
+          </div>
+
+        </footer>
+
+      </main>
+
+      {/* =====================================================
+          LOADING OVERLAY DURING SAVE
+          ===================================================== */}
+
+      {status === 'loading' && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+
+          <div className="rounded-3xl bg-white px-10 py-9 shadow-2xl">
+
+            <CircuitLoader text="Processing property..." />
+
+          </div>
+
+        </div>
+      )}
+
+      {/* =====================================================
+          LOADER STYLES
+          ===================================================== */}
+
+      <style jsx global>{`
+        .circuit-loader {
+          position: relative;
+          width: 110px;
+          height: 110px;
+          transform-style: preserve-3d;
+          animation: circuitFloat 3s ease-in-out infinite;
+        }
+
+        .chip {
+          position: absolute;
+          left: 25px;
+          top: 25px;
+          width: 60px;
+          height: 60px;
+          border-radius: 12px;
+          background: linear-gradient(
+            145deg,
+            #1e293b,
+            #020617
+          );
+          border: 2px solid #334155;
+          box-shadow:
+            0 0 0 5px rgba(59, 130, 246, 0.05),
+            0 0 35px rgba(37, 99, 235, 0.25),
+            inset 0 0 20px rgba(59, 130, 246, 0.1);
+          z-index: 3;
+        }
+
+        .chip-core {
+          position: absolute;
+          inset: 12px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 5px;
+        }
+
+        .chip-core span {
+          border-radius: 3px;
+          background: #2563eb;
+          box-shadow: 0 0 10px #2563eb;
+          animation: chipPulse 1.4s ease-in-out infinite;
+        }
+
+        .chip-core span:nth-child(2) {
+          animation-delay: 0.15s;
+        }
+
+        .chip-core span:nth-child(3) {
+          animation-delay: 0.3s;
+        }
+
+        .chip-core span:nth-child(4) {
+          animation-delay: 0.45s;
+        }
+
+        .pin {
+          position: absolute;
+          width: 18px;
+          height: 3px;
+          border-radius: 2px;
+          background: #475569;
+          z-index: 1;
+        }
+
+        .pin-1 {
+          left: 8px;
+          top: 32px;
+        }
+
+        .pin-2 {
+          left: 84px;
+          top: 32px;
+        }
+
+        .pin-3 {
+          left: 8px;
+          top: 47px;
+        }
+
+        .pin-4 {
+          left: 84px;
+          top: 47px;
+        }
+
+        .pin-5 {
+          left: 32px;
+          top: 8px;
+          transform: rotate(90deg);
+        }
+
+        .pin-6 {
+          left: 62px;
+          top: 8px;
+          transform: rotate(90deg);
+        }
+
+        .pin-7 {
+          left: 32px;
+          top: 84px;
+          transform: rotate(90deg);
+        }
+
+        .pin-8 {
+          left: 62px;
+          top: 84px;
+          transform: rotate(90deg);
+        }
+
+        .circuit-line {
+          position: absolute;
+          background: #2563eb;
+          opacity: 0.5;
+          box-shadow: 0 0 8px #2563eb;
+          animation: linePulse 1.5s ease-in-out infinite;
+        }
+
+        .line-1 {
+          left: 0;
+          top: 33px;
+          width: 28px;
+          height: 1px;
+        }
+
+        .line-2 {
+          right: 0;
+          top: 48px;
+          width: 28px;
+          height: 1px;
+          animation-delay: 0.3s;
+        }
+
+        .line-3 {
+          left: 33px;
+          top: 0;
+          width: 1px;
+          height: 28px;
+          animation-delay: 0.6s;
+        }
+
+        .line-4 {
+          right: 33px;
+          bottom: 0;
+          width: 1px;
+          height: 28px;
+          animation-delay: 0.9s;
+        }
+
+        @keyframes chipPulse {
+          0%,
+          100% {
+            opacity: 0.35;
+            transform: scale(0.85);
+          }
+
+          50% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes linePulse {
+          0%,
+          100% {
+            opacity: 0.2;
+          }
+
+          50% {
+            opacity: 1;
+          }
+        }
+
+        @keyframes circuitFloat {
+          0%,
+          100% {
+            transform: translateY(0) rotateX(0deg);
+          }
+
+          50% {
+            transform: translateY(-8px) rotateX(4deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }
-
