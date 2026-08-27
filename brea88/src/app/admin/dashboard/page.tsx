@@ -483,6 +483,23 @@ export default function AdminDashboard() {
     });
   };
 
+   useEffect(() => {
+    const welcomeMessage = new SpeechSynthesisUtterance(
+      'Hi Cylex! Welcome to Brea88 Realty Admin Dashboard.'
+    );
+
+    welcomeMessage.rate = 0.9;
+    welcomeMessage.pitch = 1;
+    welcomeMessage.volume = 1;
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(welcomeMessage);
+
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-black text-green-400 py-8 px-4 sm:px-6 lg:px-8 font-mono">
       <div className="pointer-events-none fixed inset-0">
