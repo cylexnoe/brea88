@@ -1,6 +1,7 @@
 'use client';
 
 import React, {
+  Suspense,
   useEffect,
   useMemo,
   useState,
@@ -27,7 +28,7 @@ import {
   ChevronRight,
   User,
 } from 'lucide-react';
-
+import { useSearchParams } from 'next/navigation';
 import PropertyCard from '../propertyCard';
 
 interface Agent {
@@ -64,8 +65,12 @@ const CATEGORIES = [
   'Commercial',
   'Investment',
 ];
+ function MarketplaceContent() {
+  const searchParams = useSearchParams();
 
-export default function MarketplacePage() {
+  const agentSlug =
+    searchParams.get('agent');
+
   const [properties, setProperties] =
     useState<Property[]>([]);
 
@@ -168,6 +173,9 @@ export default function MarketplacePage() {
               property.tag
                 .toLowerCase()
                 .includes(query);
+            const matchesAgent =
+              !agentSlug ||
+              property.agent?.slug === agentSlug;
 
             const matchesTag =
               selectedTag === 'All' ||
@@ -180,10 +188,11 @@ export default function MarketplacePage() {
               ) <= maxPrice;
 
             return (
-              matchesSearch &&
-              matchesTag &&
-              matchesPrice
-            );
+                    matchesSearch &&
+                    matchesTag &&
+                    matchesPrice &&
+                    matchesAgent
+                  );
           }
         );
 
@@ -1272,4 +1281,23 @@ export default function MarketplacePage() {
     </div>
   );
 }
+  export default function MarketplacePage() {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center bg-slate-50">
+            <div className="text-center">
+              <Loader2 className="mx-auto h-9 w-9 animate-spin text-blue-900" />
+
+              <p className="mt-4 text-sm font-semibold text-slate-500">
+                Loading marketplace...
+              </p>
+            </div>
+          </div>
+        }
+      >
+        <MarketplaceContent />
+      </Suspense>
+    );
+  }
 

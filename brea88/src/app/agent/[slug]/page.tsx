@@ -311,10 +311,13 @@ export default function AgentProfilePage({
               <div className="mt-8 border-t border-slate-200 pt-6">
                 <button
                   type="button"
-                  onClick={() => router.push('/home')}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3 font-bold text-white transition hover:bg-slate-800 active:scale-[0.98]"
+                  onClick={() =>
+                    router.push(
+                      `/marketplace?agent=${encodeURIComponent(agent.slug)}`
+                    )
+                  }
+                  className="..."
                 >
-                  <Building2 className="h-5 w-5" />
                   Property
                 </button>
               </div>

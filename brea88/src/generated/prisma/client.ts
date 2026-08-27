@@ -51,3 +51,8 @@ export type Agent = Prisma.AgentModel
  * 
  */
 export type Property = Prisma.PropertyModel
+/**
+ * Model Inquiry
+ * 
+ */
+export type Inquiry = Prisma.InquiryModel

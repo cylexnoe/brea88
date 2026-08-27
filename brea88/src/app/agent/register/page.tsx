@@ -243,7 +243,7 @@ export default function AgentRegisterPage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="09XXXXXXXXX"
+                  placeholder="+63"
                   autoComplete="tel"
                   className="w-full bg-transparent px-3 py-3.5 outline-none text-sm"
                 />

@@ -297,6 +297,7 @@ export type AgentWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   properties?: Prisma.PropertyListRelationFilter
+  inquiries?: Prisma.InquiryListRelationFilter
 }
 
 export type AgentOrderByWithRelationInput = {
@@ -316,6 +317,7 @@ export type AgentOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   properties?: Prisma.PropertyOrderByRelationAggregateInput
+  inquiries?: Prisma.InquiryOrderByRelationAggregateInput
 }
 
 export type AgentWhereUniqueInput = Prisma.AtLeast<{
@@ -338,6 +340,7 @@ export type AgentWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   properties?: Prisma.PropertyListRelationFilter
+  inquiries?: Prisma.InquiryListRelationFilter
 }, "id" | "email" | "slug">
 
 export type AgentOrderByWithAggregationInput = {
@@ -400,6 +403,7 @@ export type AgentCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   properties?: Prisma.PropertyCreateNestedManyWithoutAgentInput
+  inquiries?: Prisma.InquiryCreateNestedManyWithoutAgentInput
 }
 
 export type AgentUncheckedCreateInput = {
@@ -419,6 +423,7 @@ export type AgentUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   properties?: Prisma.PropertyUncheckedCreateNestedManyWithoutAgentInput
+  inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutAgentInput
 }
 
 export type AgentUpdateInput = {
@@ -437,6 +442,7 @@ export type AgentUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   properties?: Prisma.PropertyUpdateManyWithoutAgentNestedInput
+  inquiries?: Prisma.InquiryUpdateManyWithoutAgentNestedInput
 }
 
 export type AgentUncheckedUpdateInput = {
@@ -456,6 +462,7 @@ export type AgentUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   properties?: Prisma.PropertyUncheckedUpdateManyWithoutAgentNestedInput
+  inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutAgentNestedInput
 }
 
 export type AgentCreateManyInput = {
@@ -618,6 +625,22 @@ export type AgentUpdateOneWithoutPropertiesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AgentUpdateToOneWithWhereWithoutPropertiesInput, Prisma.AgentUpdateWithoutPropertiesInput>, Prisma.AgentUncheckedUpdateWithoutPropertiesInput>
 }
 
+export type AgentCreateNestedOneWithoutInquiriesInput = {
+  create?: Prisma.XOR<Prisma.AgentCreateWithoutInquiriesInput, Prisma.AgentUncheckedCreateWithoutInquiriesInput>
+  connectOrCreate?: Prisma.AgentCreateOrConnectWithoutInquiriesInput
+  connect?: Prisma.AgentWhereUniqueInput
+}
+
+export type AgentUpdateOneWithoutInquiriesNestedInput = {
+  create?: Prisma.XOR<Prisma.AgentCreateWithoutInquiriesInput, Prisma.AgentUncheckedCreateWithoutInquiriesInput>
+  connectOrCreate?: Prisma.AgentCreateOrConnectWithoutInquiriesInput
+  upsert?: Prisma.AgentUpsertWithoutInquiriesInput
+  disconnect?: Prisma.AgentWhereInput | boolean
+  delete?: Prisma.AgentWhereInput | boolean
+  connect?: Prisma.AgentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AgentUpdateToOneWithWhereWithoutInquiriesInput, Prisma.AgentUpdateWithoutInquiriesInput>, Prisma.AgentUncheckedUpdateWithoutInquiriesInput>
+}
+
 export type AgentCreateWithoutPropertiesInput = {
   fullName: string
   email: string
@@ -633,6 +656,7 @@ export type AgentCreateWithoutPropertiesInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  inquiries?: Prisma.InquiryCreateNestedManyWithoutAgentInput
 }
 
 export type AgentUncheckedCreateWithoutPropertiesInput = {
@@ -651,6 +675,7 @@ export type AgentUncheckedCreateWithoutPropertiesInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutAgentInput
 }
 
 export type AgentCreateOrConnectWithoutPropertiesInput = {
@@ -684,6 +709,7 @@ export type AgentUpdateWithoutPropertiesInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inquiries?: Prisma.InquiryUpdateManyWithoutAgentNestedInput
 }
 
 export type AgentUncheckedUpdateWithoutPropertiesInput = {
@@ -702,6 +728,97 @@ export type AgentUncheckedUpdateWithoutPropertiesInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutAgentNestedInput
+}
+
+export type AgentCreateWithoutInquiriesInput = {
+  fullName: string
+  email: string
+  passwordHash: string
+  role?: string
+  slug: string
+  phone?: string | null
+  address?: string | null
+  profileImage?: string | null
+  bio?: string | null
+  facebook?: string | null
+  messenger?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  properties?: Prisma.PropertyCreateNestedManyWithoutAgentInput
+}
+
+export type AgentUncheckedCreateWithoutInquiriesInput = {
+  id?: number
+  fullName: string
+  email: string
+  passwordHash: string
+  role?: string
+  slug: string
+  phone?: string | null
+  address?: string | null
+  profileImage?: string | null
+  bio?: string | null
+  facebook?: string | null
+  messenger?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  properties?: Prisma.PropertyUncheckedCreateNestedManyWithoutAgentInput
+}
+
+export type AgentCreateOrConnectWithoutInquiriesInput = {
+  where: Prisma.AgentWhereUniqueInput
+  create: Prisma.XOR<Prisma.AgentCreateWithoutInquiriesInput, Prisma.AgentUncheckedCreateWithoutInquiriesInput>
+}
+
+export type AgentUpsertWithoutInquiriesInput = {
+  update: Prisma.XOR<Prisma.AgentUpdateWithoutInquiriesInput, Prisma.AgentUncheckedUpdateWithoutInquiriesInput>
+  create: Prisma.XOR<Prisma.AgentCreateWithoutInquiriesInput, Prisma.AgentUncheckedCreateWithoutInquiriesInput>
+  where?: Prisma.AgentWhereInput
+}
+
+export type AgentUpdateToOneWithWhereWithoutInquiriesInput = {
+  where?: Prisma.AgentWhereInput
+  data: Prisma.XOR<Prisma.AgentUpdateWithoutInquiriesInput, Prisma.AgentUncheckedUpdateWithoutInquiriesInput>
+}
+
+export type AgentUpdateWithoutInquiriesInput = {
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  properties?: Prisma.PropertyUpdateManyWithoutAgentNestedInput
+}
+
+export type AgentUncheckedUpdateWithoutInquiriesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  fullName?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  profileImage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  properties?: Prisma.PropertyUncheckedUpdateManyWithoutAgentNestedInput
 }
 
 
@@ -711,10 +828,12 @@ export type AgentUncheckedUpdateWithoutPropertiesInput = {
 
 export type AgentCountOutputType = {
   properties: number
+  inquiries: number
 }
 
 export type AgentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   properties?: boolean | AgentCountOutputTypeCountPropertiesArgs
+  inquiries?: boolean | AgentCountOutputTypeCountInquiriesArgs
 }
 
 /**
@@ -732,6 +851,13 @@ export type AgentCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
  */
 export type AgentCountOutputTypeCountPropertiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.PropertyWhereInput
+}
+
+/**
+ * AgentCountOutputType without action
+ */
+export type AgentCountOutputTypeCountInquiriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.InquiryWhereInput
 }
 
 
@@ -752,6 +878,7 @@ export type AgentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   createdAt?: boolean
   updatedAt?: boolean
   properties?: boolean | Prisma.Agent$propertiesArgs<ExtArgs>
+  inquiries?: boolean | Prisma.Agent$inquiriesArgs<ExtArgs>
   _count?: boolean | Prisma.AgentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["agent"]>
 
@@ -812,6 +939,7 @@ export type AgentSelectScalar = {
 export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "passwordHash" | "role" | "slug" | "phone" | "address" | "profileImage" | "bio" | "facebook" | "messenger" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["agent"]>
 export type AgentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   properties?: boolean | Prisma.Agent$propertiesArgs<ExtArgs>
+  inquiries?: boolean | Prisma.Agent$inquiriesArgs<ExtArgs>
   _count?: boolean | Prisma.AgentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AgentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -821,6 +949,7 @@ export type $AgentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name: "Agent"
   objects: {
     properties: Prisma.$PropertyPayload<ExtArgs>[]
+    inquiries: Prisma.$InquiryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1233,6 +1362,7 @@ readonly fields: AgentFieldRefs;
 export interface Prisma__AgentClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   properties<T extends Prisma.Agent$propertiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Agent$propertiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PropertyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inquiries<T extends Prisma.Agent$inquiriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Agent$inquiriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InquiryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1691,6 +1821,30 @@ export type Agent$propertiesArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.PropertyScalarFieldEnum | Prisma.PropertyScalarFieldEnum[]
+}
+
+/**
+ * Agent.inquiries
+ */
+export type Agent$inquiriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Inquiry
+   */
+  select?: Prisma.InquirySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Inquiry
+   */
+  omit?: Prisma.InquiryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InquiryInclude<ExtArgs> | null
+  where?: Prisma.InquiryWhereInput
+  orderBy?: Prisma.InquiryOrderByWithRelationInput | Prisma.InquiryOrderByWithRelationInput[]
+  cursor?: Prisma.InquiryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.InquiryScalarFieldEnum | Prisma.InquiryScalarFieldEnum[]
 }
 
 /**
