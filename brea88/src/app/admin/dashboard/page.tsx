@@ -1234,7 +1234,7 @@ export default function AdminDashboard() {
         );
       } finally {
         router.replace(
-          '/admin/login'
+          '/'
         );
 
         router.refresh();
