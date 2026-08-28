@@ -192,7 +192,7 @@ export default function PropertyCard({
       >
         {/* CARD IMAGE */}
 
-        <div className="relative h-60 overflow-hidden bg-slate-100">
+        <div className="relative h-36 overflow-hidden bg-slate-100 sm:h-48 md:h-60">
           {propertyImages.length > 0 ? (
             <img
               src={propertyImages[0]}
@@ -231,15 +231,15 @@ export default function PropertyCard({
 
         {/* CARD CONTENT */}
 
-        <div className="p-6">
+        <div className="p-3 sm:p-4 md:p-6">
 
           {/* FORMATTED PRICE */}
 
-          <span className="text-2xl font-black text-blue-900">
+          <span className="text-base font-black text-blue-900 sm:text-xl md:text-2xl">
             ₱{formatPrice(property.price)}
           </span>
 
-          <h3 className="mt-2 text-lg font-bold text-slate-900 transition-colors duration-300 group-hover:text-blue-600">
+          <h3 className="mt-1 text-sm font-bold leading-tight text-slate-900 transition-colors duration-300 group-hover:text-blue-600 sm:mt-2 sm:text-base md:text-lg">
             {property.title}
           </h3>
 
@@ -958,7 +958,7 @@ export default function PropertyCard({
 
             {/* CONTENT */}
 
-            <div className="p-6">
+            <div className="p-3 sm:p-4 md:p-6">
 
               {property.agent ? (
                 <>

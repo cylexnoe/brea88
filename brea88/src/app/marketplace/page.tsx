@@ -1052,32 +1052,24 @@ function MarketplaceContent() {
         ) : filteredAndSortedProperties.length >
           0 ? (
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-6">
 
             {filteredAndSortedProperties.map(
               (property) => (
 
                 <button
-                  key={
-                    property.id
-                  }
+                  key={property.id}
                   type="button"
                   onClick={() =>
-                    openProperty(
-                      property
-                    )
+                    openProperty(property)
                   }
                   className="group block w-full rounded-2xl text-left transition duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
 
                   <div className="pointer-events-none">
-
                     <PropertyCard
-                      property={
-                        property
-                      }
+                      property={property}
                     />
-
                   </div>
 
                 </button>
