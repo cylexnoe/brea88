@@ -315,7 +315,12 @@ const [inquiryError, setInquiryError] = useState('');
                 </p>
 
                 <h3 className="text-3xl md:text-4xl font-black text-blue-900 mt-1">
-                  ₱{property.price}
+                  ₱ {Number(
+                    String(property.price).replace(/[^0-9.]/g, '')
+                  ).toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
                 </h3>
 
                 {property.totalcp && (
