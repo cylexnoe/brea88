@@ -6,8 +6,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Brea 88 Realty OPC",
-  description: "Discover exceptional spaces crafted for you.",
+  title: 'BREA 88 Realty',
+  description: 'BREA 88 Realty Property Management System',
+  icons: {
+    icon: '/img/LOGO.png',
+    shortcut: '/img/LOGO.png',
+    apple: '/img/LOGO.png',
+  },
 };
 
 export default function RootLayout({
