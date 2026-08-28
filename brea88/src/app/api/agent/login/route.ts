@@ -272,7 +272,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: `Agent login server error: ${errorMessage}`,
+        message: 'Unable to process login.',
       },
       { status: 500 }
     );
