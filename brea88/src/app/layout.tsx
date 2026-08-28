@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   title: 'BREA 88 Realty',
   description: 'BREA 88 Realty Property Management System',
   icons: {
-    icon: '/img/LOGO.png',
-    shortcut: '/img/LOGO.png',
-    apple: '/img/LOGO.png',
+    icon: '/img/browse_logo.png',
+    shortcut: '/img/browse_logo.png',
+    apple: '/img/browse_logo.png',
   },
 };
 
