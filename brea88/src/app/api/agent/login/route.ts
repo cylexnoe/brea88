@@ -253,15 +253,16 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (error) {
-    console.error(
-      '=================================================='
-    );
-    console.error('POST /api/agent/login FAILED');
-    console.error(error);
-    console.error(
-      '=================================================='
-    );
+    } catch (error) {
+    console.error('========== AGENT LOGIN ERROR ==========');
+    console.error('Error:', error);
+
+    if (error instanceof Error) {
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+    }
+
+    console.error('========================================');
 
     return NextResponse.json(
       {
