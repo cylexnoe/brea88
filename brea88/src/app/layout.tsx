@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'BREA 88 Realty',
+  title: 'BREA 88 Realty OPC',
   description: 'BREA 88 Realty Property Management System',
   icons: {
     icon: '/img/browse_logo.png',
