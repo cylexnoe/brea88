@@ -65,9 +65,6 @@ export default function AdminLoginPage() {
             return;
           }
 
-          /*
-          * Speak only after successful authentication.
-          */
           if (typeof window !== 'undefined') {
             window.speechSynthesis.cancel();
 
