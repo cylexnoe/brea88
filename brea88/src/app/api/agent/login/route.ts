@@ -253,7 +253,7 @@ export async function POST(request: Request) {
     });
 
     return response;
-    } catch (error) {
+      } catch (error) {
     console.error('========== AGENT LOGIN ERROR ==========');
     console.error('Error:', error);
 
@@ -264,10 +264,15 @@ export async function POST(request: Request) {
 
     console.error('========================================');
 
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Unknown server error';
+
     return NextResponse.json(
       {
         success: false,
-        message: 'Unable to process login.',
+        message: `Agent login server error: ${errorMessage}`,
       },
       { status: 500 }
     );
