@@ -325,7 +325,12 @@ const [inquiryError, setInquiryError] = useState('');
 
                 {property.totalcp && (
                   <p className="text-md text-slate-500 mt-1">
-                    Total Contract Price: {property.totalcp}
+                    Total Contract Price: ₱ {Number(
+                      String(property.totalcp).replace(/[^0-9.]/g, '')
+                    ).toLocaleString('en-US', {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
                   </p>
                 )}
               </div>
