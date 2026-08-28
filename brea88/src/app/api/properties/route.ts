@@ -7,10 +7,22 @@ function cleanImages(value: unknown): string[] {
     return [];
   }
 
-  return value.filter(
-    (item): item is string =>
-      typeof item === 'string' && item.trim().length > 0
-  ).map((item) => item.trim());
+  return value
+    .filter(
+      (item): item is string =>
+        typeof item === 'string' && item.trim().length > 0
+    )
+    .map((item) => item.trim());
+}
+
+function cleanOptionalString(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const cleaned = value.trim();
+
+  return cleaned.length > 0 ? cleaned : null;
 }
 
 function parseOptionalInteger(value: unknown): number | null {
@@ -108,6 +120,10 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
+    // ==========================================
+    // BASIC PROPERTY INFORMATION
+    // ==========================================
+
     const title =
       typeof body.title === 'string'
         ? body.title.trim()
@@ -128,6 +144,28 @@ export async function POST(request: Request) {
         ? body.location.trim()
         : '';
 
+    // ==========================================
+    // PROPERTY CLASSIFICATION
+    // ==========================================
+
+    const category = cleanOptionalString(body.category);
+
+    const propertyType = cleanOptionalString(
+      body.propertyType
+    );
+
+    const houseType = cleanOptionalString(
+      body.houseType
+    );
+
+    const storey = cleanOptionalString(
+      body.storey
+    );
+
+    // ==========================================
+    // IMAGES
+    // ==========================================
+
     const image =
       typeof body.image === 'string'
         ? body.image.trim()
@@ -135,8 +173,14 @@ export async function POST(request: Request) {
 
     const images = cleanImages(body.images);
 
+    // ==========================================
+    // PROPERTY DETAILS
+    // ==========================================
+
     const beds = parseOptionalInteger(body.beds);
+
     const baths = parseOptionalInteger(body.baths);
+
     const sqft = parseOptionalFloat(body.sqft);
 
     // ==========================================
@@ -157,7 +201,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Property category is required.',
+          message: 'Property tag is required.',
         },
         { status: 400 }
       );
@@ -246,13 +290,13 @@ export async function POST(request: Request) {
       images.length > 0
         ? images
         : image
-        ? [image]
-        : [];
+          ? [image]
+          : [];
 
     const coverImage = finalImages[0];
 
     // ==========================================
-    // CREATE DATABASE RECORD
+    // CREATE PROPERTY
     // ==========================================
 
     const property = await prisma.property.create({
@@ -261,8 +305,15 @@ export async function POST(request: Request) {
         tag,
         price,
         location,
+
+        category,
+        propertyType,
+        houseType,
+        storey,
+
         image: coverImage,
         images: finalImages,
+
         beds,
         baths,
         sqft,
@@ -327,6 +378,10 @@ export async function PUT(request: Request) {
       );
     }
 
+    // ==========================================
+    // BASIC PROPERTY INFORMATION
+    // ==========================================
+
     const title =
       typeof body.title === 'string'
         ? body.title.trim()
@@ -347,6 +402,28 @@ export async function PUT(request: Request) {
         ? body.location.trim()
         : '';
 
+    // ==========================================
+    // PROPERTY CLASSIFICATION
+    // ==========================================
+
+    const category = cleanOptionalString(body.category);
+
+    const propertyType = cleanOptionalString(
+      body.propertyType
+    );
+
+    const houseType = cleanOptionalString(
+      body.houseType
+    );
+
+    const storey = cleanOptionalString(
+      body.storey
+    );
+
+    // ==========================================
+    // IMAGES
+    // ==========================================
+
     const image =
       typeof body.image === 'string'
         ? body.image.trim()
@@ -354,8 +431,14 @@ export async function PUT(request: Request) {
 
     const images = cleanImages(body.images);
 
+    // ==========================================
+    // PROPERTY DETAILS
+    // ==========================================
+
     const beds = parseOptionalInteger(body.beds);
+
     const baths = parseOptionalInteger(body.baths);
+
     const sqft = parseOptionalFloat(body.sqft);
 
     // ==========================================
@@ -376,7 +459,7 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Property category is required.',
+          message: 'Property tag is required.',
         },
         { status: 400 }
       );
@@ -412,6 +495,51 @@ export async function PUT(request: Request) {
       );
     }
 
+    if (
+      body.beds !== undefined &&
+      body.beds !== null &&
+      body.beds !== '' &&
+      beds === null
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid number of bedrooms.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      body.baths !== undefined &&
+      body.baths !== null &&
+      body.baths !== '' &&
+      baths === null
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid number of bathrooms.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      body.sqft !== undefined &&
+      body.sqft !== null &&
+      body.sqft !== '' &&
+      sqft === null
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid floor area.',
+        },
+        { status: 400 }
+      );
+    }
+
     // ==========================================
     // PREPARE IMAGES
     // ==========================================
@@ -420,13 +548,13 @@ export async function PUT(request: Request) {
       images.length > 0
         ? images
         : image
-        ? [image]
-        : [];
+          ? [image]
+          : [];
 
     const coverImage = finalImages[0];
 
     // ==========================================
-    // UPDATE DATABASE RECORD
+    // UPDATE PROPERTY
     // ==========================================
 
     const property = await prisma.property.update({
@@ -438,8 +566,15 @@ export async function PUT(request: Request) {
         tag,
         price,
         location,
+
+        category,
+        propertyType,
+        houseType,
+        storey,
+
         image: coverImage,
         images: finalImages,
+
         beds,
         baths,
         sqft,
@@ -472,3 +607,65 @@ export async function PUT(request: Request) {
   }
 }
 
+// ==========================================
+// DELETE PROPERTY
+// ==========================================
+
+export async function DELETE(request: Request) {
+  try {
+    const authenticated = await isAdminAuthenticated();
+
+    if (!authenticated) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unauthorized.',
+        },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+
+    const id = Number(searchParams.get('id'));
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid property ID.',
+        },
+        { status: 400 }
+      );
+    }
+
+    await prisma.property.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Property deleted successfully.',
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('DELETE /api/properties error:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to delete property.',
+        debug:
+          process.env.NODE_ENV !== 'production' &&
+          error instanceof Error
+            ? error.message
+            : undefined,
+      },
+      { status: 500 }
+    );
+  }
+}

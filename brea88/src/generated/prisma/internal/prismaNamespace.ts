@@ -688,14 +688,14 @@ export const AgentScalarFieldEnum = {
   role: 'role',
   slug: 'slug',
   phone: 'phone',
-  address: 'address',
   profileImage: 'profileImage',
   bio: 'bio',
   facebook: 'facebook',
   messenger: 'messenger',
   isActive: 'isActive',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  address: 'address'
 } as const
 
 export type AgentScalarFieldEnum = (typeof AgentScalarFieldEnum)[keyof typeof AgentScalarFieldEnum]
@@ -705,16 +705,20 @@ export const PropertyScalarFieldEnum = {
   id: 'id',
   title: 'title',
   tag: 'tag',
+  category: 'category',
+  propertyType: 'propertyType',
+  houseType: 'houseType',
+  storey: 'storey',
   price: 'price',
   location: 'location',
   image: 'image',
-  images: 'images',
   beds: 'beds',
   baths: 'baths',
   sqft: 'sqft',
-  agentId: 'agentId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  images: 'images',
+  agentId: 'agentId'
 } as const
 
 export type PropertyScalarFieldEnum = (typeof PropertyScalarFieldEnum)[keyof typeof PropertyScalarFieldEnum]

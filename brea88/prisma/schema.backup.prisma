@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Agent {
+  id           Int     @id @default(autoincrement())
+  fullName     String
+  email        String  @unique
+  passwordHash String
+  role         String  @default("Agent")
+  slug         String  @unique
+  phone        String?
+  address      String?
+  profileImage String?
+  bio          String?
+  facebook     String?
+  messenger    String?
+  isActive     Boolean @default(true)
+
+  properties Property[]
+  inquiries  Inquiry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([role])
+  @@map("agents")
+}
+
+model Property {
+  id    Int    @id @default(autoincrement())
+  title String
+
+  // Main classification
+  tag String
+
+  // Specific property classification
+  propertyType String?
+
+  // House-specific information
+  houseType String?
+  storey    String?
+
+  price    String
+  location String
+
+  image  String
+  images String[] @default([])
+
+  beds  Int?
+  baths Int?
+  sqft  Float?
+
+  agentId   Int?
+  agent     Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  inquiries Inquiry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tag])
+  @@index([propertyType])
+  @@index([houseType])
+  @@index([storey])
+  @@index([location])
+  @@index([agentId])
+  @@map("properties")
+}
+
+model Inquiry {
+  id Int @id @default(autoincrement())
+
+  name    String
+  email   String
+  phone   String
+  message String
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  agentId Int?
+  agent   Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  status String @default("New")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([agentId])
+  @@index([status])
+  @@map("inquiries")
+}

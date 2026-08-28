@@ -27,7 +27,11 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  Home,
+  Layers3,
+  Tag,
 } from 'lucide-react';
+
 import { useSearchParams } from 'next/navigation';
 import PropertyCard from '../propertyCard';
 
@@ -47,29 +51,92 @@ interface Agent {
 interface Property {
   id: number;
   title: string;
+
+  /*
+   * Existing field
+   */
   tag: string;
+
+  /*
+   * New classification fields
+   */
+  category?: string | null;
+  propertyType?: string | null;
+  houseType?: string | null;
+  storey?: string | null;
+
   price: string;
   location: string;
+
   image: string;
   images?: string[];
+
   beds?: number | null;
   baths?: number | null;
   sqft?: number | null;
+
   agent?: Agent | null;
   agentId?: number | null;
 }
 
-const CATEGORIES = [
+/* =========================================================
+   CLASSIFICATION OPTIONS
+========================================================= */
+
+const PROPERTY_CATEGORIES = [
   'All',
-  'Residential',
-  'Commercial',
-  'Investment',
+  'House & Lot',
+  'Condominiums',
+  'For Rent',
+  'For Sale by Owner',
 ];
- function MarketplaceContent() {
+
+const PROPERTY_TYPES = [
+  'Pre-Selling House & Lot',
+  'RFO House & Lot',
+  'Rent To Own House & Lot',
+  'RFO Subdivision House & Lot',
+  'Lot Only Subdivision',
+
+  'Pre-Selling Condominium',
+  'RFO Condominium',
+  'Rent To Own Condominium',
+  'CondoTel',
+
+  'Condominiums For Rent',
+  'House For Rent',
+  'Warehouse For Rent',
+  'Commercial Space For Rent',
+
+  'For Sale by Owner',
+];
+
+const HOUSE_TYPES = [
+  'Townhouse or Row House',
+  'Single Attached',
+  'Single Detached',
+  'Duplex',
+];
+
+const STOREY_OPTIONS = [
+  '1',
+  '2',
+  '3',
+  '4+',
+];
+
+/* =========================================================
+   HELPER
+========================================================= */
+
+function MarketplaceContent() {
   const searchParams = useSearchParams();
 
-  const agentSlug =
-    searchParams.get('agent');
+  const agentSlug = searchParams.get('agent');
+
+  /* =======================================================
+     STATE
+  ======================================================= */
 
   const [properties, setProperties] =
     useState<Property[]>([]);
@@ -80,11 +147,20 @@ const CATEGORIES = [
   const [searchQuery, setSearchQuery] =
     useState('');
 
-  const [selectedTag, setSelectedTag] =
+  const [selectedCategory, setSelectedCategory] =
+    useState('All');
+
+  const [selectedPropertyType, setSelectedPropertyType] =
+    useState('All');
+
+  const [selectedHouseType, setSelectedHouseType] =
+    useState('All');
+
+  const [selectedStorey, setSelectedStorey] =
     useState('All');
 
   const [maxPrice, setMaxPrice] =
-    useState<number>(60000000);
+    useState<number>(500000000);
 
   const [sortBy, setSortBy] =
     useState<
@@ -99,58 +175,70 @@ const CATEGORIES = [
   const [selectedImage, setSelectedImage] =
     useState(0);
 
+  /* =======================================================
+     FETCH PROPERTIES
+  ======================================================= */
+
   useEffect(() => {
-    const fetchProperties =
-      async () => {
-        try {
-          setLoading(true);
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
 
-          const response =
-            await fetch(
-              '/api/properties',
-              {
-                cache: 'no-store',
-              }
-            );
-
-          if (!response.ok) {
-            throw new Error(
-              'Failed to load properties.'
-            );
+        const response = await fetch(
+          '/api/properties',
+          {
+            cache: 'no-store',
           }
+        );
 
-          const data =
-            await response.json();
-
-          setProperties(
-            Array.isArray(data)
-              ? data
-              : []
+        if (!response.ok) {
+          throw new Error(
+            'Failed to load properties.'
           );
-        } catch (error) {
-          console.error(
-            'Failed fetching properties:',
-            error
-          );
-
-          setProperties([]);
-        } finally {
-          setLoading(false);
         }
-      };
+
+        const data = await response.json();
+
+        setProperties(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+      } catch (error) {
+        console.error(
+          'Failed fetching properties:',
+          error
+        );
+
+        setProperties([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchProperties();
   }, []);
+
+  /* =======================================================
+     PRICE PARSER
+  ======================================================= */
 
   const parsePrice = (
     price: string
   ): number => {
     return (
       Number(
-        price.replace(/[^0-9.]/g, '')
+        price.replace(
+          /[^0-9.]/g,
+          ''
+        )
       ) || 0
     );
   };
+
+  /* =======================================================
+     FILTER + SORT
+  ======================================================= */
 
   const filteredAndSortedProperties =
     useMemo(() => {
@@ -162,25 +250,59 @@ const CATEGORIES = [
       let result =
         properties.filter(
           (property) => {
+
+            const searchableText = [
+              property.title,
+              property.location,
+              property.tag,
+              property.category,
+              property.propertyType,
+              property.houseType,
+              property.storey,
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+
             const matchesSearch =
               !query ||
-              property.title
-                .toLowerCase()
-                .includes(query) ||
-              property.location
-                .toLowerCase()
-                .includes(query) ||
-              property.tag
-                .toLowerCase()
-                .includes(query);
+              searchableText.includes(
+                query
+              );
+
             const matchesAgent =
               !agentSlug ||
-              property.agent?.slug === agentSlug;
+              property.agent?.slug ===
+                agentSlug;
 
-            const matchesTag =
-              selectedTag === 'All' ||
-              property.tag ===
-                selectedTag;
+            const matchesCategory =
+              selectedCategory ===
+                'All' ||
+              property.category ===
+                selectedCategory ||
+              (
+                !property.category &&
+                selectedCategory ===
+                  property.tag
+              );
+
+            const matchesPropertyType =
+              selectedPropertyType ===
+                'All' ||
+              property.propertyType ===
+                selectedPropertyType;
+
+            const matchesHouseType =
+              selectedHouseType ===
+                'All' ||
+              property.houseType ===
+                selectedHouseType;
+
+            const matchesStorey =
+              selectedStorey ===
+                'All' ||
+              property.storey ===
+                selectedStorey;
 
             const matchesPrice =
               parsePrice(
@@ -188,18 +310,24 @@ const CATEGORIES = [
               ) <= maxPrice;
 
             return (
-                    matchesSearch &&
-                    matchesTag &&
-                    matchesPrice &&
-                    matchesAgent
-                  );
+              matchesSearch &&
+              matchesAgent &&
+              matchesCategory &&
+              matchesPropertyType &&
+              matchesHouseType &&
+              matchesStorey &&
+              matchesPrice
+            );
           }
         );
 
       if (
-        sortBy === 'price-asc'
+        sortBy ===
+        'price-asc'
       ) {
-        result = [...result].sort(
+        result = [
+          ...result,
+        ].sort(
           (a, b) =>
             parsePrice(a.price) -
             parsePrice(b.price)
@@ -207,9 +335,12 @@ const CATEGORIES = [
       }
 
       if (
-        sortBy === 'price-desc'
+        sortBy ===
+        'price-desc'
       ) {
-        result = [...result].sort(
+        result = [
+          ...result,
+        ].sort(
           (a, b) =>
             parsePrice(b.price) -
             parsePrice(a.price)
@@ -220,17 +351,32 @@ const CATEGORIES = [
     }, [
       properties,
       searchQuery,
-      selectedTag,
+      selectedCategory,
+      selectedPropertyType,
+      selectedHouseType,
+      selectedStorey,
       maxPrice,
       sortBy,
+      agentSlug,
     ]);
+
+  /* =======================================================
+     RESET FILTERS
+  ======================================================= */
 
   const resetFilters = () => {
     setSearchQuery('');
-    setSelectedTag('All');
-    setMaxPrice(60000000);
+    setSelectedCategory('All');
+    setSelectedPropertyType('All');
+    setSelectedHouseType('All');
+    setSelectedStorey('All');
+    setMaxPrice(500000000);
     setSortBy('default');
   };
+
+  /* =======================================================
+     FORMAT BUDGET
+  ======================================================= */
 
   const formatBudget = (
     price: number
@@ -246,10 +392,17 @@ const CATEGORIES = [
     ).toFixed(0)}K`;
   };
 
+  /* =======================================================
+     PROPERTY MODAL
+  ======================================================= */
+
   const openProperty = (
     property: Property
   ) => {
-    setSelectedProperty(property);
+    setSelectedProperty(
+      property
+    );
+
     setSelectedImage(0);
 
     document.body.style.overflow =
@@ -258,11 +411,16 @@ const CATEGORIES = [
 
   const closeProperty = () => {
     setSelectedProperty(null);
+
     setSelectedImage(0);
 
     document.body.style.overflow =
       'auto';
   };
+
+  /* =======================================================
+     PROPERTY IMAGES
+  ======================================================= */
 
   const getPropertyImages = (
     property: Property
@@ -277,14 +435,23 @@ const CATEGORIES = [
     ];
   };
 
+  /* =======================================================
+     NEXT IMAGE
+  ======================================================= */
+
   const nextImage = () => {
-    if (!selectedProperty)
+    if (!selectedProperty) {
       return;
+    }
 
     const images =
       getPropertyImages(
         selectedProperty
       );
+
+    if (images.length <= 1) {
+      return;
+    }
 
     setSelectedImage(
       (current) =>
@@ -293,14 +460,23 @@ const CATEGORIES = [
     );
   };
 
+  /* =======================================================
+     PREVIOUS IMAGE
+  ======================================================= */
+
   const previousImage = () => {
-    if (!selectedProperty)
+    if (!selectedProperty) {
       return;
+    }
 
     const images =
       getPropertyImages(
         selectedProperty
       );
+
+    if (images.length <= 1) {
+      return;
+    }
 
     setSelectedImage(
       (current) =>
@@ -310,12 +486,46 @@ const CATEGORIES = [
     );
   };
 
+  /* =======================================================
+     BODY SCROLL CLEANUP
+  ======================================================= */
+
   useEffect(() => {
     return () => {
       document.body.style.overflow =
         'auto';
     };
   }, []);
+
+  /* =======================================================
+     CHECK IF HOUSE PROPERTY
+  ======================================================= */
+
+  const isHouseProperty = (
+    property: Property
+  ) => {
+    const text = [
+      property.category,
+      property.propertyType,
+      property.houseType,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return (
+      text.includes('house') ||
+      text.includes('duplex') ||
+      text.includes('townhouse') ||
+      text.includes('row house') ||
+      text.includes('attached') ||
+      text.includes('detached')
+    );
+  };
+
+  /* =======================================================
+     RETURN
+  ======================================================= */
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -344,6 +554,7 @@ const CATEGORIES = [
               href="/home"
               className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-300 backdrop-blur transition hover:bg-white/10 hover:text-white"
             >
+
               <CircleArrowLeft className="h-5 w-5 transition group-hover:-translate-x-0.5" />
 
               <span className="hidden sm:inline">
@@ -353,11 +564,15 @@ const CATEGORIES = [
               <span className="sm:hidden">
                 Back
               </span>
+
             </a>
 
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-300">
+
               <Building2 className="h-3.5 w-3.5" />
+
               BREA 88 Realty
+
             </div>
 
           </div>
@@ -374,7 +589,8 @@ const CATEGORIES = [
 
             <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base">
               Explore verified residential,
-              commercial, and investment
+              commercial, condominium,
+              rental, and investment
               properties in prime locations.
             </p>
 
@@ -386,37 +602,35 @@ const CATEGORIES = [
 
             <div className="rounded-2xl border border-white/10 bg-white/10 p-2 shadow-2xl backdrop-blur-xl">
 
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative">
 
-                <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) =>
+                    setSearchQuery(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Search properties, locations, property types..."
+                  className="h-14 w-full rounded-xl border border-white/10 bg-slate-950/70 pl-12 pr-10 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
+                />
 
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) =>
-                      setSearchQuery(
-                        e.target.value
-                      )
+                {searchQuery && (
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearchQuery('')
                     }
-                    placeholder="Search properties, locations, or categories..."
-                    className="h-14 w-full rounded-xl border border-white/10 bg-slate-950/70 pl-12 pr-10 text-sm font-medium text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
-                  />
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
 
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSearchQuery('')
-                      }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-white/10 hover:text-white"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-
-                </div>
+                )}
 
               </div>
 
@@ -435,47 +649,265 @@ const CATEGORIES = [
 
         <div className="sticky top-2 z-30 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur-xl sm:p-5">
 
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          {/* CATEGORY */}
+
+          <div>
+
+            <div className="mb-3 flex items-center gap-2">
+
+              <SlidersHorizontal className="h-4 w-4 text-blue-900" />
+
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+                Property Category
+              </span>
+
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-1">
+
+              {PROPERTY_CATEGORIES.map(
+                (category) => (
+
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(
+                        category
+                      );
+
+                      setSelectedPropertyType(
+                        'All'
+                      );
+
+                      if (
+                        category !==
+                        'House & Lot'
+                      ) {
+                        setSelectedHouseType(
+                          'All'
+                        );
+                        setSelectedStorey(
+                          'All'
+                        );
+                      }
+                    }}
+                    className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+                      selectedCategory ===
+                      category
+                        ? 'bg-slate-950 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {category}
+                  </button>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+          {/* SECONDARY FILTERS */}
+
+          <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+
+            {/* PROPERTY TYPE */}
 
             <div>
 
-              <div className="mb-3 flex items-center gap-2">
+              <label className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
 
-                <SlidersHorizontal className="h-4 w-4 text-blue-900" />
+                <Tag className="h-3.5 w-3.5" />
 
-                <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-                  Property Type
-                </span>
+                Property Type
 
-              </div>
+              </label>
 
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <select
+                value={
+                  selectedPropertyType
+                }
+                onChange={(e) =>
+                  setSelectedPropertyType(
+                    e.target.value
+                  )
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none transition focus:border-blue-500 focus:bg-white"
+              >
 
-                {CATEGORIES.map(
-                  (category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() =>
-                        setSelectedTag(
-                          category
-                        )
-                      }
-                      className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-bold transition ${
-                        selectedTag ===
-                        category
-                          ? 'bg-slate-950 text-white shadow-md'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
+                <option value="All">
+                  All Property Types
+                </option>
+
+                {PROPERTY_TYPES.map(
+                  (type) => (
+
+                    <option
+                      key={type}
+                      value={type}
                     >
-                      {category}
-                    </button>
+                      {type}
+                    </option>
+
                   )
                 )}
+
+              </select>
+
+            </div>
+
+            {/* HOUSE TYPE */}
+
+            <div>
+
+              <label className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
+
+                <Home className="h-3.5 w-3.5" />
+
+                House Type
+
+              </label>
+
+              <select
+                value={
+                  selectedHouseType
+                }
+                onChange={(e) =>
+                  setSelectedHouseType(
+                    e.target.value
+                  )
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none transition focus:border-blue-500 focus:bg-white"
+              >
+
+                <option value="All">
+                  All House Types
+                </option>
+
+                {HOUSE_TYPES.map(
+                  (type) => (
+
+                    <option
+                      key={type}
+                      value={type}
+                    >
+                      {type}
+                    </option>
+
+                  )
+                )}
+
+              </select>
+
+            </div>
+
+            {/* STOREY */}
+
+            <div>
+
+              <label className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
+
+                <Layers3 className="h-3.5 w-3.5" />
+
+                Storey
+
+              </label>
+
+              <select
+                value={
+                  selectedStorey
+                }
+                onChange={(e) =>
+                  setSelectedStorey(
+                    e.target.value
+                  )
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none transition focus:border-blue-500 focus:bg-white"
+              >
+
+                <option value="All">
+                  All Storeys
+                </option>
+
+                {STOREY_OPTIONS.map(
+                  (storey) => (
+
+                    <option
+                      key={storey}
+                      value={storey}
+                    >
+                      {storey ===
+                      '4+'
+                        ? '4 or more'
+                        : `${storey} Storey`}
+                    </option>
+
+                  )
+                )}
+
+              </select>
+
+            </div>
+
+          </div>
+
+          {/* SORT */}
+
+          <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+
+            <div className="w-full lg:max-w-md">
+
+              <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-500">
+                Maximum Budget
+              </label>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+                <p className="min-w-[90px] text-lg font-black text-slate-950">
+                  {formatBudget(
+                    maxPrice
+                  )}
+                </p>
+
+                <div className="w-full">
+
+                  <input
+                    type="range"
+                    min={50000}
+                    max={500000000}
+                    step={1000000}
+                    value={maxPrice}
+                    onChange={(e) =>
+                      setMaxPrice(
+                        Number(
+                          e.target.value
+                        )
+                      )
+                    }
+                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-900"
+                  />
+
+                  <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+
+                    <span>
+                      ₱50K
+                    </span>
+
+                    <span>
+                      ₱500M+
+                    </span>
+
+                  </div>
+
+                </div>
 
               </div>
 
             </div>
+
+            {/* SORT */}
 
             <div className="w-full lg:w-64">
 
@@ -499,6 +931,7 @@ const CATEGORIES = [
                   }
                   className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-blue-500 focus:bg-white"
                 >
+
                   <option value="default">
                     Featured
                   </option>
@@ -519,60 +952,19 @@ const CATEGORIES = [
 
           </div>
 
-          {/* BUDGET */}
-
-          <div className="mt-5 border-t border-slate-100 pt-5">
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-              <div>
-
-                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
-                  Maximum Budget
-                </p>
-
-                <p className="mt-1 text-lg font-black text-slate-950">
-                  {formatBudget(
-                    maxPrice
-                  )}
-                </p>
-
-              </div>
-
-              <div className="w-full sm:max-w-md">
-
-                <input
-                  type="range"
-                  min={50000}
-                  max={500000000}
-                  step={1000000}
-                  value={maxPrice}
-                  onChange={(e) =>
-                    setMaxPrice(
-                      Number(
-                        e.target.value
-                      )
-                    )
-                  }
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-900"
-                />
-
-                <div className="mt-1 flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  <span>₱50K</span>
-                  <span>₱500M+</span>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
+          {/* RESET */}
 
           {(searchQuery ||
-            selectedTag !==
+            selectedCategory !==
+              'All' ||
+            selectedPropertyType !==
+              'All' ||
+            selectedHouseType !==
+              'All' ||
+            selectedStorey !==
               'All' ||
             maxPrice <
-              60000000 ||
+              500000000 ||
             sortBy !==
               'default') && (
 
@@ -584,11 +976,16 @@ const CATEGORIES = [
 
               <button
                 type="button"
-                onClick={resetFilters}
+                onClick={
+                  resetFilters
+                }
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-900"
               >
+
                 <RotateCcw className="h-3.5 w-3.5" />
+
                 Reset
+
               </button>
 
             </div>
@@ -620,12 +1017,18 @@ const CATEGORIES = [
           </div>
 
           <p className="text-xs font-bold text-slate-400">
-            {filteredAndSortedProperties.length}{' '}
+
+            {
+              filteredAndSortedProperties.length
+            }{' '}
+
             {filteredAndSortedProperties.length ===
             1
               ? 'property'
               : 'properties'}{' '}
+
             found
+
           </p>
 
         </div>
@@ -655,14 +1058,16 @@ const CATEGORIES = [
               (property) => (
 
                 <button
-                  key={property.id}
+                  key={
+                    property.id
+                  }
                   type="button"
                   onClick={() =>
                     openProperty(
                       property
                     )
                   }
-                  className="group block w-full text-left transition duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-2xl"
+                  className="group block w-full rounded-2xl text-left transition duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
 
                   <div className="pointer-events-none">
@@ -698,16 +1103,23 @@ const CATEGORIES = [
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Try changing your search,
-              property type, or budget.
+              property category,
+              property type, house type,
+              storey, or budget.
             </p>
 
             <button
               type="button"
-              onClick={resetFilters}
+              onClick={
+                resetFilters
+              }
               className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
             >
+
               <RotateCcw className="h-4 w-4" />
+
               Reset Search
+
             </button>
 
           </div>
@@ -725,16 +1137,18 @@ const CATEGORIES = [
         <div
           className="fixed inset-0 z-[100] overflow-y-auto bg-black/70 p-0 backdrop-blur-sm sm:p-4"
           onMouseDown={(e) => {
+
             if (
               e.target ===
               e.currentTarget
             ) {
               closeProperty();
             }
+
           }}
         >
 
-          <div className="min-h-full flex items-center justify-center">
+          <div className="flex min-h-full items-center justify-center">
 
             <div className="relative w-full max-w-6xl overflow-hidden bg-white shadow-2xl sm:rounded-3xl">
 
@@ -742,10 +1156,14 @@ const CATEGORIES = [
 
               <button
                 type="button"
-                onClick={closeProperty}
+                onClick={
+                  closeProperty
+                }
                 className="absolute right-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition hover:bg-black/80"
               >
+
                 <X className="h-5 w-5" />
+
               </button>
 
               {/* =================================================
@@ -775,20 +1193,19 @@ const CATEGORIES = [
 
                   )}
 
-                  {/* IMAGE COUNT */}
-
                   <div className="absolute bottom-4 left-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
+
                     {selectedImage +
                       1}{' '}
                     /{' '}
+
                     {
                       getPropertyImages(
                         selectedProperty
                       ).length
                     }
-                  </div>
 
-                  {/* PREVIOUS */}
+                  </div>
 
                   {getPropertyImages(
                     selectedProperty
@@ -796,6 +1213,7 @@ const CATEGORIES = [
                     1 && (
 
                     <>
+
                       <button
                         type="button"
                         onClick={
@@ -803,7 +1221,9 @@ const CATEGORIES = [
                         }
                         className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/80"
                       >
+
                         <ChevronLeft className="h-5 w-5" />
+
                       </button>
 
                       <button
@@ -813,8 +1233,11 @@ const CATEGORIES = [
                         }
                         className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/80 lg:hidden"
                       >
+
                         <ChevronRight className="h-5 w-5" />
+
                       </button>
+
                     </>
 
                   )}
@@ -913,18 +1336,40 @@ const CATEGORIES = [
 
                 <div className="p-5 sm:p-8">
 
-                  {/* TAG */}
+                  {/* CLASSIFICATION BADGES */}
 
-                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-800">
-                    {selectedProperty.tag}
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+
+                    {selectedProperty.category && (
+
+                      <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-800">
+
+                        {selectedProperty.category}
+
+                      </span>
+
+                    )}
+
+                    {selectedProperty.propertyType && (
+
+                      <span className="inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
+
+                        {selectedProperty.propertyType}
+
+                      </span>
+
+                    )}
+
+                  </div>
 
                   {/* TITLE */}
 
                   <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+
                     {
                       selectedProperty.title
                     }
+
                   </h2>
 
                   {/* LOCATION */}
@@ -944,88 +1389,204 @@ const CATEGORIES = [
                   {/* PRICE */}
 
                   <p className="mt-6 text-3xl font-black text-blue-950 sm:text-4xl">
+
                     ₱
                     {
                       selectedProperty.price
                     }
+
                   </p>
 
-                  {/* PROPERTY FEATURES */}
+                  {/* =================================================
+                      CLASSIFICATION INFORMATION
+                  ================================================== */}
 
-                  <div className="mt-7 grid grid-cols-3 gap-3">
+                  <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
-                    {selectedProperty.beds !==
-                      null &&
-                      selectedProperty.beds !==
-                        undefined && (
+                    {selectedProperty.category && (
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
 
-                          <BedDouble className="h-5 w-5 text-blue-900" />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          Category
+                        </p>
 
-                          <p className="mt-3 text-lg font-black">
-                            {
-                              selectedProperty.beds
-                            }
-                          </p>
+                        <p className="mt-2 text-sm font-black text-slate-900">
+                          {
+                            selectedProperty.category
+                          }
+                        </p>
 
-                          <p className="text-xs font-semibold text-slate-500">
-                            Bedrooms
-                          </p>
+                      </div>
 
-                        </div>
+                    )}
 
-                      )}
+                    {selectedProperty.propertyType && (
 
-                    {selectedProperty.baths !==
-                      null &&
-                      selectedProperty.baths !==
-                        undefined && (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          Property Type
+                        </p>
 
-                          <Bath className="h-5 w-5 text-blue-900" />
+                        <p className="mt-2 text-sm font-black text-slate-900">
+                          {
+                            selectedProperty.propertyType
+                          }
+                        </p>
 
-                          <p className="mt-3 text-lg font-black">
-                            {
-                              selectedProperty.baths
-                            }
-                          </p>
+                      </div>
 
-                          <p className="text-xs font-semibold text-slate-500">
-                            Bathrooms
-                          </p>
+                    )}
 
-                        </div>
+                    {selectedProperty.houseType && (
 
-                      )}
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
 
-                    {selectedProperty.sqft !==
-                      null &&
-                      selectedProperty.sqft !==
-                        undefined && (
+                        <div className="flex items-center gap-2">
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          <Home className="h-4 w-4 text-blue-900" />
 
-                          <Maximize className="h-5 w-5 text-blue-900" />
-
-                          <p className="mt-3 text-lg font-black">
-                            {
-                              selectedProperty.sqft
-                            }
-                          </p>
-
-                          <p className="text-xs font-semibold text-slate-500">
-                            sqm
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            House Type
                           </p>
 
                         </div>
 
-                      )}
+                        <p className="mt-2 text-sm font-black text-slate-900">
+                          {
+                            selectedProperty.houseType
+                          }
+                        </p>
+
+                      </div>
+
+                    )}
+
+                    {selectedProperty.storey && (
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+
+                        <div className="flex items-center gap-2">
+
+                          <Layers3 className="h-4 w-4 text-blue-900" />
+
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Storey
+                          </p>
+
+                        </div>
+
+                        <p className="mt-2 text-sm font-black text-slate-900">
+
+                          {selectedProperty.storey ===
+                          '4+'
+                            ? '4 or more'
+                            : selectedProperty.storey}
+
+                        </p>
+
+                      </div>
+
+                    )}
 
                   </div>
 
-                  {/* DESCRIPTION */}
+                  {/* =================================================
+                      PROPERTY FEATURES
+                  ================================================== */}
+
+                  {(selectedProperty.beds !==
+                    null &&
+                    selectedProperty.beds !==
+                      undefined) ||
+                  (selectedProperty.baths !==
+                    null &&
+                    selectedProperty.baths !==
+                      undefined) ||
+                  (selectedProperty.sqft !==
+                    null &&
+                    selectedProperty.sqft !==
+                      undefined) ? (
+
+                    <div className="mt-4 grid grid-cols-3 gap-3">
+
+                      {selectedProperty.beds !==
+                        null &&
+                        selectedProperty.beds !==
+                          undefined && (
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+
+                            <BedDouble className="h-5 w-5 text-blue-900" />
+
+                            <p className="mt-3 text-lg font-black">
+                              {
+                                selectedProperty.beds
+                              }
+                            </p>
+
+                            <p className="text-xs font-semibold text-slate-500">
+                              Bedrooms
+                            </p>
+
+                          </div>
+
+                        )}
+
+                      {selectedProperty.baths !==
+                        null &&
+                        selectedProperty.baths !==
+                          undefined && (
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+
+                            <Bath className="h-5 w-5 text-blue-900" />
+
+                            <p className="mt-3 text-lg font-black">
+                              {
+                                selectedProperty.baths
+                              }
+                            </p>
+
+                            <p className="text-xs font-semibold text-slate-500">
+                              Bathrooms
+                            </p>
+
+                          </div>
+
+                        )}
+
+                      {selectedProperty.sqft !==
+                        null &&
+                        selectedProperty.sqft !==
+                          undefined && (
+
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+
+                            <Maximize className="h-5 w-5 text-blue-900" />
+
+                            <p className="mt-3 text-lg font-black">
+                              {
+                                selectedProperty.sqft
+                              }
+                            </p>
+
+                            <p className="text-xs font-semibold text-slate-500">
+                              sqm
+                            </p>
+
+                          </div>
+
+                        )}
+
+                    </div>
+
+                  ) : null}
+
+                  {/* =================================================
+                      PROPERTY INFORMATION
+                  ================================================== */}
 
                   <div className="mt-8 border-t border-slate-200 pt-7">
 
@@ -1034,16 +1595,16 @@ const CATEGORIES = [
                     </h3>
 
                     <p className="mt-3 text-sm leading-7 text-slate-500">
+
                       This property is
                       available through
                       BREA 88 Realty.
-                      Contact the
-                      assigned agent
-                      for complete
+                      Contact the assigned
+                      agent for complete
                       property details,
-                      availability,
-                      pricing, and
-                      viewing schedules.
+                      availability, pricing,
+                      and viewing schedules.
+
                     </p>
 
                   </div>
@@ -1091,15 +1652,19 @@ const CATEGORIES = [
                         <div className="min-w-0">
 
                           <h3 className="truncate text-lg font-black">
+
                             {
                               selectedProperty.agent.fullName
                             }
+
                           </h3>
 
                           <p className="text-xs font-semibold text-slate-500">
+
                             {
                               selectedProperty.agent.role
                             }
+
                           </p>
 
                         </div>
@@ -1199,9 +1764,13 @@ const CATEGORIES = [
                             className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-800 transition hover:bg-slate-100"
                           >
 
-                             <span className="font-black text-lg">f</span>
-                                Facebook
-                              </a>
+                            <span className="text-lg font-black">
+                              f
+                            </span>
+
+                            Facebook
+
+                          </a>
 
                         )}
 
@@ -1224,10 +1793,14 @@ const CATEGORIES = [
                             );
 
                           if (
-                            selectedProperty.agent?.email
+                            selectedProperty
+                              .agent
+                              ?.email
                           ) {
+
                             window.location.href =
                               `mailto:${selectedProperty.agent.email}?subject=${subject}&body=${body}`;
+
                           }
 
                         }}
@@ -1246,7 +1819,9 @@ const CATEGORIES = [
                         href={`/agent/${selectedProperty.agent.slug}`}
                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-blue-900 transition hover:bg-blue-50"
                       >
+
                         View Agent Profile
+
                       </a>
 
                     </>
@@ -1281,23 +1856,33 @@ const CATEGORIES = [
     </div>
   );
 }
-  export default function MarketplacePage() {
-    return (
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center bg-slate-50">
-            <div className="text-center">
-              <Loader2 className="mx-auto h-9 w-9 animate-spin text-blue-900" />
 
-              <p className="mt-4 text-sm font-semibold text-slate-500">
-                Loading marketplace...
-              </p>
-            </div>
+/* =========================================================
+   PAGE
+========================================================= */
+
+export default function MarketplacePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+
+          <div className="text-center">
+
+            <Loader2 className="mx-auto h-9 w-9 animate-spin text-blue-900" />
+
+            <p className="mt-4 text-sm font-semibold text-slate-500">
+              Loading marketplace...
+            </p>
+
           </div>
-        }
-      >
-        <MarketplaceContent />
-      </Suspense>
-    );
-  }
 
+        </div>
+      }
+    >
+
+      <MarketplaceContent />
+
+    </Suspense>
+  );
+}
