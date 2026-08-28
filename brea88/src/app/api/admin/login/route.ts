@@ -7,19 +7,6 @@ import {
 
 /*
 |--------------------------------------------------------------------------
-| PASSWORD HASH
-|--------------------------------------------------------------------------
-*/
-
-function hashPassword(password: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(password)
-    .digest('hex');
-}
-
-/*
-|--------------------------------------------------------------------------
 | SAFE COMPARISON
 |--------------------------------------------------------------------------
 */
@@ -28,16 +15,10 @@ function safeCompare(
   a: string,
   b: string
 ): boolean {
-  const bufferA =
-    Buffer.from(a);
+  const bufferA = Buffer.from(a);
+  const bufferB = Buffer.from(b);
 
-  const bufferB =
-    Buffer.from(b);
-
-  if (
-    bufferA.length !==
-    bufferB.length
-  ) {
+  if (bufferA.length !== bufferB.length) {
     return false;
   }
 
@@ -71,8 +52,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Invalid request body.',
+          message: 'Invalid request body.',
         },
         { status: 400 }
       );
@@ -86,18 +66,14 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Invalid login data.',
+          message: 'Invalid login data.',
         },
         { status: 400 }
       );
     }
 
     const data =
-      body as Record<
-        string,
-        unknown
-      >;
+      body as Record<string, unknown>;
 
     /*
     |--------------------------------------------------------------------------
@@ -105,11 +81,9 @@ export async function POST(
     |--------------------------------------------------------------------------
     */
 
-    const email =
-      typeof data.email === 'string'
-        ? data.email
-            .trim()
-            .toLowerCase()
+    const username =
+      typeof data.username === 'string'
+        ? data.username.trim()
         : '';
 
     const password =
@@ -123,12 +97,12 @@ export async function POST(
     |--------------------------------------------------------------------------
     */
 
-    if (!email || !password) {
+    if (!username || !password) {
       return NextResponse.json(
         {
           success: false,
           message:
-            'Email and password are required.',
+            'Username and password are required.',
         },
         { status: 400 }
       );
@@ -136,29 +110,22 @@ export async function POST(
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN CREDENTIALS
+    | ENVIRONMENT VARIABLES
     |--------------------------------------------------------------------------
     |
-    | These values come from:
+    | Your existing credentials are:
     |
-    | ADMIN_EMAIL
-    | ADMIN_PASSWORD_HASH
-    |
-    | Example:
-    |
-    | ADMIN_EMAIL=admin@example.com
-    | ADMIN_PASSWORD_HASH=<sha256 hash>
+    | ADMIN_USERNAME
+    | ADMIN_PASSWORD
     |
     |--------------------------------------------------------------------------
     */
 
-    const adminEmail =
-      process.env.ADMIN_EMAIL
-        ?.trim()
-        .toLowerCase();
+    const adminUsername =
+      process.env.ADMIN_USERNAME?.trim();
 
-    const adminPasswordHash =
-      process.env.ADMIN_PASSWORD_HASH;
+    const adminPassword =
+      process.env.ADMIN_PASSWORD;
 
     /*
     |--------------------------------------------------------------------------
@@ -167,11 +134,11 @@ export async function POST(
     */
 
     if (
-      !adminEmail ||
-      !adminPasswordHash
+      !adminUsername ||
+      !adminPassword
     ) {
       console.error(
-        'Admin authentication is not configured. Missing ADMIN_EMAIL or ADMIN_PASSWORD_HASH.'
+        'Admin authentication is not configured. Missing ADMIN_USERNAME or ADMIN_PASSWORD.'
       );
 
       return NextResponse.json(
@@ -186,53 +153,37 @@ export async function POST(
 
     /*
     |--------------------------------------------------------------------------
-    | EMAIL CHECK
+    | AUTHENTICATION
     |--------------------------------------------------------------------------
     */
 
-    const emailMatches =
+    const usernameMatches =
       safeCompare(
-        email,
-        adminEmail
+        username,
+        adminUsername
       );
-
-    /*
-    |--------------------------------------------------------------------------
-    | PASSWORD CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    const passwordHash =
-      hashPassword(password);
 
     const passwordMatches =
       safeCompare(
-        passwordHash,
-        adminPasswordHash
+        password,
+        adminPassword
       );
 
     /*
     |--------------------------------------------------------------------------
-    | AUTHENTICATION CHECK
-    |--------------------------------------------------------------------------
-    |
-    | We intentionally use the same generic error
-    | for invalid email/password.
-    |
-    | This prevents revealing which admin credential
-    | is incorrect.
+    | INVALID CREDENTIALS
     |--------------------------------------------------------------------------
     */
 
     if (
-      !emailMatches ||
+      !usernameMatches ||
       !passwordMatches
     ) {
       return NextResponse.json(
         {
           success: false,
           message:
-            'Invalid email or password.',
+            'Invalid username or password.',
         },
         { status: 401 }
       );
@@ -240,7 +191,7 @@ export async function POST(
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE ADMIN SESSION
+    | CREATE SESSION
     |--------------------------------------------------------------------------
     */
 
@@ -259,20 +210,21 @@ export async function POST(
         message:
           'Admin login successful.',
         admin: {
-          email: adminEmail,
+          username: adminUsername,
           role: 'Admin',
         },
       });
 
     /*
     |--------------------------------------------------------------------------
-    | SECURE ADMIN COOKIE
+    | ADMIN SESSION COOKIE
     |--------------------------------------------------------------------------
     */
 
     response.cookies.set({
       name: 'admin_session',
       value: token,
+
       httpOnly: true,
 
       secure:
@@ -281,7 +233,6 @@ export async function POST(
 
       sameSite: 'strict',
 
-      // 2 hours
       maxAge:
         60 * 60 * 2,
 
@@ -289,6 +240,7 @@ export async function POST(
     });
 
     return response;
+
   } catch (error) {
     console.error(
       'POST /api/admin/login error:',
@@ -305,4 +257,3 @@ export async function POST(
     );
   }
 }
-

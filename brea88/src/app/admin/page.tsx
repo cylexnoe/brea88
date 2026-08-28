@@ -4,6 +4,7 @@ import {
   FormEvent,
   useState,
 } from 'react';
+
 import {
   Eye,
   EyeOff,
@@ -14,6 +15,7 @@ import {
   ShieldCheck,
   Building2,
 } from 'lucide-react';
+
 import { useRouter } from 'next/navigation';
 
 export default function AdminLoginPage() {
@@ -26,68 +28,79 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
 
   const handleSubmit = async (
-      event: FormEvent<HTMLFormElement>
-    ) => {
-      event.preventDefault();
+        event: FormEvent<HTMLFormElement>
+      ) => {
+        event.preventDefault();
 
-      if (loading) return;
+        if (loading) return;
 
-      setError('');
-      setLoading(true);
+        setError('');
+        setLoading(true);
 
-      try {
-        const response = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            email: username.trim().toLowerCase(),
-            password,
-          }),
-        });
+        try {
+          const response = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              username: username.trim(),
+              password,
+            }),
+          });
 
-        const data = await response.json().catch(() => null);
+          const data = await response
+            .json()
+            .catch(() => null);
 
-        if (!response.ok) {
+          if (!response.ok) {
+            setError(
+              data?.message ||
+                data?.error ||
+                'Invalid username or password.'
+            );
+
+            setLoading(false);
+            return;
+          }
+
+          /*
+          * Speak only after successful authentication.
+          */
+          if (typeof window !== 'undefined') {
+            window.speechSynthesis.cancel();
+
+            const welcomeMessage =
+              new SpeechSynthesisUtterance(
+                'Welcome to Brea Eighty Eight Admin.'
+              );
+
+            welcomeMessage.rate = 0.9;
+            welcomeMessage.pitch = 1;
+            welcomeMessage.volume = 1;
+
+            window.speechSynthesis.speak(
+              welcomeMessage
+            );
+          }
+
+          router.replace('/admin/dashboard');
+          router.refresh();
+
+        } catch (error) {
+          console.error(
+            'Admin login error:',
+            error
+          );
+
           setError(
-            data?.message ||
-              data?.error ||
-              'Invalid email or password.'
+            'Unable to connect to the server. Please try again.'
           );
 
           setLoading(false);
-          return;
         }
-
-        if (typeof window !== 'undefined') {
-          window.speechSynthesis.cancel();
-
-          const welcomeMessage =
-            new SpeechSynthesisUtterance(
-              'Welcome to Brea Eighty Eight Admin.'
-            );
-
-          welcomeMessage.rate = 0.9;
-          welcomeMessage.pitch = 1;
-          welcomeMessage.volume = 1;
-
-          window.speechSynthesis.speak(welcomeMessage);
-        }
-
-        router.replace('/admin/dashboard');
-        router.refresh();
-      } catch (error) {
-        console.error('Admin login error:', error);
-
-        setError(
-          'Unable to connect to the server. Please try again.'
-        );
-
-        setLoading(false);
-      }
-    };
+      };
 
   return (
     <main className="min-h-screen bg-[#f5f7fa] text-slate-900">
@@ -120,8 +133,6 @@ export default function AdminLoginPage() {
 
             <section className="relative hidden overflow-hidden bg-slate-950 lg:flex">
 
-              {/* Decorative background */}
-
               <div className="absolute inset-0">
 
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(148,163,184,0.15),transparent_35%)]" />
@@ -133,8 +144,6 @@ export default function AdminLoginPage() {
                 <div className="absolute -left-20 -top-20 h-[300px] w-[300px] rounded-full border border-white/5" />
 
               </div>
-
-              {/* Content */}
 
               <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
 
@@ -321,27 +330,30 @@ export default function AdminLoginPage() {
                   <div>
 
                     <label
-                        htmlFor="admin-email"
-                        className="mb-2 block text-xs font-semibold text-slate-700"
-                      >
-                        Email
-                      </label>
+                      htmlFor="admin-username"
+                      className="mb-2 block text-xs font-semibold text-slate-700"
+                    >
+                      Username
+                    </label>
 
                     <div className="relative">
 
                       <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
                       <input
-                        id="admin-email"
-                        type="email"
+                        id="admin-username"
+                        type="text"
                         value={username}
                         onChange={(event) =>
-                          setUsername(event.target.value)
+                          setUsername(
+                            event.target.value
+                          )
                         }
-                        placeholder="Enter your email"
-                        autoComplete="email"
+                        placeholder="Enter your username"
+                        autoComplete="username"
                         required
                         disabled={loading}
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-500 focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
                       />
 
                     </div>
@@ -372,7 +384,9 @@ export default function AdminLoginPage() {
                         }
                         value={password}
                         onChange={(event) =>
-                          setPassword(event.target.value)
+                          setPassword(
+                            event.target.value
+                          )
                         }
                         placeholder="Enter your password"
                         autoComplete="current-password"
@@ -385,7 +399,8 @@ export default function AdminLoginPage() {
                         type="button"
                         onClick={() =>
                           setShowPassword(
-                            (previous) => !previous
+                            (previous) =>
+                              !previous
                           )
                         }
                         disabled={loading}
