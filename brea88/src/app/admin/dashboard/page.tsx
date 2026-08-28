@@ -1991,17 +1991,12 @@ export default function AdminDashboard() {
                             <div className="mt-4 flex items-center justify-between">
 
                               <p className="text-lg font-black text-slate-900">
-                                ₱
-                                {Number(
-                                  String(
-                                    property.price
-                                  ).replace(
-                                    /,/g,
-                                    ''
-                                  )
-                                ).toLocaleString(
-                                  'en-US'
-                                )}
+                                ₱ {Number(
+                                  String(property.price).replace(/[^0-9.]/g, '')
+                                ).toLocaleString('en-US', {
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0,
+                                })}
                               </p>
 
                               <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase text-slate-500">

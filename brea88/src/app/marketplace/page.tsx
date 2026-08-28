@@ -1389,12 +1389,12 @@ function MarketplaceContent() {
                   {/* PRICE */}
 
                   <p className="mt-6 text-3xl font-black text-blue-950 sm:text-4xl">
-
-                    ₱
-                    {
-                      selectedProperty.price
-                    }
-
+                    ₱ {Number(
+                      String(selectedProperty.price).replace(/[^0-9.]/g, '')
+                    ).toLocaleString('en-US', {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
                   </p>
 
                   {/* =================================================
