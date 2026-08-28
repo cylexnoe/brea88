@@ -2,15 +2,38 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
+/*
+|--------------------------------------------------------------------------
+| AGENT SESSION CONFIGURATION
+|--------------------------------------------------------------------------
+*/
+
 const SESSION_COOKIE = 'agent_session';
 
+// 30 days
 const SESSION_DURATION =
-  1000 * 60 * 60 * 24 * 30; // 30 days
+  1000 * 60 * 60 * 24 * 30;
 
-function getSecret() {
+const SESSION_MAX_AGE =
+  60 * 60 * 24 * 30;
+
+/*
+|--------------------------------------------------------------------------
+| SESSION SECRET
+|--------------------------------------------------------------------------
+|
+| Agent authentication must have its own secret.
+|
+| IMPORTANT:
+| Do NOT fall back to ADMIN_SESSION_SECRET.
+|
+| Admin and Agent authentication should use separate secrets.
+|
+*/
+
+function getSecret(): string {
   const secret =
-    process.env.AGENT_SESSION_SECRET ||
-    process.env.ADMIN_SESSION_SECRET;
+    process.env.AGENT_SESSION_SECRET;
 
   if (!secret) {
     throw new Error(
@@ -21,19 +44,52 @@ function getSecret() {
   return secret;
 }
 
-function createSignature(payload: string) {
+/*
+|--------------------------------------------------------------------------
+| CREATE SIGNATURE
+|--------------------------------------------------------------------------
+*/
+
+function createSignature(
+  payload: string
+): string {
   return crypto
-    .createHmac('sha256', getSecret())
+    .createHmac(
+      'sha256',
+      getSecret()
+    )
     .update(payload)
     .digest('hex');
 }
 
+/*
+|--------------------------------------------------------------------------
+| CREATE AGENT SESSION TOKEN
+|--------------------------------------------------------------------------
+|
+| Format:
+|
+| agentId.timestamp.signature
+|
+*/
+
 export function createAgentSessionToken(
   agentId: number
-) {
-  const timestamp = Date.now();
+): string {
+  if (
+    !Number.isInteger(agentId) ||
+    agentId <= 0
+  ) {
+    throw new Error(
+      'Invalid agent ID.'
+    );
+  }
 
-  const payload = `${agentId}.${timestamp}`;
+  const timestamp =
+    Date.now();
+
+  const payload =
+    `${agentId}.${timestamp}`;
 
   const signature =
     createSignature(payload);
@@ -41,14 +97,37 @@ export function createAgentSessionToken(
   return `${payload}.${signature}`;
 }
 
+/*
+|--------------------------------------------------------------------------
+| VERIFY AGENT SESSION TOKEN
+|--------------------------------------------------------------------------
+*/
+
 export function verifyAgentSessionToken(
   token: string | undefined
-) {
+): number | null {
   if (!token) {
     return null;
   }
 
-  const parts = token.split('.');
+  /*
+  |--------------------------------------------------------------------------
+  | TOKEN LENGTH PROTECTION
+  |--------------------------------------------------------------------------
+  */
+
+  if (token.length > 500) {
+    return null;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | TOKEN FORMAT
+  |--------------------------------------------------------------------------
+  */
+
+  const parts =
+    token.split('.');
 
   if (parts.length !== 3) {
     return null;
@@ -60,16 +139,45 @@ export function verifyAgentSessionToken(
     signature,
   ] = parts;
 
-  const agentId = Number(agentIdString);
-  const timestamp = Number(timestampString);
+  /*
+  |--------------------------------------------------------------------------
+  | BASIC TOKEN VALIDATION
+  |--------------------------------------------------------------------------
+  */
 
   if (
-    !Number.isInteger(agentId) ||
-    agentId <= 0 ||
-    !Number.isFinite(timestamp)
+    !/^\d+$/.test(agentIdString) ||
+    !/^\d+$/.test(timestampString) ||
+    !/^[a-f0-9]{64}$/i.test(signature)
   ) {
     return null;
   }
+
+  const agentId =
+    Number(agentIdString);
+
+  const timestamp =
+    Number(timestampString);
+
+  if (
+    !Number.isSafeInteger(agentId) ||
+    agentId <= 0
+  ) {
+    return null;
+  }
+
+  if (
+    !Number.isSafeInteger(timestamp) ||
+    timestamp <= 0
+  ) {
+    return null;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | RECREATE PAYLOAD
+  |--------------------------------------------------------------------------
+  */
 
   const payload =
     `${agentId}.${timestamp}`;
@@ -77,11 +185,23 @@ export function verifyAgentSessionToken(
   const expectedSignature =
     createSignature(payload);
 
+  /*
+  |--------------------------------------------------------------------------
+  | CONSTANT-TIME SIGNATURE COMPARISON
+  |--------------------------------------------------------------------------
+  */
+
   const actualBuffer =
-    Buffer.from(signature);
+    Buffer.from(
+      signature,
+      'utf8'
+    );
 
   const expectedBuffer =
-    Buffer.from(expectedSignature);
+    Buffer.from(
+      expectedSignature,
+      'utf8'
+    );
 
   if (
     actualBuffer.length !==
@@ -99,6 +219,12 @@ export function verifyAgentSessionToken(
     return null;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | SESSION EXPIRATION
+  |--------------------------------------------------------------------------
+  */
+
   const age =
     Date.now() - timestamp;
 
@@ -109,29 +235,72 @@ export function verifyAgentSessionToken(
     return null;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | VALID SESSION
+  |--------------------------------------------------------------------------
+  */
+
   return agentId;
 }
 
-export async function getCurrentAgentId() {
-  const cookieStore =
-    await cookies();
+/*
+|--------------------------------------------------------------------------
+| GET CURRENT AGENT ID
+|--------------------------------------------------------------------------
+*/
 
-  const token =
-    cookieStore.get(
-      SESSION_COOKIE
-    )?.value;
+export async function getCurrentAgentId(): Promise<
+  number | null
+> {
+  try {
+    const cookieStore =
+      await cookies();
 
-  return verifyAgentSessionToken(token);
+    const token =
+      cookieStore.get(
+        SESSION_COOKIE
+      )?.value;
+
+    return verifyAgentSessionToken(
+      token
+    );
+  } catch (error) {
+    console.error(
+      'Failed to read agent session:',
+      error
+    );
+
+    return null;
+  }
 }
 
-export async function isAgentAuthenticated() {
+/*
+|--------------------------------------------------------------------------
+| CHECK AGENT AUTHENTICATION
+|--------------------------------------------------------------------------
+*/
+
+export async function isAgentAuthenticated(): Promise<boolean> {
   const agentId =
     await getCurrentAgentId();
 
   return agentId !== null;
 }
 
-/* NEW */
+/*
+|--------------------------------------------------------------------------
+| GET CURRENT AGENT
+|--------------------------------------------------------------------------
+|
+| This is the preferred helper for protected Agent routes.
+|
+| The browser does NOT provide the agent ID.
+|
+| The ID comes from the signed HttpOnly session cookie.
+|
+*/
+
 export async function getAgentFromSession() {
   const agentId =
     await getCurrentAgentId();
@@ -145,21 +314,55 @@ export async function getAgentFromSession() {
       where: {
         id: agentId,
       },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+        slug: true,
+        phone: true,
+        profileImage: true,
+        bio: true,
+        facebook: true,
+        messenger: true,
+        isActive: true,
+        address: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
-  if (!agent || !agent.isActive) {
+  /*
+  |--------------------------------------------------------------------------
+  | ACCOUNT MUST EXIST AND BE ACTIVE
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    !agent ||
+    !agent.isActive
+  ) {
     return null;
   }
 
   return agent;
 }
 
+/*
+|--------------------------------------------------------------------------
+| SET AGENT SESSION COOKIE
+|--------------------------------------------------------------------------
+*/
+
 export function setAgentSessionCookie(
   response: Response,
   agentId: number
-) {
+): void {
   const token =
-    createAgentSessionToken(agentId);
+    createAgentSessionToken(
+      agentId
+    );
 
   const secure =
     process.env.NODE_ENV ===
@@ -169,13 +372,29 @@ export function setAgentSessionCookie(
 
   response.headers.append(
     'Set-Cookie',
-    `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`
+    [
+      `${SESSION_COOKIE}=${token}`,
+      'Path=/',
+      'HttpOnly',
+      'SameSite=Lax',
+      `Max-Age=${SESSION_MAX_AGE}`,
+      'Priority=High',
+      secure.replace('; ', ''),
+    ]
+      .filter(Boolean)
+      .join('; ')
   );
 }
+
+/*
+|--------------------------------------------------------------------------
+| CLEAR AGENT SESSION COOKIE
+|--------------------------------------------------------------------------
+*/
 
 export function clearAgentSessionCookie(
   response: Response
-) {
+): void {
   const secure =
     process.env.NODE_ENV ===
     'production'
@@ -184,6 +403,17 @@ export function clearAgentSessionCookie(
 
   response.headers.append(
     'Set-Cookie',
-    `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
+    [
+      `${SESSION_COOKIE}=`,
+      'Path=/',
+      'HttpOnly',
+      'SameSite=Lax',
+      'Max-Age=0',
+      'Priority=High',
+      secure.replace('; ', ''),
+    ]
+      .filter(Boolean)
+      .join('; ')
   );
 }
+

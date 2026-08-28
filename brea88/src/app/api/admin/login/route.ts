@@ -1,118 +1,308 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const SESSION_COOKIE = 'admin_session';
+import {
+  createAdminSessionToken,
+} from '@/lib/admin-auth';
 
-function createSessionToken(): string {
-  const secret = process.env.ADMIN_SESSION_SECRET;
+/*
+|--------------------------------------------------------------------------
+| PASSWORD HASH
+|--------------------------------------------------------------------------
+*/
 
-  if (!secret) {
-    throw new Error('ADMIN_SESSION_SECRET is not configured');
-  }
-
-  const timestamp = Date.now().toString();
-
-  const signature = crypto
-    .createHmac('sha256', secret)
-    .update(timestamp)
+function hashPassword(password: string): string {
+  return crypto
+    .createHash('sha256')
+    .update(password)
     .digest('hex');
-
-  return `${timestamp}.${signature}`;
 }
 
-export async function POST(request: Request) {
+/*
+|--------------------------------------------------------------------------
+| SAFE COMPARISON
+|--------------------------------------------------------------------------
+*/
+
+function safeCompare(
+  a: string,
+  b: string
+): boolean {
+  const bufferA =
+    Buffer.from(a);
+
+  const bufferB =
+    Buffer.from(b);
+
+  if (
+    bufferA.length !==
+    bufferB.length
+  ) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(
+    bufferA,
+    bufferB
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| POST /api/admin/login
+|--------------------------------------------------------------------------
+*/
+
+export async function POST(
+  request: Request
+) {
   try {
-    const body = await request.json();
+    /*
+    |--------------------------------------------------------------------------
+    | PARSE REQUEST
+    |--------------------------------------------------------------------------
+    */
 
-    const username =
-      typeof body.username === 'string'
-        ? body.username.trim()
-        : '';
+    let body: unknown;
 
-    const password =
-      typeof body.password === 'string'
-        ? body.password
-        : '';
-
-    const validUsername = process.env.ADMIN_USERNAME;
-    const validPassword = process.env.ADMIN_PASSWORD;
-
-    if (!validUsername || !validPassword) {
-      console.error(
-        'Admin authentication environment variables are not configured.'
-      );
-
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
         {
           success: false,
-          message: 'Server authentication is not configured.',
-        },
-        { status: 500 }
-      );
-    }
-
-    if (!username || !password) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Username and password are required.',
+          message:
+            'Invalid request body.',
         },
         { status: 400 }
       );
     }
 
-    const usernameMatches =
-      crypto.timingSafeEqual(
-        Buffer.from(username),
-        Buffer.from(validUsername)
-      );
-
-    const passwordMatches =
-      crypto.timingSafeEqual(
-        Buffer.from(password),
-        Buffer.from(validPassword)
-      );
-
-    if (!usernameMatches || !passwordMatches) {
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid username or password.',
+          message:
+            'Invalid login data.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const data =
+      body as Record<
+        string,
+        unknown
+      >;
+
+    /*
+    |--------------------------------------------------------------------------
+    | INPUTS
+    |--------------------------------------------------------------------------
+    */
+
+    const email =
+      typeof data.email === 'string'
+        ? data.email
+            .trim()
+            .toLowerCase()
+        : '';
+
+    const password =
+      typeof data.password === 'string'
+        ? data.password
+        : '';
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (!email || !password) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Email and password are required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN CREDENTIALS
+    |--------------------------------------------------------------------------
+    |
+    | These values come from:
+    |
+    | ADMIN_EMAIL
+    | ADMIN_PASSWORD_HASH
+    |
+    | Example:
+    |
+    | ADMIN_EMAIL=admin@example.com
+    | ADMIN_PASSWORD_HASH=<sha256 hash>
+    |
+    |--------------------------------------------------------------------------
+    */
+
+    const adminEmail =
+      process.env.ADMIN_EMAIL
+        ?.trim()
+        .toLowerCase();
+
+    const adminPasswordHash =
+      process.env.ADMIN_PASSWORD_HASH;
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONFIGURATION CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !adminEmail ||
+      !adminPasswordHash
+    ) {
+      console.error(
+        'Admin authentication is not configured. Missing ADMIN_EMAIL or ADMIN_PASSWORD_HASH.'
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Admin authentication is not configured.',
+        },
+        { status: 500 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EMAIL CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    const emailMatches =
+      safeCompare(
+        email,
+        adminEmail
+      );
+
+    /*
+    |--------------------------------------------------------------------------
+    | PASSWORD CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    const passwordHash =
+      hashPassword(password);
+
+    const passwordMatches =
+      safeCompare(
+        passwordHash,
+        adminPasswordHash
+      );
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTHENTICATION CHECK
+    |--------------------------------------------------------------------------
+    |
+    | We intentionally use the same generic error
+    | for invalid email/password.
+    |
+    | This prevents revealing which admin credential
+    | is incorrect.
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !emailMatches ||
+      !passwordMatches
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Invalid email or password.',
         },
         { status: 401 }
       );
     }
 
-    const token = createSessionToken();
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE ADMIN SESSION
+    |--------------------------------------------------------------------------
+    */
 
-    const response = NextResponse.json(
-      {
+    const token =
+      createAdminSessionToken();
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    const response =
+      NextResponse.json({
         success: true,
-        message: 'Authentication successful.',
-      },
-      { status: 200 }
-    );
+        message:
+          'Admin login successful.',
+        admin: {
+          email: adminEmail,
+          role: 'Admin',
+        },
+      });
+
+    /*
+    |--------------------------------------------------------------------------
+    | SECURE ADMIN COOKIE
+    |--------------------------------------------------------------------------
+    */
 
     response.cookies.set({
-      name: SESSION_COOKIE,
+      name: 'admin_session',
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+
+      secure:
+        process.env.NODE_ENV ===
+        'production',
+
       sameSite: 'strict',
-      maxAge: 60 * 60 * 2,
+
+      // 2 hours
+      maxAge:
+        60 * 60 * 2,
+
       path: '/',
     });
 
     return response;
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error(
+      'POST /api/admin/login error:',
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Unable to process login.',
+        message:
+          'Unable to process admin login.',
       },
       { status: 500 }
     );
   }
 }
+

@@ -30,6 +30,8 @@ import {
   Home,
   Layers3,
   Tag,
+  Send,
+  CheckCircle2,
 } from 'lucide-react';
 
 import { useSearchParams } from 'next/navigation';
@@ -51,15 +53,8 @@ interface Agent {
 interface Property {
   id: number;
   title: string;
-
-  /*
-   * Existing field
-   */
   tag: string;
 
-  /*
-   * New classification fields
-   */
   category?: string | null;
   propertyType?: string | null;
   houseType?: string | null;
@@ -126,7 +121,7 @@ const STOREY_OPTIONS = [
 ];
 
 /* =========================================================
-   HELPER
+   MARKETPLACE CONTENT
 ========================================================= */
 
 function MarketplaceContent() {
@@ -135,7 +130,7 @@ function MarketplaceContent() {
   const agentSlug = searchParams.get('agent');
 
   /* =======================================================
-     STATE
+     PROPERTY STATE
   ======================================================= */
 
   const [properties, setProperties] =
@@ -143,6 +138,10 @@ function MarketplaceContent() {
 
   const [loading, setLoading] =
     useState(true);
+
+  /* =======================================================
+     SEARCH / FILTER STATE
+  ======================================================= */
 
   const [searchQuery, setSearchQuery] =
     useState('');
@@ -169,11 +168,43 @@ function MarketplaceContent() {
       'price-desc'
     >('default');
 
+  /* =======================================================
+     PROPERTY MODAL
+  ======================================================= */
+
   const [selectedProperty, setSelectedProperty] =
     useState<Property | null>(null);
 
   const [selectedImage, setSelectedImage] =
     useState(0);
+
+  /* =======================================================
+     INQUIRY FORM
+  ======================================================= */
+
+  const [showInquiryForm, setShowInquiryForm] =
+    useState(false);
+
+  const [inquiryName, setInquiryName] =
+    useState('');
+
+  const [inquiryEmail, setInquiryEmail] =
+    useState('');
+
+  const [inquiryPhone, setInquiryPhone] =
+    useState('');
+
+  const [inquiryMessage, setInquiryMessage] =
+    useState('');
+
+  const [submittingInquiry, setSubmittingInquiry] =
+    useState(false);
+
+  const [inquirySuccess, setInquirySuccess] =
+    useState(false);
+
+  const [inquiryError, setInquiryError] =
+    useState('');
 
   /* =======================================================
      FETCH PROPERTIES
@@ -228,7 +259,7 @@ function MarketplaceContent() {
   ): number => {
     return (
       Number(
-        price.replace(
+        String(price).replace(
           /[^0-9.]/g,
           ''
         )
@@ -393,7 +424,7 @@ function MarketplaceContent() {
   };
 
   /* =======================================================
-     PROPERTY MODAL
+     OPEN PROPERTY
   ======================================================= */
 
   const openProperty = (
@@ -405,14 +436,28 @@ function MarketplaceContent() {
 
     setSelectedImage(0);
 
+    setShowInquiryForm(false);
+    setInquirySuccess(false);
+    setInquiryError('');
+
     document.body.style.overflow =
       'hidden';
   };
+
+  /* =======================================================
+     CLOSE PROPERTY
+  ======================================================= */
 
   const closeProperty = () => {
     setSelectedProperty(null);
 
     setSelectedImage(0);
+
+    setShowInquiryForm(false);
+
+    setInquirySuccess(false);
+
+    setInquiryError('');
 
     document.body.style.overflow =
       'auto';
@@ -498,29 +543,149 @@ function MarketplaceContent() {
   }, []);
 
   /* =======================================================
-     CHECK IF HOUSE PROPERTY
+     OPEN INQUIRY FORM
   ======================================================= */
 
-  const isHouseProperty = (
-    property: Property
-  ) => {
-    const text = [
-      property.category,
-      property.propertyType,
-      property.houseType,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
+  const openInquiryForm = () => {
+    setShowInquiryForm(true);
 
-    return (
-      text.includes('house') ||
-      text.includes('duplex') ||
-      text.includes('townhouse') ||
-      text.includes('row house') ||
-      text.includes('attached') ||
-      text.includes('detached')
-    );
+    setInquirySuccess(false);
+    setInquiryError('');
+  };
+
+  /* =======================================================
+     CLOSE INQUIRY FORM
+  ======================================================= */
+
+  const closeInquiryForm = () => {
+    if (submittingInquiry) {
+      return;
+    }
+
+    setShowInquiryForm(false);
+
+    setInquiryError('');
+  };
+
+  /* =======================================================
+     SUBMIT INQUIRY
+     
+     IMPORTANT:
+     NO agentId IS SENT HERE.
+
+     The API route will determine which
+     logged-in agent receives the inquiry.
+  ======================================================= */
+
+  const submitInquiry = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
+    if (!selectedProperty) {
+      return;
+    }
+
+    setInquiryError('');
+    setInquirySuccess(false);
+    setSubmittingInquiry(true);
+
+    try {
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: inquiryName.trim(),
+            email: inquiryEmail.trim(),
+            phone: inquiryPhone.trim(),
+            message:
+              inquiryMessage.trim(),
+            propertyId:
+              selectedProperty.id,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+          'Failed to submit inquiry.'
+        );
+      }
+
+      setInquirySuccess(true);
+
+      setInquiryName('');
+      setInquiryEmail('');
+      setInquiryPhone('');
+      setInquiryMessage('');
+    } catch (error) {
+      console.error(
+        'Inquiry submission failed:',
+        error
+      );
+
+      setInquiryError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to submit inquiry. Please try again.'
+      );
+    } finally {
+      setSubmittingInquiry(false);
+    }
+  };
+
+  /* =======================================================
+     SCHEDULE VIEWING
+     
+     This still uses email for now.
+     Later we can make viewing requests
+     use the same inquiry system.
+  ======================================================= */
+
+  const scheduleViewing = () => {
+    if (!selectedProperty) {
+      return;
+    }
+
+    const subject =
+      encodeURIComponent(
+        `Property Viewing Request - ${selectedProperty.title}`
+      );
+
+    const body =
+      encodeURIComponent(
+        `Hello,\n\nI am interested in viewing the property "${selectedProperty.title}" located at ${selectedProperty.location}.\n\nI would like to schedule a property viewing.\n\nThank you.`
+      );
+
+    if (
+      selectedProperty.agent?.email
+    ) {
+      window.location.href =
+        `mailto:${selectedProperty.agent.email}?subject=${subject}&body=${body}`;
+
+      return;
+    }
+
+    /*
+     * If no property agent is assigned,
+     * open the inquiry form instead.
+     *
+     * This prevents the marketplace
+     * from depending on a property-level
+     * agent assignment.
+     */
+
+    openInquiryForm();
   };
 
   /* =======================================================
@@ -627,7 +792,9 @@ function MarketplaceContent() {
                     }
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-white/10 hover:text-white"
                   >
+
                     <X className="h-4 w-4" />
+
                   </button>
 
                 )}
@@ -648,8 +815,6 @@ function MarketplaceContent() {
       <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
 
         <div className="sticky top-2 z-30 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur-xl sm:p-5">
-
-          {/* CATEGORY */}
 
           <div>
 
@@ -672,6 +837,7 @@ function MarketplaceContent() {
                     key={category}
                     type="button"
                     onClick={() => {
+
                       setSelectedCategory(
                         category
                       );
@@ -684,13 +850,17 @@ function MarketplaceContent() {
                         category !==
                         'House & Lot'
                       ) {
+
                         setSelectedHouseType(
                           'All'
                         );
+
                         setSelectedStorey(
                           'All'
                         );
+
                       }
+
                     }}
                     className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-bold transition ${
                       selectedCategory ===
@@ -712,8 +882,6 @@ function MarketplaceContent() {
           {/* SECONDARY FILTERS */}
 
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-
-            {/* PROPERTY TYPE */}
 
             <div>
 
@@ -758,8 +926,6 @@ function MarketplaceContent() {
 
             </div>
 
-            {/* HOUSE TYPE */}
-
             <div>
 
               <label className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
@@ -802,8 +968,6 @@ function MarketplaceContent() {
               </select>
 
             </div>
-
-            {/* STOREY */}
 
             <div>
 
@@ -907,8 +1071,6 @@ function MarketplaceContent() {
 
             </div>
 
-            {/* SORT */}
-
             <div className="w-full lg:w-64">
 
               <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-500">
@@ -951,8 +1113,6 @@ function MarketplaceContent() {
             </div>
 
           </div>
-
-          {/* RESET */}
 
           {(searchQuery ||
             selectedCategory !==
@@ -1067,9 +1227,11 @@ function MarketplaceContent() {
                 >
 
                   <div className="pointer-events-none">
+
                     <PropertyCard
                       property={property}
                     />
+
                   </div>
 
                 </button>
@@ -1095,9 +1257,8 @@ function MarketplaceContent() {
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Try changing your search,
-              property category,
-              property type, house type,
-              storey, or budget.
+              property category, property type,
+              house type, storey, or budget.
             </p>
 
             <button
@@ -1328,15 +1489,15 @@ function MarketplaceContent() {
 
                 <div className="p-5 sm:p-8">
 
-                  {/* CLASSIFICATION BADGES */}
-
                   <div className="flex flex-wrap gap-2">
 
                     {selectedProperty.category && (
 
                       <span className="inline-flex rounded-full bg-blue-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-blue-800">
 
-                        {selectedProperty.category}
+                        {
+                          selectedProperty.category
+                        }
 
                       </span>
 
@@ -1346,15 +1507,15 @@ function MarketplaceContent() {
 
                       <span className="inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
 
-                        {selectedProperty.propertyType}
+                        {
+                          selectedProperty.propertyType
+                        }
 
                       </span>
 
                     )}
 
                   </div>
-
-                  {/* TITLE */}
 
                   <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
 
@@ -1363,8 +1524,6 @@ function MarketplaceContent() {
                     }
 
                   </h2>
-
-                  {/* LOCATION */}
 
                   <div className="mt-3 flex items-start gap-2 text-sm text-slate-500">
 
@@ -1378,20 +1537,28 @@ function MarketplaceContent() {
 
                   </div>
 
-                  {/* PRICE */}
-
                   <p className="mt-6 text-3xl font-black text-blue-950 sm:text-4xl">
-                    ₱ {Number(
-                      String(selectedProperty.price).replace(/[^0-9.]/g, '')
-                    ).toLocaleString('en-US', {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })}
+
+                    ₱{' '}
+
+                    {Number(
+                      String(
+                        selectedProperty.price
+                      ).replace(
+                        /[^0-9.]/g,
+                        ''
+                      )
+                    ).toLocaleString(
+                      'en-US',
+                      {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }
+                    )}
+
                   </p>
 
-                  {/* =================================================
-                      CLASSIFICATION INFORMATION
-                  ================================================== */}
+                  {/* CLASSIFICATION */}
 
                   <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
@@ -1484,9 +1651,7 @@ function MarketplaceContent() {
 
                   </div>
 
-                  {/* =================================================
-                      PROPERTY FEATURES
-                  ================================================== */}
+                  {/* FEATURES */}
 
                   {(selectedProperty.beds !==
                     null &&
@@ -1576,9 +1741,7 @@ function MarketplaceContent() {
 
                   ) : null}
 
-                  {/* =================================================
-                      PROPERTY INFORMATION
-                  ================================================== */}
+                  {/* PROPERTY INFORMATION */}
 
                   <div className="mt-8 border-t border-slate-200 pt-7">
 
@@ -1587,16 +1750,13 @@ function MarketplaceContent() {
                     </h3>
 
                     <p className="mt-3 text-sm leading-7 text-slate-500">
-
                       This property is
                       available through
                       BREA 88 Realty.
-                      Contact the assigned
-                      agent for complete
-                      property details,
-                      availability, pricing,
-                      and viewing schedules.
-
+                      Submit an inquiry
+                      to connect with
+                      the agent currently
+                      handling your session.
                     </p>
 
                   </div>
@@ -1604,232 +1764,404 @@ function MarketplaceContent() {
                 </div>
 
                 {/* =================================================
-                    AGENT CARD
+                    AGENT / INQUIRY SIDEBAR
                 ================================================== */}
 
                 <aside className="border-t border-slate-200 bg-slate-50 p-5 sm:p-8 lg:border-l lg:border-t-0">
 
                   <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">
-                    Listed By
+                    Property Inquiry
                   </p>
 
-                  {selectedProperty.agent ? (
+                  {/* =================================================
+                      SUCCESS MESSAGE
+                  ================================================== */}
 
-                    <>
+                  {inquirySuccess ? (
 
-                      <div className="mt-5 flex items-center gap-4">
+                    <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
 
-                        <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200">
+                      <div className="flex items-start gap-3">
 
-                          {selectedProperty.agent.profileImage ? (
+                        <CheckCircle2 className="mt-0.5 h-6 w-6 flex-shrink-0 text-emerald-600" />
 
-                            <img
-                              src={
-                                selectedProperty.agent.profileImage
-                              }
-                              alt={
-                                selectedProperty.agent.fullName
-                              }
-                              className="h-full w-full object-cover"
-                            />
+                        <div>
 
-                          ) : (
-
-                            <User className="h-7 w-7 text-slate-400" />
-
-                          )}
-
-                        </div>
-
-                        <div className="min-w-0">
-
-                          <h3 className="truncate text-lg font-black">
-
-                            {
-                              selectedProperty.agent.fullName
-                            }
-
+                          <h3 className="font-black text-emerald-900">
+                            Inquiry Sent
                           </h3>
 
-                          <p className="text-xs font-semibold text-slate-500">
-
-                            {
-                              selectedProperty.agent.role
-                            }
-
+                          <p className="mt-2 text-sm leading-6 text-emerald-700">
+                            Your inquiry has
+                            been submitted
+                            successfully.
+                            The appropriate
+                            agent will handle
+                            your inquiry.
                           </p>
 
                         </div>
 
                       </div>
 
-                      {/* CONTACT */}
-
-                      <div className="mt-6 space-y-2">
-
-                        {selectedProperty.agent.phone && (
-
-                          <a
-                            href={`tel:${selectedProperty.agent.phone}`}
-                            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
-                          >
-
-                            <Phone className="h-4 w-4 text-blue-700" />
-
-                            <span className="truncate">
-                              {
-                                selectedProperty.agent.phone
-                              }
-                            </span>
-
-                          </a>
-
-                        )}
-
-                        {selectedProperty.agent.email && (
-
-                          <a
-                            href={`mailto:${selectedProperty.agent.email}`}
-                            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
-                          >
-
-                            <Mail className="h-4 w-4 text-blue-700" />
-
-                            <span className="truncate">
-                              {
-                                selectedProperty.agent.email
-                              }
-                            </span>
-
-                          </a>
-
-                        )}
-
-                      </div>
-
-                      {/* BUTTONS */}
-
-                      <div className="mt-6 space-y-2">
-
-                        {selectedProperty.agent.phone && (
-
-                          <a
-                            href={`tel:${selectedProperty.agent.phone}`}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3.5 text-sm font-black text-white transition hover:bg-blue-800 active:scale-[0.98]"
-                          >
-
-                            <Phone className="h-4 w-4" />
-
-                            Call Agent
-
-                          </a>
-
-                        )}
-
-                        {selectedProperty.agent.messenger && (
-
-                          <a
-                            href={
-                              selectedProperty.agent.messenger
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-800 transition hover:bg-slate-100"
-                          >
-
-                            <MessageCircle className="h-4 w-4" />
-
-                            Messenger
-
-                          </a>
-
-                        )}
-
-                        {selectedProperty.agent.facebook && (
-
-                          <a
-                            href={
-                              selectedProperty.agent.facebook
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-800 transition hover:bg-slate-100"
-                          >
-
-                            <span className="text-lg font-black">
-                              f
-                            </span>
-
-                            Facebook
-
-                          </a>
-
-                        )}
-
-                      </div>
-
-                      {/* SCHEDULE */}
-
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={() =>
+                          setInquirySuccess(
+                            false
+                          )
+                        }
+                        className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+                      >
+                        Send Another Inquiry
+                      </button>
 
-                          const subject =
-                            encodeURIComponent(
-                              `Property Viewing Request - ${selectedProperty.title}`
-                            );
+                    </div>
 
-                          const body =
-                            encodeURIComponent(
-                              `Hello ${selectedProperty.agent?.fullName},\n\nI am interested in viewing the property "${selectedProperty.title}" located at ${selectedProperty.location}.\n\nI would like to schedule a property viewing.\n\nThank you.`
-                            );
+                  ) : showInquiryForm ? (
 
-                          if (
-                            selectedProperty
-                              .agent
-                              ?.email
-                          ) {
+                    /* =================================================
+                       INQUIRY FORM
+                    ================================================== */
 
-                            window.location.href =
-                              `mailto:${selectedProperty.agent.email}?subject=${subject}&body=${body}`;
+                    <form
+                      onSubmit={
+                        submitInquiry
+                      }
+                      className="mt-5 space-y-4"
+                    >
 
+                      <div>
+
+                        <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                          Full Name
+                        </label>
+
+                        <input
+                          type="text"
+                          required
+                          value={
+                            inquiryName
                           }
+                          onChange={(e) =>
+                            setInquiryName(
+                              e.target.value
+                            )
+                          }
+                          placeholder="Enter your full name"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition focus:border-blue-500"
+                        />
 
-                        }}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.98]"
+                      </div>
+
+                      <div>
+
+                        <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                          Email
+                        </label>
+
+                        <input
+                          type="email"
+                          required
+                          value={
+                            inquiryEmail
+                          }
+                          onChange={(e) =>
+                            setInquiryEmail(
+                              e.target.value
+                            )
+                          }
+                          placeholder="you@example.com"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition focus:border-blue-500"
+                        />
+
+                      </div>
+
+                      <div>
+
+                        <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                          Phone Number
+                        </label>
+
+                        <input
+                          type="tel"
+                          required
+                          value={
+                            inquiryPhone
+                          }
+                          onChange={(e) =>
+                            setInquiryPhone(
+                              e.target.value
+                            )
+                          }
+                          placeholder="09XXXXXXXXX"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition focus:border-blue-500"
+                        />
+
+                      </div>
+
+                      <div>
+
+                        <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                          Message
+                        </label>
+
+                        <textarea
+                          required
+                          rows={5}
+                          value={
+                            inquiryMessage
+                          }
+                          onChange={(e) =>
+                            setInquiryMessage(
+                              e.target.value
+                            )
+                          }
+                          placeholder={`I'm interested in ${selectedProperty.title}. Please provide more information.`}
+                          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium outline-none transition focus:border-blue-500"
+                        />
+
+                      </div>
+
+                      {inquiryError && (
+
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold leading-5 text-red-700">
+
+                          {inquiryError}
+
+                        </div>
+
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={
+                          submittingInquiry
+                        }
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3.5 text-sm font-black text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                       >
 
-                        <CalendarDays className="h-4 w-4" />
+                        {submittingInquiry ? (
 
-                        Schedule Viewing
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+
+                            Sending...
+
+                          </>
+
+                        ) : (
+
+                          <>
+                            <Send className="h-4 w-4" />
+
+                            Submit Inquiry
+
+                          </>
+
+                        )}
 
                       </button>
 
-                      {/* PROFILE */}
-
-                      <a
-                        href={`/agent/${selectedProperty.agent.slug}`}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-blue-900 transition hover:bg-blue-50"
+                      <button
+                        type="button"
+                        onClick={
+                          closeInquiryForm
+                        }
+                        disabled={
+                          submittingInquiry
+                        }
+                        className="w-full rounded-xl px-4 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
                       >
+                        Cancel
+                      </button>
 
-                        View Agent Profile
-
-                      </a>
-
-                    </>
+                    </form>
 
                   ) : (
 
-                    <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 text-center">
+                    /* =================================================
+                       DEFAULT SIDEBAR
+                    ================================================== */
 
-                      <User className="mx-auto h-8 w-8 text-slate-300" />
+                    <>
 
-                      <p className="mt-3 text-sm font-semibold text-slate-500">
-                        Agent information is
-                        currently unavailable.
-                      </p>
+                      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
 
-                    </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+
+                          <MessageCircle className="h-6 w-6 text-blue-900" />
+
+                        </div>
+
+                        <h3 className="mt-4 text-lg font-black text-slate-950">
+                          Interested in this property?
+                        </h3>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                          Send an inquiry
+                          and provide your
+                          contact details.
+                          Your inquiry will
+                          automatically be
+                          assigned to the
+                          appropriate logged-in
+                          agent.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={
+                            openInquiryForm
+                          }
+                          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3.5 text-sm font-black text-white transition hover:bg-blue-800 active:scale-[0.98]"
+                        >
+
+                          <Send className="h-4 w-4" />
+
+                          Send Inquiry
+
+                        </button>
+
+                      </div>
+
+                      {/* CURRENT PROPERTY AGENT */}
+
+                      {selectedProperty.agent && (
+
+                        <div className="mt-5 border-t border-slate-200 pt-5">
+
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+                            Property Contact
+                          </p>
+
+                          <div className="mt-4 flex items-center gap-3">
+
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200">
+
+                              {selectedProperty.agent.profileImage ? (
+
+                                <img
+                                  src={
+                                    selectedProperty.agent.profileImage
+                                  }
+                                  alt={
+                                    selectedProperty.agent.fullName
+                                  }
+                                  className="h-full w-full object-cover"
+                                />
+
+                              ) : (
+
+                                <User className="h-6 w-6 text-slate-400" />
+
+                              )}
+
+                            </div>
+
+                            <div className="min-w-0">
+
+                              <h3 className="truncate text-sm font-black">
+                                {
+                                  selectedProperty.agent.fullName
+                                }
+                              </h3>
+
+                              <p className="text-xs font-semibold text-slate-500">
+                                {
+                                  selectedProperty.agent.role
+                                }
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                          {selectedProperty.agent.phone && (
+
+                            <a
+                              href={`tel:${selectedProperty.agent.phone}`}
+                              className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+                            >
+
+                              <Phone className="h-4 w-4 text-blue-700" />
+
+                              <span className="truncate">
+                                {
+                                  selectedProperty.agent.phone
+                                }
+                              </span>
+
+                            </a>
+
+                          )}
+
+                          {selectedProperty.agent.email && (
+
+                            <a
+                              href={`mailto:${selectedProperty.agent.email}`}
+                              className="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+                            >
+
+                              <Mail className="h-4 w-4 text-blue-700" />
+
+                              <span className="truncate">
+                                {
+                                  selectedProperty.agent.email
+                                }
+                              </span>
+
+                            </a>
+
+                          )}
+
+                          {selectedProperty.agent.messenger && (
+
+                            <a
+                              href={
+                                selectedProperty.agent.messenger
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-800 transition hover:bg-slate-100"
+                            >
+
+                              <MessageCircle className="h-4 w-4" />
+
+                              Messenger
+
+                            </a>
+
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={
+                              scheduleViewing
+                            }
+                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.98]"
+                          >
+
+                            <CalendarDays className="h-4 w-4" />
+
+                            Schedule Viewing
+
+                          </button>
+
+                          <a
+                            href={`/agent/${selectedProperty.agent.slug}`}
+                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-blue-900 transition hover:bg-blue-50"
+                          >
+
+                            View Agent Profile
+
+                          </a>
+
+                        </div>
+
+                      )}
+
+                    </>
 
                   )}
 
@@ -1878,3 +2210,4 @@ export default function MarketplacePage() {
     </Suspense>
   );
 }
+

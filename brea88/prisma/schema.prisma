@@ -23,11 +23,14 @@ model Agent {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   address      String?
+
+  // An agent handles inquiries.
+  // Agents do NOT own/manage properties.
   inquiries    Inquiry[]
-  properties   Property[]
 
   @@index([slug])
   @@index([role])
+  @@index([isActive])
   @@map("agents")
 }
 
@@ -48,35 +51,45 @@ model Property {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   images       String[] @default([])
-  agentId      Int?
 
-  inquiries Inquiry[]
-  agent     Agent?    @relation(fields: [agentId], references: [id])
+  // Properties belong to the Admin/property inventory.
+  // There is NO agentId here.
+  inquiries    Inquiry[]
 
   @@index([tag])
   @@index([category])
   @@index([propertyType])
   @@index([location])
-  @@index([agentId])
   @@map("properties")
 }
 
 model Inquiry {
   id         Int      @id @default(autoincrement())
+
+  // Client information
   name       String
   email      String
   phone      String
   message    String
+
+  // Property being inquired about
   propertyId Int
-  agentId    Int?
+
+  // Agent automatically assigned when the inquiry is created.
+  agentId    Int
+
+  // Inquiry workflow
   status     String   @default("New")
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  agent      Agent?   @relation(fields: [agentId], references: [id])
+
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Restrict)
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([agentId])
   @@index([status])
+  @@index([createdAt])
   @@map("inquiries")
 }

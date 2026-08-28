@@ -1,44 +1,54 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 /*
 |--------------------------------------------------------------------------
-| GET /api/properties
+| GET /admin/api/properties
 |--------------------------------------------------------------------------
 | Fetch all properties with their assigned agent.
+|
+| GET is intentionally public/read-only here.
+|--------------------------------------------------------------------------
 */
+
 export async function GET() {
   try {
-    const properties = await prisma.property.findMany({
-      include: {
-        agent: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-            role: true,
-            messenger: true,
-            facebook: true,
+    const properties =
+      await prisma.property.findMany({
+        include: {
+          agent: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              role: true,
+              messenger: true,
+              facebook: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
     return NextResponse.json({
       success: true,
       properties,
     });
   } catch (error) {
-    console.error('GET /api/properties error:', error);
+    console.error(
+      'GET /admin/api/properties error:',
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch properties',
+        message:
+          'Failed to fetch properties.',
       },
       { status: 500 }
     );
@@ -47,124 +57,225 @@ export async function GET() {
 
 /*
 |--------------------------------------------------------------------------
-| POST /api/properties
+| POST /admin/api/properties
 |--------------------------------------------------------------------------
 | Create a new property.
+|
+| ADMIN ONLY
+|--------------------------------------------------------------------------
 */
-export async function POST(request: Request) {
+
+export async function POST(
+  request: Request
+) {
   try {
-    const body = await request.json();
-
-    console.log('POST /api/properties body:', body);
-
     /*
-     * Required fields
-     */
-    if (!body.title?.trim()) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Property title is required.',
-        },
-        { status: 400 }
-      );
-    }
+    |--------------------------------------------------------------------------
+    | ADMIN AUTHORIZATION
+    |--------------------------------------------------------------------------
+    */
 
-    if (!body.tag?.trim()) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Property tag is required.',
-        },
-        { status: 400 }
-      );
-    }
+    const authenticated =
+      await isAdminAuthenticated();
 
-    if (!body.location?.trim()) {
+    if (!authenticated) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Property location is required.',
+          message: 'Unauthorized.',
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
     /*
-     * Your Prisma schema requires image to be a String.
-     * If no image is supplied, use an empty string.
-     */
-    const image =
-      typeof body.image === 'string'
-        ? body.image.trim()
+    |--------------------------------------------------------------------------
+    | PARSE REQUEST
+    |--------------------------------------------------------------------------
+    */
+
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Invalid request body.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Invalid property data.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const data =
+      body as Record<
+        string,
+        unknown
+      >;
+
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRED FIELDS
+    |--------------------------------------------------------------------------
+    */
+
+    const title =
+      typeof data.title === 'string'
+        ? data.title.trim()
         : '';
 
+    const tag =
+      typeof data.tag === 'string'
+        ? data.tag.trim()
+        : '';
+
+    const location =
+      typeof data.location === 'string'
+        ? data.location.trim()
+        : '';
+
+    if (!title) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Property title is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!tag) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Property tag is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!location) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Property location is required.',
+        },
+        { status: 400 }
+      );
+    }
+
     /*
-     * Price is a STRING in your Prisma schema.
-     *
-     * We keep it as a string so values such as:
-     *
-     * 12500000
-     * ₱12,500,000
-     * 12,500,000
-     *
-     * can be stored safely.
-     */
+    |--------------------------------------------------------------------------
+    | PRICE
+    |--------------------------------------------------------------------------
+    */
+
     let price = '';
 
     if (
-      body.price !== null &&
-      body.price !== undefined
+      data.price !== null &&
+      data.price !== undefined
     ) {
-      price = String(body.price).trim();
+      price =
+        String(data.price).trim();
     }
 
     /*
-     * Images must be a PostgreSQL String[].
-     */
-    const images = Array.isArray(body.images)
-      ? body.images.filter(
-          (image: unknown): image is string =>
-            typeof image === 'string' &&
-            image.trim().length > 0
-        )
-      : [];
+    |--------------------------------------------------------------------------
+    | IMAGE
+    |--------------------------------------------------------------------------
+    */
+
+    const image =
+      typeof data.image === 'string'
+        ? data.image.trim()
+        : '';
 
     /*
-     * Convert numeric values safely.
-     */
+    |--------------------------------------------------------------------------
+    | IMAGES
+    |--------------------------------------------------------------------------
+    */
+
+    const images =
+      Array.isArray(data.images)
+        ? data.images.filter(
+            (
+              value: unknown
+            ): value is string =>
+              typeof value ===
+                'string' &&
+              value.trim().length >
+                0
+          ).map(
+            (value) =>
+              value.trim()
+          )
+        : [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | NUMERIC FIELDS
+    |--------------------------------------------------------------------------
+    */
+
     const beds =
-      body.beds === null ||
-      body.beds === undefined ||
-      body.beds === ''
+      data.beds === null ||
+      data.beds === undefined ||
+      data.beds === ''
         ? null
-        : Number(body.beds);
+        : Number(data.beds);
 
     const baths =
-      body.baths === null ||
-      body.baths === undefined ||
-      body.baths === ''
+      data.baths === null ||
+      data.baths === undefined ||
+      data.baths === ''
         ? null
-        : Number(body.baths);
+        : Number(data.baths);
 
     const sqft =
-      body.sqft === null ||
-      body.sqft === undefined ||
-      body.sqft === ''
+      data.sqft === null ||
+      data.sqft === undefined ||
+      data.sqft === ''
         ? null
-        : Number(body.sqft);
+        : Number(data.sqft);
 
     /*
-     * Validate numeric fields.
-     */
+    |--------------------------------------------------------------------------
+    | NUMERIC VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
     if (
       beds !== null &&
-      !Number.isFinite(beds)
+      (!Number.isInteger(beds) ||
+        beds < 0)
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Bedrooms must be a valid number.',
+          message:
+            'Bedrooms must be a valid non-negative integer.',
         },
         { status: 400 }
       );
@@ -172,12 +283,14 @@ export async function POST(request: Request) {
 
     if (
       baths !== null &&
-      !Number.isFinite(baths)
+      (!Number.isInteger(baths) ||
+        baths < 0)
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Bathrooms must be a valid number.',
+          message:
+            'Bathrooms must be a valid non-negative integer.',
         },
         { status: 400 }
       );
@@ -185,131 +298,229 @@ export async function POST(request: Request) {
 
     if (
       sqft !== null &&
-      !Number.isFinite(sqft)
+      (!Number.isFinite(sqft) ||
+        sqft < 0)
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Area must be a valid number.',
+          message:
+            'Area must be a valid non-negative number.',
         },
         { status: 400 }
       );
     }
 
     /*
-     * Agent
-     *
-     * Your Property model uses:
-     *
-     * agentId Int?
-     */
+    |--------------------------------------------------------------------------
+    | AGENT
+    |--------------------------------------------------------------------------
+    */
+
     const agentId =
-      body.agentId === null ||
-      body.agentId === undefined ||
-      body.agentId === ''
+      data.agentId === null ||
+      data.agentId === undefined ||
+      data.agentId === ''
         ? null
-        : Number(body.agentId);
+        : Number(data.agentId);
 
     if (
       agentId !== null &&
-      !Number.isInteger(agentId)
+      (!Number.isInteger(agentId) ||
+        agentId <= 0)
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid agent ID.',
+          message:
+            'Invalid agent ID.',
         },
         { status: 400 }
       );
     }
 
     /*
-     * Create property
-     */
-    const property = await prisma.property.create({
-      data: {
-        title: body.title.trim(),
-        tag: body.tag.trim(),
+    |--------------------------------------------------------------------------
+    | VERIFY AGENT EXISTS
+    |--------------------------------------------------------------------------
+    */
 
-        category:
-          body.category?.trim() || null,
-
-        propertyType:
-          body.propertyType?.trim() || null,
-
-        houseType:
-          body.houseType?.trim() || null,
-
-        storey:
-          body.storey?.trim() || null,
-
-        price,
-
-        location: body.location.trim(),
-
-        image,
-
-        images,
-
-        beds,
-
-        baths,
-
-        sqft,
-
-        agentId,
-      },
-
-      include: {
-        agent: {
+    if (agentId !== null) {
+      const agent =
+        await prisma.agent.findUnique({
+          where: {
+            id: agentId,
+          },
           select: {
             id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-            role: true,
-            messenger: true,
-            facebook: true,
+            isActive: true,
+          },
+        });
+
+      if (!agent) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              'Assigned agent does not exist.',
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!agent.isActive) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              'Cannot assign a property to an inactive agent.',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGE REQUIREMENT
+    |--------------------------------------------------------------------------
+    |
+    | The Prisma schema requires `image`.
+    |
+    | If images[] exists but image is empty,
+    | use the first image as the cover image.
+    |--------------------------------------------------------------------------
+    */
+
+    const finalImages =
+      images.length > 0
+        ? images
+        : image
+          ? [image]
+          : [];
+
+    const coverImage =
+      image ||
+      finalImages[0] ||
+      '';
+
+    if (!coverImage) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'At least one property image is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | OPTIONAL TEXT FIELDS
+    |--------------------------------------------------------------------------
+    */
+
+    const category =
+      typeof data.category === 'string'
+        ? data.category.trim() ||
+          null
+        : null;
+
+    const propertyType =
+      typeof data.propertyType ===
+      'string'
+        ? data.propertyType.trim() ||
+          null
+        : null;
+
+    const houseType =
+      typeof data.houseType ===
+      'string'
+        ? data.houseType.trim() ||
+          null
+        : null;
+
+    const storey =
+      typeof data.storey === 'string'
+        ? data.storey.trim() ||
+          null
+        : null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PROPERTY
+    |--------------------------------------------------------------------------
+    */
+
+    const property =
+      await prisma.property.create({
+        data: {
+          title,
+          tag,
+
+          category,
+          propertyType,
+          houseType,
+          storey,
+
+          price,
+          location,
+
+          image: coverImage,
+          images: finalImages,
+
+          beds,
+          baths,
+          sqft,
+
+          agentId,
+        },
+
+        include: {
+          agent: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              role: true,
+              messenger: true,
+              facebook: true,
+            },
           },
         },
-      },
-    });
-
-    console.log(
-      'Property successfully created:',
-      property.id
-    );
+      });
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Property saved successfully.',
+        message:
+          'Property saved successfully.',
         property,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error(
-      'POST /api/properties error:',
+      'POST /admin/api/properties error:',
       error
     );
-
-    /*
-     * Return the actual error during development
-     * instead of hiding it behind "Something went wrong".
-     */
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : 'Unknown server error';
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create property.',
-        error: errorMessage,
+        message:
+          'Failed to create property.',
+        debug:
+          process.env.NODE_ENV !==
+            'production' &&
+          error instanceof Error
+            ? error.message
+            : undefined,
       },
       { status: 500 }
     );
   }
 }
+

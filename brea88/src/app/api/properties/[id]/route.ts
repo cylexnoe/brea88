@@ -8,15 +8,119 @@ type RouteContext = {
   }>;
 };
 
+/*
+|--------------------------------------------------------------------------
+| HELPERS
+|--------------------------------------------------------------------------
+*/
+
+function parsePropertyId(value: string): number | null {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
+}
+
+function cleanString(value: unknown): string {
+  return typeof value === 'string'
+    ? value.trim()
+    : '';
+}
+
+function cleanOptionalString(
+  value: unknown
+): string | null {
+  const valueString = cleanString(value);
+
+  return valueString || null;
+}
+
+function cleanImages(
+  value: unknown
+): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter(
+      (item): item is string =>
+        typeof item === 'string' &&
+        item.trim().length > 0
+    )
+    .map((item) => item.trim());
+}
+
+function parseOptionalInteger(
+  value: unknown
+): number | null {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ''
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (
+    !Number.isInteger(number) ||
+    number < 0
+  ) {
+    return null;
+  }
+
+  return number;
+}
+
+function parseOptionalFloat(
+  value: unknown
+): number | null {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ''
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (
+    !Number.isFinite(number) ||
+    number < 0
+  ) {
+    return null;
+  }
+
+  return number;
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET /api/properties/[id]
+|--------------------------------------------------------------------------
+| PUBLIC
+|
+| Visitors need to be able to view individual properties.
+|--------------------------------------------------------------------------
+*/
+
 export async function GET(
   request: Request,
   context: RouteContext
 ) {
   try {
     const { id } = await context.params;
-    const propertyId = Number(id);
 
-    if (!Number.isInteger(propertyId)) {
+    const propertyId =
+      parsePropertyId(id);
+
+    if (propertyId === null) {
       return NextResponse.json(
         {
           success: false,
@@ -26,11 +130,28 @@ export async function GET(
       );
     }
 
-    const property = await prisma.property.findUnique({
-      where: {
-        id: propertyId,
-      },
-    });
+    const property =
+      await prisma.property.findUnique({
+        where: {
+          id: propertyId,
+        },
+        include: {
+          agent: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              role: true,
+              slug: true,
+              profileImage: true,
+              bio: true,
+              facebook: true,
+              messenger: true,
+            },
+          },
+        },
+      });
 
     if (!property) {
       return NextResponse.json(
@@ -42,7 +163,10 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(property);
+    return NextResponse.json({
+      success: true,
+      property,
+    });
   } catch (error) {
     console.error(
       'GET /api/properties/[id] error:',
@@ -59,27 +183,51 @@ export async function GET(
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| PUT /api/properties/[id]
+|--------------------------------------------------------------------------
+| ADMIN ONLY
+|--------------------------------------------------------------------------
+*/
+
 export async function PUT(
   request: Request,
   context: RouteContext
 ) {
   try {
-    const authenticated = await isAdminAuthenticated();
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN PERMISSION CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    const authenticated =
+      await isAdminAuthenticated();
 
     if (!authenticated) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Unauthorized.',
+          message:
+            'Unauthorized. Administrator access is required.',
         },
         { status: 401 }
       );
     }
 
-    const { id } = await context.params;
-    const propertyId = Number(id);
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY ID
+    |--------------------------------------------------------------------------
+    */
 
-    if (!Number.isInteger(propertyId)) {
+    const { id } = await context.params;
+
+    const propertyId =
+      parsePropertyId(id);
+
+    if (propertyId === null) {
       return NextResponse.json(
         {
           success: false,
@@ -89,126 +237,283 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK PROPERTY EXISTS
+    |--------------------------------------------------------------------------
+    */
+
+    const existingProperty =
+      await prisma.property.findUnique({
+        where: {
+          id: propertyId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!existingProperty) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Property not found.',
+        },
+        { status: 404 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PARSE REQUEST BODY
+    |--------------------------------------------------------------------------
+    */
+
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid request body.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid property data.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const data =
+      body as Record<string, unknown>;
+
+    /*
+    |--------------------------------------------------------------------------
+    | BASIC INFORMATION
+    |--------------------------------------------------------------------------
+    */
 
     const title =
-      typeof body.title === 'string'
-        ? body.title.trim()
-        : '';
+      cleanString(data.title);
 
     const tag =
-      typeof body.tag === 'string'
-        ? body.tag.trim()
-        : '';
+      cleanString(data.tag);
 
     const price =
-      typeof body.price === 'string'
-        ? body.price.trim()
-        : '';
+      cleanString(data.price);
 
     const location =
-      typeof body.location === 'string'
-        ? body.location.trim()
-        : '';
+      cleanString(data.location);
 
-    const images = Array.isArray(body.images)
-      ? body.images.filter(
-          (item: unknown): item is string =>
-            typeof item === 'string' &&
-            item.trim().length > 0
-        )
-      : [];
+    /*
+    |--------------------------------------------------------------------------
+    | CLASSIFICATION
+    |--------------------------------------------------------------------------
+    */
+
+    const category =
+      cleanOptionalString(
+        data.category
+      );
+
+    const propertyType =
+      cleanOptionalString(
+        data.propertyType
+      );
+
+    const houseType =
+      cleanOptionalString(
+        data.houseType
+      );
+
+    const storey =
+      cleanOptionalString(
+        data.storey
+      );
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGES
+    |--------------------------------------------------------------------------
+    */
 
     const image =
-      typeof body.image === 'string'
-        ? body.image.trim()
-        : '';
+      cleanString(data.image);
+
+    const images =
+      cleanImages(data.images);
+
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY DETAILS
+    |--------------------------------------------------------------------------
+    */
 
     const beds =
-      body.beds !== undefined &&
-      body.beds !== null &&
-      body.beds !== ''
-        ? Number(body.beds)
-        : null;
+      parseOptionalInteger(data.beds);
 
     const baths =
-      body.baths !== undefined &&
-      body.baths !== null &&
-      body.baths !== ''
-        ? Number(body.baths)
-        : null;
+      parseOptionalInteger(data.baths);
 
     const sqft =
-      body.sqft !== undefined &&
-      body.sqft !== null &&
-      body.sqft !== ''
-        ? Number(body.sqft)
-        : null;
+      parseOptionalFloat(data.sqft);
 
-    if (!title || !tag || !price || !location) {
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRED FIELD VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (!title) {
       return NextResponse.json(
         {
           success: false,
           message:
-            'Title, category, price, and location are required.',
+            'Property title is required.',
         },
         { status: 400 }
       );
     }
 
-    if (images.length === 0 && !image) {
+    if (!tag) {
       return NextResponse.json(
         {
           success: false,
-          message: 'At least one property image is required.',
+          message:
+            'Property tag is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!price) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Property price is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!location) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Property location is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGE VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !image &&
+      images.length === 0
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'At least one property image is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NUMERIC VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      data.beds !== undefined &&
+      data.beds !== null &&
+      data.beds !== '' &&
+      beds === null
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Invalid number of bedrooms.',
         },
         { status: 400 }
       );
     }
 
     if (
-      beds !== null &&
-      (!Number.isInteger(beds) || beds < 0)
+      data.baths !== undefined &&
+      data.baths !== null &&
+      data.baths !== '' &&
+      baths === null
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid number of bedrooms.',
+          message:
+            'Invalid number of bathrooms.',
         },
         { status: 400 }
       );
     }
 
     if (
-      baths !== null &&
-      (!Number.isInteger(baths) || baths < 0)
+      data.sqft !== undefined &&
+      data.sqft !== null &&
+      data.sqft !== '' &&
+      sqft === null
     ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid number of bathrooms.',
+          message:
+            'Invalid floor area.',
         },
         { status: 400 }
       );
     }
 
-    if (
-      sqft !== null &&
-      (!Number.isFinite(sqft) || sqft < 0)
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid floor area.',
-        },
-        { status: 400 }
-      );
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | FINAL IMAGE ARRAY
+    |--------------------------------------------------------------------------
+    */
 
     const finalImages =
       images.length > 0
         ? images
         : [image];
+
+    const coverImage =
+      finalImages[0];
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PROPERTY
+    |--------------------------------------------------------------------------
+    */
 
     const updatedProperty =
       await prisma.property.update({
@@ -218,19 +523,40 @@ export async function PUT(
         data: {
           title,
           tag,
+          category,
+          propertyType,
+          houseType,
+          storey,
           price,
           location,
-          image: finalImages[0],
+          image: coverImage,
           images: finalImages,
           beds,
           baths,
           sqft,
         },
+        include: {
+          agent: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              role: true,
+              slug: true,
+              profileImage: true,
+              bio: true,
+              facebook: true,
+              messenger: true,
+            },
+          },
+        },
       });
 
     return NextResponse.json({
       success: true,
-      message: 'Property updated successfully.',
+      message:
+        'Property updated successfully.',
       property: updatedProperty,
     });
   } catch (error) {
@@ -242,34 +568,59 @@ export async function PUT(
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update property.',
+        message:
+          'Failed to update property.',
       },
       { status: 500 }
     );
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| DELETE /api/properties/[id]
+|--------------------------------------------------------------------------
+| ADMIN ONLY
+|--------------------------------------------------------------------------
+*/
+
 export async function DELETE(
   request: Request,
   context: RouteContext
 ) {
   try {
-    const authenticated = await isAdminAuthenticated();
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN PERMISSION CHECK
+    |--------------------------------------------------------------------------
+    */
+
+    const authenticated =
+      await isAdminAuthenticated();
 
     if (!authenticated) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Unauthorized.',
+          message:
+            'Unauthorized. Administrator access is required.',
         },
         { status: 401 }
       );
     }
 
-    const { id } = await context.params;
-    const propertyId = Number(id);
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY ID
+    |--------------------------------------------------------------------------
+    */
 
-    if (!Number.isInteger(propertyId)) {
+    const { id } = await context.params;
+
+    const propertyId =
+      parsePropertyId(id);
+
+    if (propertyId === null) {
       return NextResponse.json(
         {
           success: false,
@@ -279,6 +630,38 @@ export async function DELETE(
       );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK PROPERTY EXISTS
+    |--------------------------------------------------------------------------
+    */
+
+    const existingProperty =
+      await prisma.property.findUnique({
+        where: {
+          id: propertyId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!existingProperty) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Property not found.',
+        },
+        { status: 404 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE PROPERTY
+    |--------------------------------------------------------------------------
+    */
+
     await prisma.property.delete({
       where: {
         id: propertyId,
@@ -287,7 +670,8 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Property deleted successfully.',
+      message:
+        'Property deleted successfully.',
     });
   } catch (error) {
     console.error(
@@ -298,7 +682,8 @@ export async function DELETE(
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to delete property.',
+        message:
+          'Failed to delete property.',
       },
       { status: 500 }
     );

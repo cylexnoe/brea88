@@ -1,10 +1,34 @@
 import { NextResponse } from 'next/server';
+import {
+  getAgentFromSession,
+} from '@/lib/agent-auth';
 import { prisma } from '@/lib/prisma';
-import { getAgentFromSession } from '@/lib/agent-auth';
+
+/*
+|--------------------------------------------------------------------------
+| GET /api/agent/me
+|--------------------------------------------------------------------------
+|
+| Returns the currently authenticated agent's safe profile information.
+|
+| Security:
+| - Requires a valid agent session.
+| - Requires the agent account to be active.
+| - Explicitly selects allowed fields.
+| - NEVER returns passwordHash.
+|
+*/
 
 export async function GET() {
   try {
-    const agent = await getAgentFromSession();
+    /*
+    |--------------------------------------------------------------------------
+    | AUTHENTICATION
+    |--------------------------------------------------------------------------
+    */
+
+    const agent =
+      await getAgentFromSession();
 
     if (!agent) {
       return NextResponse.json(
@@ -12,53 +36,106 @@ export async function GET() {
           success: false,
           message: 'Unauthorized.',
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
 
-    const profile = await prisma.agent.findUnique({
-      where: {
-        id: agent.id,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        slug: true,
-        phone: true,
-        address: true,
-        profileImage: true,
-        bio: true,
-        facebook: true,
-        messenger: true,
-        isActive: true,
-      },
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | LOAD SAFE PROFILE
+    |--------------------------------------------------------------------------
+    |
+    | Do not return the complete Prisma Agent object.
+    |
+    | In particular, passwordHash must never be sent to the browser.
+    |
+    */
 
-    if (!profile || !profile.isActive) {
+    const profile =
+      await prisma.agent.findUnique({
+        where: {
+          id: agent.id,
+        },
+
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          slug: true,
+          phone: true,
+          address: true,
+          profileImage: true,
+          bio: true,
+          facebook: true,
+          messenger: true,
+          isActive: true,
+        },
+      });
+
+    /*
+    |--------------------------------------------------------------------------
+    | VERIFY ACCOUNT STILL EXISTS AND IS ACTIVE
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+      !profile ||
+      !profile.isActive
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Agent account not found.',
+          message:
+            'Agent account not found.',
         },
-        { status: 401 }
+        {
+          status: 401,
+        }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      agent: profile,
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | SUCCESS
+    |--------------------------------------------------------------------------
+    */
+
+    return NextResponse.json(
+      {
+        success: true,
+        agent: profile,
+      },
+      {
+        status: 200,
+      }
+    );
   } catch (error) {
-    console.error('GET /api/agent/me error:', error);
+    /*
+    |--------------------------------------------------------------------------
+    | SERVER ERROR
+    |--------------------------------------------------------------------------
+    |
+    | Do not expose internal database or authentication errors to the client.
+    |
+    */
+
+    console.error(
+      'GET /api/agent/me error:',
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Unable to load agent profile.',
+        message:
+          'Unable to load agent profile.',
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }

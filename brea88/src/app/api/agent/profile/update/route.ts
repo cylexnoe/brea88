@@ -4,6 +4,10 @@ import { getAgentFromSession } from '@/lib/agent-auth';
 
 export async function PUT(request: Request) {
   try {
+    // =========================================================
+    // AUTHENTICATION
+    // =========================================================
+
     const agent = await getAgentFromSession();
 
     if (!agent) {
@@ -16,26 +20,227 @@ export async function PUT(request: Request) {
       );
     }
 
-    const body = await request.json();
+    // =========================================================
+    // REQUEST BODY
+    // =========================================================
 
-    const fullName = body.fullName?.trim();
-    const email = body.email?.trim();
-    const phone = body.phone?.trim() || null;
-    const address = body.address?.trim() || null;
-    const bio = body.bio?.trim() || null;
-    const facebook = body.facebook?.trim() || null;
-    const messenger = body.messenger?.trim() || null;
-    const profileImage = body.profileImage?.trim() || null;
+    let body: unknown;
 
-    if (!fullName || !email) {
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
         {
           success: false,
-          message: 'Full name and email are required.',
+          message: 'Invalid request body.',
         },
         { status: 400 }
       );
     }
+
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid request body.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const data = body as Record<string, unknown>;
+
+    // =========================================================
+    // CLEAN INPUT
+    // =========================================================
+
+    const fullName =
+      typeof data.fullName === 'string'
+        ? data.fullName.trim()
+        : '';
+
+    const email =
+      typeof data.email === 'string'
+        ? data.email.trim().toLowerCase()
+        : '';
+
+    const phone =
+      typeof data.phone === 'string'
+        ? data.phone.trim() || null
+        : null;
+
+    const address =
+      typeof data.address === 'string'
+        ? data.address.trim() || null
+        : null;
+
+    const bio =
+      typeof data.bio === 'string'
+        ? data.bio.trim() || null
+        : null;
+
+    const facebook =
+      typeof data.facebook === 'string'
+        ? data.facebook.trim() || null
+        : null;
+
+    const messenger =
+      typeof data.messenger === 'string'
+        ? data.messenger.trim() || null
+        : null;
+
+    const profileImage =
+      typeof data.profileImage === 'string'
+        ? data.profileImage.trim() || null
+        : null;
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+    if (!fullName) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Full name is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (fullName.length < 2) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Full name must contain at least 2 characters.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (fullName.length > 100) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Full name is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!email) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Email is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Basic email validation
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Please provide a valid email address.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (email.length > 254) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Email address is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (phone && phone.length > 50) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Phone number is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (address && address.length > 500) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Address is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (bio && bio.length > 2000) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Bio is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (facebook && facebook.length > 500) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Facebook link is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (messenger && messenger.length > 500) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Messenger link is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (profileImage && profileImage.length > 2000) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Profile image URL is too long.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // EMAIL UNIQUENESS
+    // =========================================================
+    //
+    // IMPORTANT:
+    // We identify the current agent ONLY from the server-side
+    // session. We never accept an agent ID from the browser.
+    //
+    // Therefore:
+    //
+    // Agent A cannot submit:
+    // { id: Agent B }
+    //
+    // because this endpoint never uses a client-provided ID.
+    // =========================================================
 
     const existingEmail = await prisma.agent.findFirst({
       where: {
@@ -43,6 +248,9 @@ export async function PUT(request: Request) {
         NOT: {
           id: agent.id,
         },
+      },
+      select: {
+        id: true,
       },
     });
 
@@ -56,10 +264,15 @@ export async function PUT(request: Request) {
       );
     }
 
+    // =========================================================
+    // UPDATE CURRENT AGENT ONLY
+    // =========================================================
+
     const updatedAgent = await prisma.agent.update({
       where: {
         id: agent.id,
       },
+
       data: {
         fullName,
         email,
@@ -70,6 +283,7 @@ export async function PUT(request: Request) {
         messenger,
         profileImage,
       },
+
       select: {
         id: true,
         fullName: true,
@@ -86,16 +300,41 @@ export async function PUT(request: Request) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Profile updated successfully.',
-      agent: updatedAgent,
-    });
+    // =========================================================
+    // RESPONSE
+    // =========================================================
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Profile updated successfully.',
+        agent: updatedAgent,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error(
       'PUT /api/agent/profile/update error:',
       error
     );
+
+    // Prisma unique constraint
+    // Handles a race condition where another request
+    // creates/updates the same email simultaneously.
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      error.code === 'P2002'
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'This email is already being used.',
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -106,3 +345,4 @@ export async function PUT(request: Request) {
     );
   }
 }
+
