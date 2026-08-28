@@ -2,21 +2,36 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 import { prisma } from '@/lib/prisma';
-import {createAgentSessionToken,} from '@/lib/agent-auth';
+import { createAgentSessionToken } from '@/lib/agent-auth';
 
 /*
 |--------------------------------------------------------------------------
 | PASSWORD HASH
 |--------------------------------------------------------------------------
-| Kept compatible with your existing accounts.
-|--------------------------------------------------------------------------
 */
 
-function hashPassword(password: string) {
+function hashPassword(password: string): string {
   return crypto
     .createHash('sha256')
     .update(password)
     .digest('hex');
+}
+
+/*
+|--------------------------------------------------------------------------
+| SAFE COMPARISON
+|--------------------------------------------------------------------------
+*/
+
+function safeCompare(a: string, b: string): boolean {
+  const bufferA = Buffer.from(a, 'utf8');
+  const bufferB = Buffer.from(b, 'utf8');
+
+  if (bufferA.length !== bufferB.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(bufferA, bufferB);
 }
 
 /*
@@ -89,8 +104,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Email and password are required.',
+          message: 'Email and password are required.',
         },
         { status: 400 }
       );
@@ -98,38 +112,28 @@ export async function POST(request: Request) {
 
     /*
     |--------------------------------------------------------------------------
-    | FIND ACCOUNT
+    | FIND AGENT
     |--------------------------------------------------------------------------
     */
 
-    const agent =
-      await prisma.agent.findUnique({
-        where: {
-          email,
-        },
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          passwordHash: true,
-          role: true,
-          slug: true,
-          isActive: true,
-        },
-      });
+    const agent = await prisma.agent.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+        slug: true,
+        isActive: true,
+      },
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | GENERIC AUTHENTICATION ERROR
-    |--------------------------------------------------------------------------
-    |
-    | Do not tell the user whether:
-    |
-    | - the email exists
-    | - the password is wrong
-    | - the account is inactive
-    |
-    | This prevents account enumeration.
+    | INVALID ACCOUNT
     |--------------------------------------------------------------------------
     */
 
@@ -137,8 +141,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Invalid email or password.',
+          message: 'Invalid email or password.',
         },
         { status: 401 }
       );
@@ -154,8 +157,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Invalid email or password.',
+          message: 'Invalid email or password.',
         },
         { status: 401 }
       );
@@ -165,10 +167,6 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     | ROLE VALIDATION
     |--------------------------------------------------------------------------
-    |
-    | Only Agent and Broker accounts are allowed
-    | through the agent portal.
-    |--------------------------------------------------------------------------
     */
 
     if (
@@ -176,7 +174,7 @@ export async function POST(request: Request) {
       agent.role !== 'Broker'
     ) {
       console.warn(
-        `Blocked invalid agent role for account ${agent.id}: ${agent.role}`
+        `Blocked agent portal login for account ${agent.id}: invalid role ${agent.role}`
       );
 
       return NextResponse.json(
@@ -195,21 +193,18 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const passwordHash =
-      hashPassword(password);
+    const passwordHash = hashPassword(password);
 
-    const passwordMatches =
-      crypto.timingSafeEqual(
-        Buffer.from(passwordHash),
-        Buffer.from(agent.passwordHash)
-      );
+    const passwordMatches = safeCompare(
+      passwordHash,
+      agent.passwordHash
+    );
 
     if (!passwordMatches) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Invalid email or password.',
+          message: 'Invalid email or password.',
         },
         { status: 401 }
       );
@@ -221,10 +216,7 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const token =
-      createAgentSessionToken(
-        agent.id
-      );
+    const token = createAgentSessionToken(agent.id);
 
     /*
     |--------------------------------------------------------------------------
@@ -232,19 +224,17 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const response =
-      NextResponse.json({
-        success: true,
-        message:
-          'Login successful.',
-        agent: {
-          id: agent.id,
-          fullName: agent.fullName,
-          email: agent.email,
-          role: agent.role,
-          slug: agent.slug,
-        },
-      });
+    const response = NextResponse.json({
+      success: true,
+      message: 'Login successful.',
+      agent: {
+        id: agent.id,
+        fullName: agent.fullName,
+        email: agent.email,
+        role: agent.role,
+        slug: agent.slug,
+      },
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -256,30 +246,29 @@ export async function POST(request: Request) {
       name: 'agent_session',
       value: token,
       httpOnly: true,
-      secure:
-        process.env.NODE_ENV ===
-        'production',
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge:
-        60 * 60 * 24 * 30,
+      maxAge: 60 * 60 * 24 * 30,
       path: '/',
     });
 
     return response;
   } catch (error) {
     console.error(
-      'POST /api/agent/login error:',
-      error
+      '=================================================='
+    );
+    console.error('POST /api/agent/login FAILED');
+    console.error(error);
+    console.error(
+      '=================================================='
     );
 
     return NextResponse.json(
       {
         success: false,
-        message:
-          'Unable to process login.',
+        message: 'Unable to process login.',
       },
       { status: 500 }
     );
   }
 }
-
