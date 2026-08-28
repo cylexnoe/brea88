@@ -43,10 +43,6 @@ import {
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-/* =========================================================
-   CLASSIFICATION OPTIONS
-   ========================================================= */
-
 const CATEGORY_OPTIONS = [
   'House & Lot',
   'Condominiums',
@@ -83,48 +79,11 @@ const HOUSE_TYPES = [
   'Duplex',
 ];
 
-const STOREY_OPTIONS = [
-  '1',
-  '2',
-  '3 or more',
-];
+const STOREY_OPTIONS = ['1', '2', '3 or more'];
 
-/*
- * House Type and Storey are relevant for actual houses.
- * They will be shown for:
- *
- * - House & Lot
- * - House For Rent
- *
- * They are not shown for:
- *
- * - Condominiums
- * - Warehouse
- * - Commercial Space
- * - Lot Only
- */
+type Status = 'idle' | 'loading' | 'success' | 'error';
 
-function requiresHouseDetails(
-  category: string,
-  propertyType: string
-) {
-  if (category === 'House & Lot') {
-    return propertyType !== 'Lot Only Subdivision';
-  }
-
-  if (
-    category === 'For Rent' &&
-    propertyType === 'House For Rent'
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-/* =========================================================
-   TYPES
-   ========================================================= */
+type Section = 'overview' | 'properties' | 'add' | 'settings';
 
 interface ImageItem {
   id: string;
@@ -136,85 +95,61 @@ interface ImageItem {
 interface Property {
   id?: number;
   _id?: string;
-
   title: string;
   tag: string;
   price: string;
   location: string;
-
   image: string;
   images?: string[];
-
   category?: string | null;
   propertyType?: string | null;
   houseType?: string | null;
   storey?: string | null;
-
   beds?: number | null;
   baths?: number | null;
   sqft?: number | null;
-
   createdAt?: string;
   updatedAt?: string;
 }
 
-type Status =
-  | 'idle'
-  | 'loading'
-  | 'success'
-  | 'error';
-
-/* =========================================================
-   CIRCUIT LOADER
-   ========================================================= */
-
-function CircuitLoader({
-  text = 'Loading...',
-  fullscreen = false,
-}: {
-  text?: string;
-  fullscreen?: boolean;
-}) {
-  return (
-    <div
-      className={
-        fullscreen
-          ? 'fixed inset-0 z-[999] flex items-center justify-center bg-slate-950'
-          : 'flex flex-col items-center justify-center py-12'
-      }
-    >
-      <div className="relative h-20 w-20">
-        <div className="absolute inset-2 rounded-2xl border-2 border-slate-700 bg-slate-900 shadow-[0_0_35px_rgba(15,23,42,0.5)]">
-          <div className="absolute inset-4 rounded-lg border border-slate-600 bg-slate-950">
-            <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-md bg-slate-200 shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
-          </div>
-        </div>
-
-        <div className="absolute left-0 top-7 h-1 w-3 animate-pulse rounded-full bg-slate-400" />
-        <div className="absolute right-0 top-7 h-1 w-3 animate-pulse rounded-full bg-slate-400" />
-        <div className="absolute left-7 top-0 h-3 w-1 animate-pulse rounded-full bg-slate-400" />
-        <div className="absolute bottom-0 left-7 h-3 w-1 animate-pulse rounded-full bg-slate-400" />
-
-        <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-slate-500" />
-        <div className="absolute right-1 top-1 h-2 w-2 rounded-full bg-slate-500" />
-        <div className="absolute bottom-1 left-1 h-2 w-2 rounded-full bg-slate-500" />
-        <div className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-slate-500" />
-      </div>
-
-      <p className="mt-5 text-sm font-semibold text-slate-500">
-        {text}
-      </p>
-
-      <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-slate-700">
-        BREA 88 REALTY
-      </p>
-    </div>
-  );
+interface FormData {
+  title: string;
+  category: string;
+  propertyType: string;
+  houseType: string;
+  storey: string;
+  tag: string;
+  price: string;
+  location: string;
+  beds: string;
+  baths: string;
+  sqft: string;
 }
 
-/* =========================================================
-   SELECT COMPONENT
-   ========================================================= */
+const INITIAL_FORM: FormData = {
+  title: '',
+  category: 'House & Lot',
+  propertyType: '',
+  houseType: '',
+  storey: '',
+  tag: 'Residential',
+  price: '',
+  location: '',
+  beds: '',
+  baths: '',
+  sqft: '',
+};
+
+function requiresHouseDetails(category: string, propertyType: string) {
+  if (category === 'House & Lot') {
+    return propertyType !== 'Lot Only Subdivision';
+  }
+
+  return (
+    category === 'For Rent' &&
+    propertyType === 'House For Rent'
+  );
+}
 
 function SelectField({
   label,
@@ -242,9 +177,7 @@ function SelectField({
         className="mb-2 block text-sm font-semibold text-slate-700"
       >
         {label}
-        {required && (
-          <span className="ml-1 text-red-500">*</span>
-        )}
+        {required && <span className="ml-1 text-red-500">*</span>}
       </label>
 
       <div className="relative">
@@ -255,12 +188,9 @@ function SelectField({
           onChange={onChange}
           required={required}
           disabled={disabled}
-          className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+          className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
         >
-          <option value="">
-            Select {label}
-          </option>
-
+          <option value="">Select {label}</option>
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -274,32 +204,42 @@ function SelectField({
   );
 }
 
-/* =========================================================
-   MAIN DASHBOARD
-   ========================================================= */
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="rounded-xl bg-slate-100 p-3">
+          <Icon className="h-5 w-5 text-slate-700" />
+        </div>
+        <span className="text-2xl font-black text-slate-900">
+          {value}
+        </span>
+      </div>
+
+      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
 
-  const [formData, setFormData] = useState({
-    title: '',
-    category: 'House & Lot',
-    propertyType: '',
-    houseType: '',
-    storey: '',
-    tag: 'Residential',
-    price: '',
-    location: '',
-    beds: '',
-    baths: '',
-    sqft: '',
-  });
+  const [formData, setFormData] =
+    useState<FormData>(INITIAL_FORM);
 
   const [images, setImages] = useState<ImageItem[]>([]);
-
   const [imageSource, setImageSource] =
     useState<'upload' | 'url'>('upload');
-
   const [imageUrl, setImageUrl] = useState('');
 
   const [status, setStatus] =
@@ -318,49 +258,38 @@ export default function AdminDashboard() {
     useState('');
 
   const [activeSection, setActiveSection] =
-    useState<
-      'overview' | 'properties' | 'add' | 'settings'
-    >('overview');
+    useState<Section>('overview');
 
   const [sidebarOpen, setSidebarOpen] =
     useState(false);
-
-  /* =========================================================
-     PROPERTY TYPE OPTIONS
-     ========================================================= */
 
   const propertyTypeOptions = useMemo(() => {
     switch (formData.category) {
       case 'House & Lot':
         return HOUSE_LOT_TYPES;
-
       case 'Condominiums':
         return CONDOMINIUM_TYPES;
-
       case 'For Rent':
         return RENT_TYPES;
-
-      case 'For Sale by Owner':
-        return [];
-
       default:
         return [];
     }
   }, [formData.category]);
 
-  const showHouseDetails =
-    requiresHouseDetails(
-      formData.category,
-      formData.propertyType
-    );
+  const showHouseDetails = requiresHouseDetails(
+    formData.category,
+    formData.propertyType
+  );
 
   /* =========================================================
      WELCOME
-     ========================================================= */
+  ========================================================= */
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+
         const message =
           new SpeechSynthesisUtterance(
             'Welcome to BREA 88 Realty Admin Dashboard.'
@@ -370,7 +299,6 @@ export default function AdminDashboard() {
         message.pitch = 1;
         message.volume = 1;
 
-        window.speechSynthesis.cancel();
         window.speechSynthesis.speak(message);
       }
     }, 700);
@@ -385,8 +313,40 @@ export default function AdminDashboard() {
   }, []);
 
   /* =========================================================
-     INPUT CHANGE
-     ========================================================= */
+     FETCH PROPERTIES
+  ========================================================= */
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch('/api/properties', {
+        cache: 'no-store',
+      });
+
+      const data = await response.json();
+
+      setProperties(
+        Array.isArray(data) ? data : []
+      );
+    } catch (error) {
+      console.error(
+        'Failed to fetch properties:',
+        error
+      );
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  /* =========================================================
+     FORM CHANGE
+  ========================================================= */
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -400,10 +360,6 @@ export default function AdminDashboard() {
       [name]: value,
     }));
 
-    /*
-     * When category changes, reset property type
-     * and house-specific fields.
-     */
     if (name === 'category') {
       setFormData((previous) => ({
         ...previous,
@@ -414,18 +370,13 @@ export default function AdminDashboard() {
       }));
     }
 
-    /*
-     * When property type changes, reset house details
-     * if they are no longer applicable.
-     */
     if (name === 'propertyType') {
-      const applicable =
-        requiresHouseDetails(
+      if (
+        !requiresHouseDetails(
           formData.category,
           value
-        );
-
-      if (!applicable) {
+        )
+      ) {
         setFormData((previous) => ({
           ...previous,
           propertyType: value,
@@ -437,54 +388,543 @@ export default function AdminDashboard() {
   };
 
   /* =========================================================
-     FETCH PROPERTIES
-     ========================================================= */
+     IMAGE UPLOAD
+  ========================================================= */
 
-  const fetchProperties = async () => {
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(
+      e.target.files || []
+    );
+
+    if (!files.length) return;
+
+    if (
+      images.length + files.length >
+      MAX_IMAGES
+    ) {
+      alert(
+        `You can upload a maximum of ${MAX_IMAGES} pictures.`
+      );
+      e.target.value = '';
+      return;
+    }
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    ];
+
+    const validImages: ImageItem[] = [];
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(
+          `${file.name} is not supported. Use JPG, JPEG, PNG, or WEBP.`
+        );
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        alert(
+          `${file.name} is larger than 5MB.`
+        );
+        return;
+      }
+
+      validImages.push({
+        id: `${Date.now()}-${Math.random()}`,
+        url: URL.createObjectURL(file),
+        file,
+        source: 'upload',
+      });
+    });
+
+    setImages((previous) => [
+      ...previous,
+      ...validImages,
+    ]);
+
+    e.target.value = '';
+  };
+
+  /* =========================================================
+     ADD IMAGE URL
+  ========================================================= */
+
+  const addImageUrl = () => {
+    const url = imageUrl.trim();
+
+    if (!url) return;
+
+    if (images.length >= MAX_IMAGES) {
+      alert(
+        `You can only add ${MAX_IMAGES} pictures.`
+      );
+      return;
+    }
+
     try {
-      setLoading(true);
+      new URL(url);
+    } catch {
+      alert('Please enter a valid image URL.');
+      return;
+    }
+
+    setImages((previous) => [
+      ...previous,
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        url,
+        source: 'url',
+      },
+    ]);
+
+    setImageUrl('');
+  };
+
+  /* =========================================================
+     REMOVE IMAGE
+  ========================================================= */
+
+  const removeImage = (id: string) => {
+    setImages((previous) => {
+      const image = previous.find(
+        (item) => item.id === id
+      );
+
+      if (
+        image?.source === 'upload' &&
+        image.url.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL(image.url);
+      }
+
+      return previous.filter(
+        (item) => item.id !== id
+      );
+    });
+  };
+
+  /* =========================================================
+     COVER IMAGE
+  ========================================================= */
+
+  const setCoverImage = (id: string) => {
+    setImages((previous) => {
+      const selected = previous.find(
+        (image) => image.id === id
+      );
+
+      if (!selected) return previous;
+
+      return [
+        selected,
+        ...previous.filter(
+          (image) => image.id !== id
+        ),
+      ];
+    });
+  };
+
+  /* =========================================================
+     UPLOAD TO BLOB
+  ========================================================= */
+
+  const uploadImageToBlob = async (
+    file: File
+  ): Promise<string> => {
+    if (!file) {
+      throw new Error(
+        'Image file is missing.'
+      );
+    }
+
+    const body = new FormData();
+    body.append('file', file);
+
+    const response = await fetch(
+      '/api/blob/upload',
+      {
+        method: 'POST',
+        body,
+      }
+    );
+
+    const data = await response
+      .json()
+      .catch(() => null);
+
+    if (
+      !response.ok ||
+      !data?.success ||
+      !data?.url
+    ) {
+      throw new Error(
+        data?.message ||
+          'Failed to upload image.'
+      );
+    }
+
+    return data.url as string;
+  };
+
+  /* =========================================================
+     RESET FORM
+  ========================================================= */
+
+  const resetForm = () => {
+    images.forEach((image) => {
+      if (
+        image.source === 'upload' &&
+        image.url.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL(image.url);
+      }
+    });
+
+    setFormData(INITIAL_FORM);
+    setImages([]);
+    setImageUrl('');
+    setImageSource('upload');
+    setEditingId(null);
+    setStatus('idle');
+  };
+
+  /* =========================================================
+     EDIT
+  ========================================================= */
+
+  const handleEdit = (
+    property: Property
+  ) => {
+    const propertyId =
+      property.id !== undefined
+        ? String(property.id)
+        : property._id;
+
+    if (!propertyId) {
+      alert('Invalid property ID.');
+      return;
+    }
+
+    setEditingId(propertyId);
+
+    setFormData({
+      title: property.title || '',
+      category:
+        property.category ||
+        'House & Lot',
+      propertyType:
+        property.propertyType || '',
+      houseType:
+        property.houseType || '',
+      storey:
+        property.storey || '',
+      tag:
+        property.tag ||
+        'Residential',
+      price:
+        property.price || '',
+      location:
+        property.location || '',
+      beds:
+        property.beds != null
+          ? String(property.beds)
+          : '',
+      baths:
+        property.baths != null
+          ? String(property.baths)
+          : '',
+      sqft:
+        property.sqft != null
+          ? String(property.sqft)
+          : '',
+    });
+
+    const propertyImages =
+      property.images?.length
+        ? property.images
+        : property.image
+          ? [property.image]
+          : [];
+
+    setImages(
+      propertyImages.map(
+        (url, index) => ({
+          id: `existing-${Date.now()}-${index}`,
+          url,
+          source: 'url',
+        })
+      )
+    );
+
+    setImageSource('url');
+    setStatus('idle');
+    setActiveSection('add');
+    setSidebarOpen(false);
+  };
+
+  /* =========================================================
+     DELETE
+  ========================================================= */
+
+  const handleDelete = async (
+    id: string | number
+  ) => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this property?'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/properties?id=${id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Failed to delete property.'
+        );
+      }
+
+      await fetchProperties();
+    } catch (error) {
+      console.error(
+        'Delete property error:',
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to delete property.'
+      );
+    }
+  };
+
+  /* =========================================================
+     SUBMIT
+  ========================================================= */
+
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      alert('Property title is required.');
+      return;
+    }
+
+    if (!formData.price.trim()) {
+      alert('Property price is required.');
+      return;
+    }
+
+    if (!formData.location.trim()) {
+      alert('Property location is required.');
+      return;
+    }
+
+    if (!formData.category) {
+      alert('Property category is required.');
+      return;
+    }
+
+    if (
+      formData.category !==
+        'For Sale by Owner' &&
+      !formData.propertyType
+    ) {
+      alert('Property type is required.');
+      return;
+    }
+
+    if (
+      showHouseDetails &&
+      (!formData.houseType ||
+        !formData.storey)
+    ) {
+      alert(
+        'House Type and Storey are required.'
+      );
+      return;
+    }
+
+    if (!images.length) {
+      alert(
+        'At least one property image is required.'
+      );
+      return;
+    }
+
+    setStatus('loading');
+
+    try {
+      const uploadedImages: string[] = [];
+
+      for (const image of images) {
+        if (image.source === 'url') {
+          uploadedImages.push(image.url);
+          continue;
+        }
+
+        if (!image.file) {
+          throw new Error(
+            'Image file is missing.'
+          );
+        }
+
+        const permanentUrl =
+          await uploadImageToBlob(
+            image.file
+          );
+
+        uploadedImages.push(
+          permanentUrl
+        );
+      }
+
+      if (!uploadedImages.length) {
+        throw new Error(
+          'No valid property images were uploaded.'
+        );
+      }
 
       const response = await fetch(
         '/api/properties',
         {
-          cache: 'no-store',
+          method: editingId
+            ? 'PUT'
+            : 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            ...(editingId
+              ? {
+                  id: Number(editingId),
+                }
+              : {}),
+            title:
+              formData.title.trim(),
+            category:
+              formData.category,
+            propertyType:
+              formData.propertyType ||
+              null,
+            houseType:
+              showHouseDetails
+                ? formData.houseType ||
+                  null
+                : null,
+            storey:
+              showHouseDetails
+                ? formData.storey ||
+                  null
+                : null,
+            tag:
+              formData.tag ||
+              'Residential',
+            price:
+              formData.price.trim(),
+            location:
+              formData.location.trim(),
+            beds: formData.beds,
+            baths: formData.baths,
+            sqft: formData.sqft,
+            image:
+              uploadedImages[0],
+            images:
+              uploadedImages,
+          }),
         }
       );
 
-      const data = await response.json();
+      const data = await response
+        .json()
+        .catch(() => null);
 
-      if (Array.isArray(data)) {
-        setProperties(data);
-      } else {
-        setProperties([]);
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Failed to save property.'
+        );
       }
+
+      setStatus('success');
+
+      await fetchProperties();
+
+      window.setTimeout(() => {
+        resetForm();
+        setActiveSection('properties');
+      }, 800);
     } catch (error) {
       console.error(
-        'Failed to fetch properties:',
+        'Save property error:',
         error
       );
 
-      setProperties([]);
-    } finally {
-      setLoading(false);
+      setStatus('error');
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to save property.'
+      );
     }
   };
 
-  useEffect(() => {
-    fetchProperties();
-  }, []);
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
+
+  const handleLogout = async () => {
+    try {
+      await fetch(
+        '/api/admin/logout',
+        {
+          method: 'POST',
+        }
+      );
+    } catch (error) {
+      console.error(
+        'Logout error:',
+        error
+      );
+    } finally {
+      router.replace('/');
+      router.refresh();
+    }
+  };
 
   /* =========================================================
-     FILTER
-     ========================================================= */
+     FILTERED PROPERTIES
+  ========================================================= */
 
   const filteredProperties = useMemo(() => {
     const term =
       searchTerm.toLowerCase().trim();
 
-    if (!term) {
-      return properties;
-    }
+    if (!term) return properties;
 
     return properties.filter(
       (property) =>
@@ -511,759 +951,79 @@ export default function AdminDashboard() {
 
   /* =========================================================
      STATS
-     ========================================================= */
+  ========================================================= */
 
   const houseLotCount =
     properties.filter(
-      (property) =>
-        property.category === 'House & Lot'
+      (p) =>
+        p.category ===
+        'House & Lot'
     ).length;
 
   const condominiumCount =
     properties.filter(
-      (property) =>
-        property.category === 'Condominiums'
+      (p) =>
+        p.category ===
+        'Condominiums'
     ).length;
 
   const forRentCount =
     properties.filter(
-      (property) =>
-        property.category === 'For Rent'
+      (p) =>
+        p.category ===
+        'For Rent'
     ).length;
 
   const ownerCount =
     properties.filter(
-      (property) =>
-        property.category ===
+      (p) =>
+        p.category ===
         'For Sale by Owner'
     ).length;
 
   /* =========================================================
-     IMAGE UPLOAD
-     ========================================================= */
-
-  const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = Array.from(
-      e.target.files || []
-    );
-
-    if (!files.length) return;
-
-    if (
-      images.length + files.length >
-      MAX_IMAGES
-    ) {
-      alert(
-        `You can upload a maximum of ${MAX_IMAGES} pictures.`
-      );
-
-      e.target.value = '';
-      return;
-    }
-
-    const allowedTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/webp',
-    ];
-
-    const validImages: ImageItem[] = [];
-
-    for (const file of files) {
-      if (!allowedTypes.includes(file.type)) {
-        alert(
-          `${file.name} is not supported. Please use JPG, JPEG, PNG, or WEBP.`
-        );
-
-        continue;
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        alert(
-          `${file.name} is larger than 5MB.`
-        );
-
-        continue;
-      }
-
-      const previewUrl =
-        URL.createObjectURL(file);
-
-      validImages.push({
-        id: `${Date.now()}-${Math.random()}`,
-        url: previewUrl,
-        file,
-        source: 'upload',
-      });
-    }
-
-    setImages((previous) => [
-      ...previous,
-      ...validImages,
-    ]);
-
-    e.target.value = '';
-  };
-
-  /* =========================================================
-     IMAGE URL
-     ========================================================= */
-
-  const addImageUrl = () => {
-    const trimmedUrl =
-      imageUrl.trim();
-
-    if (!trimmedUrl) return;
-
-    if (images.length >= MAX_IMAGES) {
-      alert(
-        `You can only add ${MAX_IMAGES} pictures.`
-      );
-
-      return;
-    }
-
-    try {
-      new URL(trimmedUrl);
-    } catch {
-      alert(
-        'Please enter a valid image URL.'
-      );
-
-      return;
-    }
-
-    setImages((previous) => [
-      ...previous,
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        url: trimmedUrl,
-        source: 'url',
-      },
-    ]);
-
-    setImageUrl('');
-  };
-
-  /* =========================================================
-     REMOVE IMAGE
-     ========================================================= */
-
-  const removeImage = (id: string) => {
-    setImages((previous) => {
-      const image =
-        previous.find(
-          (item) => item.id === id
-        );
-
-      if (
-        image?.source === 'upload' &&
-        image.url.startsWith('blob:')
-      ) {
-        URL.revokeObjectURL(
-          image.url
-        );
-      }
-
-      return previous.filter(
-        (item) => item.id !== id
-      );
-    });
-  };
-
-  /* =========================================================
-     SET COVER
-     ========================================================= */
-
-  const setCoverImage = (
-    id: string
-  ) => {
-    setImages((previous) => {
-      const selected =
-        previous.find(
-          (image) => image.id === id
-        );
-
-      if (!selected) {
-        return previous;
-      }
-
-      return [
-        selected,
-        ...previous.filter(
-          (image) =>
-            image.id !== id
-        ),
-      ];
-    });
-  };
-
-  /* =========================================================
-     RESET
-     ========================================================= */
-
-  const resetForm = () => {
-    images.forEach((image) => {
-      if (
-        image.source === 'upload' &&
-        image.url.startsWith('blob:')
-      ) {
-        URL.revokeObjectURL(
-          image.url
-        );
-      }
-    });
-
-    setEditingId(null);
-
-    setFormData({
-      title: '',
-      category: 'House & Lot',
-      propertyType: '',
-      houseType: '',
-      storey: '',
-      tag: 'Residential',
-      price: '',
-      location: '',
-      beds: '',
-      baths: '',
-      sqft: '',
-    });
-
-    setImages([]);
-    setImageUrl('');
-    setImageSource('upload');
-    setStatus('idle');
-  };
-
-  /* =========================================================
-     UPLOAD TO BLOB
-     ========================================================= */
-
-  const uploadImageToBlob = async (
-    file: File
-  ) => {
-    const formData =
-      new FormData();
-
-    formData.append(
-      'file',
-      file
-    );
-
-    const response = await fetch(
-      '/api/blob/upload',
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-
-    const data =
-      await response.json();
-
-    if (
-      !response.ok ||
-      !data.success ||
-      !data.url
-    ) {
-      throw new Error(
-        data?.message ||
-          'Failed to upload image.'
-      );
-    }
-
-    return data.url as string;
-  };
-
-  /* =========================================================
-     SUBMIT
-     ========================================================= */
-
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
-    e.preventDefault();
-
-    if (!formData.title.trim()) {
-      alert(
-        'Please enter a property title.'
-      );
-
-      return;
-    }
-
-    if (!formData.category) {
-      alert(
-        'Please select a category.'
-      );
-
-      return;
-    }
-
-    if (
-      formData.category !==
-        'For Sale by Owner' &&
-      !formData.propertyType
-    ) {
-      alert(
-        'Please select a property type.'
-      );
-
-      return;
-    }
-
-    if (!formData.location.trim()) {
-      alert(
-        'Please enter a property location.'
-      );
-
-      return;
-    }
-
-    if (!formData.price.trim()) {
-      alert(
-        'Please enter the property price.'
-      );
-
-      return;
-    }
-
-    if (
-      showHouseDetails &&
-      !formData.houseType
-    ) {
-      alert(
-        'Please select a house type.'
-      );
-
-      return;
-    }
-
-    if (
-      showHouseDetails &&
-      !formData.storey
-    ) {
-      alert(
-        'Please select the number of storeys.'
-      );
-
-      return;
-    }
-
-    if (images.length === 0) {
-      alert(
-        'Please add at least one property picture.'
-      );
-
-      return;
-    }
-
-    setStatus('loading');
-
-    try {
-      const uploadedImages: string[] =
-        [];
-
-      for (const image of images) {
-        if (
-          image.source === 'url'
-        ) {
-          uploadedImages.push(
-            image.url
-          );
-
-          continue;
-        }
-
-        if (!image.file) {
-          throw new Error(
-            'Image file is missing.'
-          );
-        }
-
-        const permanentUrl =
-          await uploadImageToBlob(
-            image.file
-          );
-
-        uploadedImages.push(
-          permanentUrl
-        );
-      }
-
-      if (
-        uploadedImages.length === 0
-      ) {
-        throw new Error(
-          'No valid property images were uploaded.'
-        );
-      }
-
-      const coverImage =
-        uploadedImages[0];
-
-      const response = await fetch(
-        '/api/properties',
-        {
-          method: editingId
-            ? 'PUT'
-            : 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-
-          body: JSON.stringify({
-            id: editingId
-              ? Number(editingId)
-              : undefined,
-
-            title:
-              formData.title.trim(),
-
-            category:
-              formData.category,
-
-            propertyType:
-              formData.propertyType ||
-              null,
-
-            houseType:
-              showHouseDetails
-                ? formData.houseType ||
-                  null
-                : null,
-
-            storey:
-              showHouseDetails
-                ? formData.storey ||
-                  null
-                : null,
-
-            tag: formData.tag,
-
-            price:
-              formData.price.replace(
-                /,/g,
-                ''
-              ),
-
-            location:
-              formData.location.trim(),
-
-            beds:
-              showHouseDetails
-                ? formData.beds
-                : null,
-
-            baths:
-              showHouseDetails
-                ? formData.baths
-                : null,
-
-            sqft: formData.sqft,
-
-            image: coverImage,
-
-            images:
-              uploadedImages,
-          }),
-        }
-      );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            'Failed to save property.'
-        );
-      }
-
-      setStatus('success');
-
-      await fetchProperties();
-
-      resetForm();
-
-      setActiveSection(
-        'properties'
-      );
-
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
-    } catch (error) {
-      console.error(
-        'Property save error:',
-        error
-      );
-
-      setStatus('error');
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Failed to save property.'
-      );
-    }
-  };
-
-  /* =========================================================
-     DELETE
-     ========================================================= */
-
-  const handleDelete = async (
-    id: string | number
-  ) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this property?'
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const response =
-        await fetch(
-          `/api/properties/${id}`,
-          {
-            method: 'DELETE',
-          }
-        );
-
-      if (!response.ok) {
-        throw new Error(
-          'Delete failed.'
-        );
-      }
-
-      await fetchProperties();
-    } catch (error) {
-      console.error(
-        'Delete failed:',
-        error
-      );
-
-      alert(
-        'Failed to delete property.'
-      );
-    }
-  };
-
-  /* =========================================================
-     EDIT
-     ========================================================= */
-
-  const handleEdit = (
-    property: Property
-  ) => {
-    const propertyId =
-      property.id !== undefined
-        ? String(property.id)
-        : property._id
-        ? String(property._id)
-        : null;
-
-    if (!propertyId) {
-      alert(
-        'Unable to identify this property.'
-      );
-
-      return;
-    }
-
-    const category =
-      property.category ||
-      'House & Lot';
-
-    const propertyType =
-      property.propertyType ||
-      '';
-
-    const showDetails =
-      requiresHouseDetails(
-        category,
-        propertyType
-      );
-
-    setEditingId(
-      propertyId
-    );
-
-    setFormData({
-      title:
-        property.title || '',
-
-      category,
-
-      propertyType,
-
-      houseType:
-        showDetails
-          ? property.houseType ||
-            ''
-          : '',
-
-      storey:
-        showDetails
-          ? property.storey ||
-            ''
-          : '',
-
-      tag:
-        property.tag ||
-        'Residential',
-
-      price: property.price
-        ? Number(
-            String(
-              property.price
-            ).replace(/,/g, '')
-          ).toLocaleString(
-            'en-US'
-          )
-        : '',
-
-      location:
-        property.location ||
-        '',
-
-      beds:
-        property.beds !== null &&
-        property.beds !== undefined
-          ? String(
-              property.beds
-            )
-          : '',
-
-      baths:
-        property.baths !== null &&
-        property.baths !== undefined
-          ? String(
-              property.baths
-            )
-          : '',
-
-      sqft:
-        property.sqft !== null &&
-        property.sqft !== undefined
-          ? String(
-              property.sqft
-            )
-          : '',
-    });
-
-    const propertyImages =
-      property.images &&
-      property.images.length > 0
-        ? property.images
-        : property.image
-        ? [property.image]
-        : [];
-
-    setImages(
-      propertyImages.map(
-        (url, index) => ({
-          id: `existing-${index}-${Date.now()}`,
-          url,
-          source: 'url',
-        })
-      )
-    );
-
-    setActiveSection('add');
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  };
-
-  /* =========================================================
      NAVIGATION
-     ========================================================= */
+  ========================================================= */
 
-  const changeSection = (
-    section:
-      | 'overview'
-      | 'properties'
-      | 'add'
-      | 'settings'
+  const navigate = (
+    section: Section
   ) => {
     setActiveSection(section);
-
     setSidebarOpen(false);
-
-    if (section !== 'add') {
-      setStatus('idle');
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
   };
 
   /* =========================================================
-     LOGOUT
-     ========================================================= */
-
-  const handleLogout =
-    async () => {
-      try {
-        await fetch(
-          '/api/admin/logout',
-          {
-            method: 'POST',
-            credentials: 'include',
-          }
-        );
-      } catch (error) {
-        console.error(
-          'Logout error:',
-          error
-        );
-      } finally {
-        router.replace(
-          '/'
-        );
-
-        router.refresh();
-      }
-    };
-
-  /* =========================================================
-     AUTH LOADING
-     ========================================================= */
+     LOADING
+  ========================================================= */
 
   if (loading) {
     return (
-      <CircuitLoader
-        fullscreen
-        text="Loading administrator dashboard..."
-      />
+      <main className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900">
+            <Loader2 className="h-7 w-7 animate-spin text-white" />
+          </div>
+
+          <p className="mt-5 text-sm font-bold text-white">
+            Loading dashboard...
+          </p>
+
+          <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-slate-500">
+            BREA 88 REALTY
+          </p>
+        </div>
+      </main>
     );
   }
 
   /* =========================================================
-     RENDER
-     ========================================================= */
+     UI
+  ========================================================= */
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
 
-      {/* =====================================================
-          MOBILE OVERLAY
-          ===================================================== */}
+      {/* MOBILE OVERLAY */}
 
       {sidebarOpen && (
         <button
@@ -1272,35 +1032,22 @@ export default function AdminDashboard() {
           onClick={() =>
             setSidebarOpen(false)
           }
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
         />
       )}
 
-      {/* =====================================================
-          SIDEBAR
-          ===================================================== */}
+      {/* SIDEBAR */}
 
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-50
-          flex w-72 flex-col
-          border-r border-slate-200
-          bg-white
-          transition-transform duration-300
-          lg:translate-x-0
-          ${
-            sidebarOpen
-              ? 'translate-x-0'
-              : '-translate-x-full'
-          }
-        `}
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-800 bg-slate-950 text-white transition-transform duration-300 lg:translate-x-0 ${
+          sidebarOpen
+            ? 'translate-x-0'
+            : '-translate-x-full'
+        }`}
       >
+        <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
 
-        {/* LOGO */}
-
-        <div className="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
-
-          <div className="h-11 w-11 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white">
             <img
               src="/img/LOGO.png"
               alt="BREA 88 Realty"
@@ -1309,209 +1056,139 @@ export default function AdminDashboard() {
           </div>
 
           <div>
-            <h1 className="text-sm font-black tracking-wide text-slate-900">
-              BREA 88 REALTY
-            </h1>
-
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Admin Portal
+            <p className="font-black">
+              BREA 88
+            </p>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+              Realty Admin
             </p>
           </div>
 
         </div>
 
-        {/* NAVIGATION */}
+        <nav className="flex-1 space-y-1 p-4">
 
-        <div className="flex-1 overflow-y-auto px-4 py-6">
-
-          <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            Management
-          </p>
-
-          <nav className="space-y-1">
-
-            <button
-              type="button"
-              onClick={() =>
-                changeSection(
-                  'overview'
-                )
-              }
-              className={`
-                flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition
-                ${
-                  activeSection ===
-                  'overview'
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
-                    : 'text-slate-600 hover:bg-slate-50'
+          {[
+            {
+              id: 'overview' as Section,
+              label: 'Overview',
+              icon: LayoutDashboard,
+            },
+            {
+              id: 'properties' as Section,
+              label: 'Properties',
+              icon: Building2,
+            },
+            {
+              id: 'add' as Section,
+              label: 'Add Property',
+              icon: PlusCircle,
+            },
+            {
+              id: 'settings' as Section,
+              label: 'Settings',
+              icon: Settings,
+            },
+          ].map(
+            ({
+              id,
+              label,
+              icon: Icon,
+            }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() =>
+                  navigate(id)
                 }
-              `}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Overview
-            </button>
+                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                  activeSection === id
+                    ? 'bg-white text-slate-900'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            )
+          )}
 
-            <button
-              type="button"
-              onClick={() =>
-                changeSection(
-                  'properties'
-                )
-              }
-              className={`
-                flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition
-                ${
-                  activeSection ===
-                  'properties'
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }
-              `}
-            >
-              <Building2 className="h-4 w-4" />
-              Properties
+        </nav>
 
-              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
-                {properties.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                changeSection('add')
-              }
-              className={`
-                flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition
-                ${
-                  activeSection === 'add'
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }
-              `}
-            >
-              <PlusCircle className="h-4 w-4" />
-              Add Property
-            </button>
-
-          </nav>
-
-          <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            System
-          </p>
-
-          <nav className="space-y-1">
-
-            <button
-              type="button"
-              onClick={() =>
-                changeSection(
-                  'settings'
-                )
-              }
-              className={`
-                flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition
-                ${
-                  activeSection ===
-                  'settings'
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }
-              `}
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push('/')
-              }
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              <Eye className="h-4 w-4" />
-              View Marketplace
-            </button>
-
-          </nav>
-
-        </div>
-
-        {/* SIDEBAR FOOTER */}
-
-        <div className="border-t border-slate-100 p-4">
+        <div className="border-t border-white/10 p-4">
 
           <button
             type="button"
-            onClick={
-              handleLogout
-            }
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
           >
             <LogOut className="h-4 w-4" />
             Sign Out
           </button>
 
         </div>
-
       </aside>
 
-      {/* =====================================================
-          MAIN
-          ===================================================== */}
+      {/* MAIN */}
 
-      <main className="min-h-screen lg:pl-72">
+      <div className="lg:pl-72">
 
-        {/* TOPBAR */}
+        {/* HEADER */}
 
-        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
 
-          <div className="flex items-center gap-3">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
 
-            <button
-              type="button"
-              onClick={() =>
-                setSidebarOpen(true)
-              }
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-3">
 
-            <div>
-              <p className="text-xs font-medium text-slate-400">
-                BREA 88 REALTY
-              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setSidebarOpen(true)
+                }
+                className="rounded-xl p-2 hover:bg-slate-100 lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
 
-              <h2 className="text-lg font-black text-slate-900">
-                Administrator
-              </h2>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  Administration
+                </p>
+
+                <h1 className="text-sm font-black sm:text-base">
+                  BREA 88 Realty
+                </h1>
+              </div>
+
             </div>
 
-          </div>
+            <div className="flex items-center gap-2">
 
-          <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                type="button"
+                onClick={fetchProperties}
+                className="rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-50"
+                title="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
 
-            <div className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 sm:flex">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              <div className="hidden items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 sm:flex">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900">
+                  <UserRound className="h-3.5 w-3.5 text-white" />
+                </div>
 
-              <span className="text-xs font-semibold text-emerald-700">
-                System Online
-              </span>
-            </div>
+                <div>
+                  <p className="text-xs font-bold">
+                    Administrator
+                  </p>
+                  <p className="text-[9px] text-slate-400">
+                    Secure Session
+                  </p>
+                </div>
+              </div>
 
-            <button
-              type="button"
-              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50"
-            >
-              <Bell className="h-4 w-4" />
-
-              <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-            </button>
-
-            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold text-white sm:flex">
-              A
             </div>
 
           </div>
@@ -1520,15 +1197,15 @@ export default function AdminDashboard() {
 
         {/* CONTENT */}
 
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
+        <main className="p-4 sm:p-6 lg:p-8">
 
-          {/* =================================================
+          {/* =====================================================
               OVERVIEW
-              ================================================= */}
+          ===================================================== */}
 
           {activeSection ===
             'overview' && (
-            <div className="space-y-8">
+            <div className="mx-auto max-w-7xl space-y-6">
 
               <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
 
@@ -1537,23 +1214,21 @@ export default function AdminDashboard() {
                     Dashboard
                   </p>
 
-                  <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
-                    Property Overview
+                  <h1 className="mt-1 text-3xl font-black">
+                    Overview
                   </h1>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    Manage your BREA 88 Realty marketplace.
+                    Manage your BREA 88 Realty property marketplace.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() =>
-                    changeSection(
-                      'add'
-                    )
+                    navigate('add')
                   }
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
                 >
                   <PlusCircle className="h-4 w-4" />
                   Add Property
@@ -1561,181 +1236,135 @@ export default function AdminDashboard() {
 
               </div>
 
-              {/* STAT CARDS */}
-
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-xl bg-slate-100 p-3">
-                      <Building2 className="h-5 w-5 text-slate-700" />
-                    </div>
+                <StatCard
+                  icon={Building2}
+                  label="House & Lot"
+                  value={houseLotCount}
+                />
 
-                    <span className="text-xs font-semibold text-slate-400">
-                      TOTAL
-                    </span>
-                  </div>
+                <StatCard
+                  icon={Building}
+                  label="Condominiums"
+                  value={condominiumCount}
+                />
 
-                  <p className="mt-5 text-3xl font-black">
-                    {properties.length}
-                  </p>
+                <StatCard
+                  icon={Warehouse}
+                  label="For Rent"
+                  value={forRentCount}
+                />
 
-                  <p className="mt-1 text-sm text-slate-500">
-                    All properties
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-xl bg-emerald-50 p-3">
-                      <Home className="h-5 w-5 text-emerald-600" />
-                    </div>
-
-                    <span className="text-xs font-semibold text-slate-400">
-                      HOUSE
-                    </span>
-                  </div>
-
-                  <p className="mt-5 text-3xl font-black">
-                    {houseLotCount}
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    House & Lot
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-xl bg-blue-50 p-3">
-                      <Building className="h-5 w-5 text-blue-600" />
-                    </div>
-
-                    <span className="text-xs font-semibold text-slate-400">
-                      CONDO
-                    </span>
-                  </div>
-
-                  <p className="mt-5 text-3xl font-black">
-                    {condominiumCount}
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Condominiums
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-xl bg-amber-50 p-3">
-                      <CircleDollarSign className="h-5 w-5 text-amber-600" />
-                    </div>
-
-                    <span className="text-xs font-semibold text-slate-400">
-                      RENT
-                    </span>
-                  </div>
-
-                  <p className="mt-5 text-3xl font-black">
-                    {forRentCount}
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    For Rent
-                  </p>
-                </div>
+                <StatCard
+                  icon={UserRound}
+                  label="Owner Listings"
+                  value={ownerCount}
+                />
 
               </div>
-
-              {/* CATEGORY BREAKDOWN */}
 
               <div className="grid gap-6 lg:grid-cols-3">
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
 
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-black text-slate-900">
-                        Property Categories
-                      </h3>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        Current inventory breakdown
+                    <div>
+                      <h2 className="font-black">
+                        Recent Properties
+                      </h2>
+
+                      <p className="mt-1 text-xs text-slate-400">
+                        Latest listings in the marketplace.
                       </p>
                     </div>
 
-                    <Activity className="h-5 w-5 text-slate-400" />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate('properties')
+                      }
+                      className="text-xs font-bold text-slate-500 hover:text-slate-900"
+                    >
+                      View all
+                    </button>
+
                   </div>
 
-                  <div className="mt-6 space-y-4">
+                  <div className="mt-5 space-y-3">
 
-                    {[
-                      {
-                        label: 'House & Lot',
-                        value: houseLotCount,
-                        icon: Home,
-                      },
-                      {
-                        label: 'Condominiums',
-                        value: condominiumCount,
-                        icon: Building,
-                      },
-                      {
-                        label: 'For Rent',
-                        value: forRentCount,
-                        icon: Warehouse,
-                      },
-                      {
-                        label: 'For Sale by Owner',
-                        value: ownerCount,
-                        icon: UserRound,
-                      },
-                    ].map(
-                      ({
-                        label,
-                        value,
-                        icon: Icon,
-                      }) => {
-                        const percentage =
-                          properties.length
-                            ? Math.round(
-                                (value /
-                                  properties.length) *
-                                  100
-                              )
-                            : 0;
+                    {properties
+                      .slice(0, 5)
+                      .map((property) => (
+                        <div
+                          key={
+                            property.id ??
+                            property._id
+                          }
+                          className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"
+                        >
+                          <div className="h-14 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
 
-                        return (
-                          <div
-                            key={label}
-                          >
-                            <div className="mb-2 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Icon className="h-4 w-4 text-slate-500" />
-
-                                <span className="text-sm font-semibold text-slate-700">
-                                  {label}
-                                </span>
-                              </div>
-
-                              <span className="text-xs font-bold text-slate-500">
-                                {value} (
-                                {percentage}
-                                %)
-                              </span>
-                            </div>
-
-                            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                              <div
-                                className="h-full rounded-full bg-slate-900 transition-all"
-                                style={{
-                                  width: `${percentage}%`,
-                                }}
+                            {property.image ? (
+                              <img
+                                src={
+                                  property.image
+                                }
+                                alt={
+                                  property.title
+                                }
+                                className="h-full w-full object-cover"
                               />
-                            </div>
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <ImageIcon className="h-5 w-5 text-slate-300" />
+                              </div>
+                            )}
+
                           </div>
-                        );
-                      }
+
+                          <div className="min-w-0 flex-1">
+
+                            <p className="truncate text-sm font-bold">
+                              {
+                                property.title
+                              }
+                            </p>
+
+                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                              <MapPin className="h-3 w-3" />
+                              {
+                                property.location
+                              }
+                            </p>
+
+                          </div>
+
+                          <p className="hidden text-sm font-black sm:block">
+                            ₱{' '}
+                            {Number(
+                              String(
+                                property.price
+                              ).replace(
+                                /[^0-9.]/g,
+                                ''
+                              )
+                            ).toLocaleString(
+                              'en-US'
+                            )}
+                          </p>
+
+                        </div>
+                      ))}
+
+                    {!properties.length && (
+                      <div className="py-10 text-center">
+                        <Building2 className="mx-auto h-8 w-8 text-slate-200" />
+                        <p className="mt-3 text-sm font-bold text-slate-400">
+                          No properties yet.
+                        </p>
+                      </div>
                     )}
 
                   </div>
@@ -1744,53 +1373,46 @@ export default function AdminDashboard() {
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-emerald-50 p-3">
-                      <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                    </div>
-
-                    <div>
-                      <h3 className="font-black">
-                        System Status
-                      </h3>
-
-                      <p className="text-xs text-slate-400">
-                        Administrator panel
-                      </p>
-                    </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                    <Activity className="h-5 w-5 text-slate-700" />
                   </div>
 
-                  <div className="mt-6 space-y-4">
+                  <h2 className="mt-5 font-black">
+                    System Status
+                  </h2>
 
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-sm text-slate-500">
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Your property management system is connected to the PostgreSQL database.
+                  </p>
+
+                  <div className="mt-6 space-y-3">
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                      <span className="text-xs font-semibold text-slate-500">
                         Database
                       </span>
-
-                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                      <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        Connected
+                        Online
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="text-sm text-slate-500">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                      <span className="text-xs font-semibold text-slate-500">
                         Authentication
                       </span>
-
-                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                      <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        Secure
+                        Active
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                      <span className="text-xs font-semibold text-slate-500">
                         Properties
                       </span>
-
                       <span className="text-xs font-bold text-slate-700">
-                        {properties.length} records
+                        {properties.length}
                       </span>
                     </div>
 
@@ -1803,19 +1425,19 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* =================================================
+          {/* =====================================================
               PROPERTIES
-              ================================================= */}
+          ===================================================== */}
 
           {activeSection ===
             'properties' && (
-            <div className="space-y-6">
+            <div className="mx-auto max-w-7xl space-y-6">
 
-              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
 
                 <div>
                   <p className="text-sm font-medium text-slate-400">
-                    Inventory
+                    Property Management
                   </p>
 
                   <h1 className="mt-1 text-3xl font-black">
@@ -1823,18 +1445,16 @@ export default function AdminDashboard() {
                   </h1>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    Manage all property listings.
+                    Manage all marketplace property listings.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() =>
-                    changeSection(
-                      'add'
-                    )
+                    navigate('add')
                   }
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
                 >
                   <PlusCircle className="h-4 w-4" />
                   Add Property
@@ -1842,50 +1462,40 @@ export default function AdminDashboard() {
 
               </div>
 
-              {/* SEARCH */}
+              <div className="relative">
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) =>
-                      setSearchTerm(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Search properties, locations, categories..."
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100"
-                  />
-                </div>
+                <input
+                  value={searchTerm}
+                  onChange={(e) =>
+                    setSearchTerm(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Search properties..."
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
 
               </div>
 
-              {/* PROPERTY GRID */}
+              {!filteredProperties.length ? (
+                <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center">
 
-              {filteredProperties.length ===
-              0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+                  <Building2 className="mx-auto h-10 w-10 text-slate-200" />
 
-                  <Building2 className="mx-auto h-10 w-10 text-slate-300" />
-
-                  <h3 className="mt-4 font-bold text-slate-700">
+                  <h3 className="mt-4 font-black">
                     No properties found
                   </h3>
 
                   <p className="mt-1 text-sm text-slate-400">
-                    Add your first property to the marketplace.
+                    Try another search or add a new property.
                   </p>
 
                   <button
                     type="button"
                     onClick={() =>
-                      changeSection(
-                        'add'
-                      )
+                      navigate('add')
                     }
                     className="mt-5 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white"
                   >
@@ -1930,7 +1540,7 @@ export default function AdminDashboard() {
                             )}
 
                             {property.category && (
-                              <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-slate-700 shadow-sm backdrop-blur">
+                              <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-slate-700 shadow-sm">
                                 {
                                   property.category
                                 }
@@ -1941,7 +1551,7 @@ export default function AdminDashboard() {
 
                           <div className="p-5">
 
-                            <h3 className="line-clamp-1 font-black text-slate-900">
+                            <h3 className="line-clamp-1 font-black">
                               {
                                 property.title
                               }
@@ -1949,53 +1559,51 @@ export default function AdminDashboard() {
 
                             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
                               <MapPin className="h-3.5 w-3.5" />
-
                               {
                                 property.location
                               }
                             </div>
 
                             {property.propertyType && (
-                              <div className="mt-3">
-                                <span className="inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
-                                  {
-                                    property.propertyType
-                                  }
-                                </span>
-                              </div>
+                              <span className="mt-3 inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                                {
+                                  property.propertyType
+                                }
+                              </span>
                             )}
 
                             {property.houseType && (
-                              <div className="mt-2 text-xs text-slate-500">
-                                <span className="font-semibold">
-                                  House:
-                                </span>{' '}
+                              <p className="mt-2 text-xs text-slate-500">
+                                <b>House:</b>{' '}
                                 {
                                   property.houseType
                                 }
-                              </div>
+                              </p>
                             )}
 
                             {property.storey && (
-                              <div className="mt-1 text-xs text-slate-500">
-                                <span className="font-semibold">
-                                  Storey:
-                                </span>{' '}
+                              <p className="mt-1 text-xs text-slate-500">
+                                <b>Storey:</b>{' '}
                                 {
                                   property.storey
                                 }
-                              </div>
+                              </p>
                             )}
 
                             <div className="mt-4 flex items-center justify-between">
 
-                              <p className="text-lg font-black text-slate-900">
-                                ₱ {Number(
-                                  String(property.price).replace(/[^0-9.]/g, '')
-                                ).toLocaleString('en-US', {
-                                  minimumFractionDigits: 0,
-                                  maximumFractionDigits: 0,
-                                })}
+                              <p className="text-lg font-black">
+                                ₱{' '}
+                                {Number(
+                                  String(
+                                    property.price
+                                  ).replace(
+                                    /[^0-9.]/g,
+                                    ''
+                                  )
+                                ).toLocaleString(
+                                  'en-US'
+                                )}
                               </p>
 
                               <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase text-slate-500">
@@ -2015,7 +1623,7 @@ export default function AdminDashboard() {
                                     property
                                   )
                                 }
-                                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                                 Edit
@@ -2028,7 +1636,7 @@ export default function AdminDashboard() {
                                     propertyId
                                   )
                                 }
-                                className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition hover:bg-red-50"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 hover:bg-red-50"
                                 aria-label="Delete property"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -2049,9 +1657,9 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* =================================================
-              ADD / EDIT PROPERTY
-              ================================================= */}
+          {/* =====================================================
+              ADD / EDIT
+          ===================================================== */}
 
           {activeSection ===
             'add' && (
@@ -2078,9 +1686,7 @@ export default function AdminDashboard() {
                 {editingId && (
                   <button
                     type="button"
-                    onClick={
-                      resetForm
-                    }
+                    onClick={resetForm}
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600"
                   >
                     <X className="h-4 w-4" />
@@ -2090,18 +1696,14 @@ export default function AdminDashboard() {
 
               </div>
 
-              {/* STATUS */}
-
-              {status ===
-                'success' && (
+              {status === 'success' && (
                 <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
                   <CheckCircle2 className="h-5 w-5" />
                   Property saved successfully.
                 </div>
               )}
 
-              {status ===
-                'error' && (
+              {status === 'error' && (
                 <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                   <AlertCircle className="h-5 w-5" />
                   Something went wrong while saving the property.
@@ -2109,15 +1711,11 @@ export default function AdminDashboard() {
               )}
 
               <form
-                onSubmit={
-                  handleSubmit
-                }
+                onSubmit={handleSubmit}
                 className="space-y-6"
               >
 
-                {/* =================================================
-                    CLASSIFICATION
-                    ================================================= */}
+                {/* CLASSIFICATION */}
 
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -2130,12 +1728,11 @@ export default function AdminDashboard() {
                       </div>
 
                       <div>
-                        <h2 className="font-black text-slate-900">
+                        <h2 className="font-black">
                           Property Classification
                         </h2>
-
                         <p className="mt-1 text-xs text-slate-400">
-                          Select how this property should appear in the marketplace.
+                          Select how this property should appear.
                         </p>
                       </div>
 
@@ -2159,13 +1756,12 @@ export default function AdminDashboard() {
                       }
                       required
                       disabled={
-                        status ===
-                        'loading'
+                        status === 'loading'
                       }
                     />
 
                     {formData.category !==
-                      'For Sale by Owner' ? (
+                    'For Sale by Owner' ? (
                       <SelectField
                         label="Property Type"
                         name="propertyType"
@@ -2180,8 +1776,7 @@ export default function AdminDashboard() {
                         }
                         required
                         disabled={
-                          status ===
-                          'loading'
+                          status === 'loading'
                         }
                       />
                     ) : (
@@ -2195,8 +1790,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     )}
-
-                    {/* HOUSE TYPE */}
 
                     {showHouseDetails && (
                       <>
@@ -2214,8 +1807,7 @@ export default function AdminDashboard() {
                           }
                           required
                           disabled={
-                            status ===
-                            'loading'
+                            status === 'loading'
                           }
                         />
 
@@ -2233,8 +1825,7 @@ export default function AdminDashboard() {
                           }
                           required
                           disabled={
-                            status ===
-                            'loading'
+                            status === 'loading'
                           }
                         />
                       </>
@@ -2242,33 +1833,9 @@ export default function AdminDashboard() {
 
                   </div>
 
-                  {showHouseDetails && (
-                    <div className="mx-5 mb-5 rounded-xl border border-slate-100 bg-slate-50 p-4 sm:mx-6 sm:mb-6">
-
-                      <div className="flex items-start gap-3">
-
-                        <Home className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-
-                        <div>
-                          <p className="text-xs font-bold text-slate-700">
-                            House classification
-                          </p>
-
-                          <p className="mt-1 text-xs leading-5 text-slate-500">
-                            House Type and Storey will be displayed for house listings on the marketplace.
-                          </p>
-                        </div>
-
-                      </div>
-
-                    </div>
-                  )}
-
                 </section>
 
-                {/* =================================================
-                    BASIC INFORMATION
-                    ================================================= */}
+                {/* BASIC INFORMATION */}
 
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -2297,7 +1864,6 @@ export default function AdminDashboard() {
                   <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-2">
 
                     <div className="md:col-span-2">
-
                       <label
                         htmlFor="title"
                         className="mb-2 block text-sm font-semibold text-slate-700"
@@ -2320,16 +1886,13 @@ export default function AdminDashboard() {
                         placeholder="e.g. Modern Family House in Cebu"
                         required
                         disabled={
-                          status ===
-                          'loading'
+                          status === 'loading'
                         }
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
                       />
-
                     </div>
 
                     <div>
-
                       <label
                         htmlFor="price"
                         className="mb-2 block text-sm font-semibold text-slate-700"
@@ -2358,17 +1921,14 @@ export default function AdminDashboard() {
                           inputMode="decimal"
                           required
                           disabled={
-                            status ===
-                            'loading'
+                            status === 'loading'
                           }
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                          className="h-11 w-full rounded-xl border border-slate-200 pl-9 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
                         />
                       </div>
-
                     </div>
 
                     <div>
-
                       <label
                         htmlFor="location"
                         className="mb-2 block text-sm font-semibold text-slate-700"
@@ -2394,21 +1954,16 @@ export default function AdminDashboard() {
                           placeholder="e.g. Liloan, Cebu"
                           required
                           disabled={
-                            status ===
-                            'loading'
+                            status === 'loading'
                           }
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                          className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
                         />
                       </div>
-
                     </div>
-
-                    {/* HOUSE STATS */}
 
                     {showHouseDetails && (
                       <>
                         <div>
-
                           <label
                             htmlFor="beds"
                             className="mb-2 block text-sm font-semibold text-slate-700"
@@ -2431,18 +1986,12 @@ export default function AdminDashboard() {
                                 handleInputChange
                               }
                               placeholder="0"
-                              disabled={
-                                status ===
-                                'loading'
-                              }
                               className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                             />
                           </div>
-
                         </div>
 
                         <div>
-
                           <label
                             htmlFor="baths"
                             className="mb-2 block text-sm font-semibold text-slate-700"
@@ -2465,20 +2014,14 @@ export default function AdminDashboard() {
                                 handleInputChange
                               }
                               placeholder="0"
-                              disabled={
-                                status ===
-                                'loading'
-                              }
                               className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                             />
                           </div>
-
                         </div>
                       </>
                     )}
 
                     <div>
-
                       <label
                         htmlFor="sqft"
                         className="mb-2 block text-sm font-semibold text-slate-700"
@@ -2502,14 +2045,9 @@ export default function AdminDashboard() {
                             handleInputChange
                           }
                           placeholder="e.g. 120"
-                          disabled={
-                            status ===
-                            'loading'
-                          }
                           className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                         />
                       </div>
-
                     </div>
 
                     <SelectField
@@ -2527,56 +2065,44 @@ export default function AdminDashboard() {
                         'Investment',
                         'All',
                       ]}
-                      disabled={
-                        status ===
-                        'loading'
-                      }
                     />
 
                   </div>
 
                 </section>
 
-                {/* =================================================
-                    IMAGES
-                    ================================================= */}
+                {/* IMAGES */}
 
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                  <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-6">
 
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
 
-                      <div className="flex items-center gap-3">
-
-                        <div className="rounded-xl bg-slate-100 p-2.5">
-                          <ImageIcon className="h-5 w-5 text-slate-700" />
-                        </div>
-
-                        <div>
-                          <h2 className="font-black">
-                            Property Photos
-                          </h2>
-
-                          <p className="mt-1 text-xs text-slate-400">
-                            Add up to {MAX_IMAGES} photos.
-                          </p>
-                        </div>
-
+                      <div className="rounded-xl bg-slate-100 p-2.5">
+                        <ImageIcon className="h-5 w-5" />
                       </div>
 
-                      <span className="text-xs font-bold text-slate-400">
-                        {images.length}/
-                        {MAX_IMAGES}
-                      </span>
+                      <div>
+                        <h2 className="font-black">
+                          Property Photos
+                        </h2>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          Add up to {MAX_IMAGES} photos.
+                        </p>
+                      </div>
 
                     </div>
+
+                    <span className="text-xs font-bold text-slate-400">
+                      {images.length}/
+                      {MAX_IMAGES}
+                    </span>
 
                   </div>
 
                   <div className="p-5 sm:p-6">
-
-                    {/* SOURCE SWITCH */}
 
                     <div className="mb-5 flex rounded-xl bg-slate-100 p-1">
 
@@ -2587,7 +2113,7 @@ export default function AdminDashboard() {
                             'upload'
                           )
                         }
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold transition ${
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold ${
                           imageSource ===
                           'upload'
                             ? 'bg-white text-slate-900 shadow-sm'
@@ -2605,7 +2131,7 @@ export default function AdminDashboard() {
                             'url'
                           )
                         }
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold transition ${
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold ${
                           imageSource ===
                           'url'
                             ? 'bg-white text-slate-900 shadow-sm'
@@ -2620,13 +2146,13 @@ export default function AdminDashboard() {
 
                     {imageSource ===
                     'upload' ? (
-                      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center transition hover:border-slate-400 hover:bg-white">
+                      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center hover:border-slate-400 hover:bg-white">
 
                         <div className="rounded-xl bg-white p-3 shadow-sm">
                           <Upload className="h-6 w-6 text-slate-500" />
                         </div>
 
-                        <p className="mt-4 text-sm font-bold text-slate-700">
+                        <p className="mt-4 text-sm font-bold">
                           Click to upload photos
                         </p>
 
@@ -2643,8 +2169,7 @@ export default function AdminDashboard() {
                           }
                           className="hidden"
                           disabled={
-                            status ===
-                            'loading'
+                            status === 'loading'
                           }
                         />
 
@@ -2660,12 +2185,9 @@ export default function AdminDashboard() {
                             value={
                               imageUrl
                             }
-                            onChange={(
-                              e
-                            ) =>
+                            onChange={(e) =>
                               setImageUrl(
-                                e.target
-                                  .value
+                                e.target.value
                               )
                             }
                             placeholder="https://example.com/image.jpg"
@@ -2686,17 +2208,11 @@ export default function AdminDashboard() {
                       </div>
                     )}
 
-                    {/* IMAGE PREVIEWS */}
-
-                    {images.length >
-                      0 && (
+                    {images.length > 0 && (
                       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
 
                         {images.map(
-                          (
-                            image,
-                            index
-                          ) => (
+                          (image, index) => (
                             <div
                               key={
                                 image.id
@@ -2708,15 +2224,11 @@ export default function AdminDashboard() {
                                 src={
                                   image.url
                                 }
-                                alt={`Property photo ${
-                                  index +
-                                  1
-                                }`}
+                                alt={`Property photo ${index + 1}`}
                                 className="h-full w-full object-cover"
                               />
 
-                              {index ===
-                                0 && (
+                              {index === 0 && (
                                 <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-slate-900 px-2 py-1 text-[9px] font-bold text-white">
                                   <Star className="h-3 w-3 fill-current" />
                                   COVER
@@ -2725,8 +2237,7 @@ export default function AdminDashboard() {
 
                               <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
 
-                                {index !==
-                                  0 && (
+                                {index !== 0 && (
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -2734,7 +2245,7 @@ export default function AdminDashboard() {
                                         image.id
                                       )
                                     }
-                                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-white text-[9px] font-bold text-slate-700 shadow"
+                                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-white text-[9px] font-bold shadow"
                                   >
                                     <Star className="h-3 w-3" />
                                     Cover
@@ -2748,7 +2259,7 @@ export default function AdminDashboard() {
                                       image.id
                                     )
                                   }
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white shadow"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white"
                                 >
                                   <X className="h-3.5 w-3.5" />
                                 </button>
@@ -2766,22 +2277,17 @@ export default function AdminDashboard() {
 
                 </section>
 
-                {/* =================================================
-                    SUBMIT
-                    ================================================= */}
+                {/* SUBMIT */}
 
                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 
                   <button
                     type="button"
-                    onClick={
-                      resetForm
-                    }
+                    onClick={resetForm}
                     disabled={
-                      status ===
-                      'loading'
+                      status === 'loading'
                     }
-                    className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                   >
                     Clear
                   </button>
@@ -2789,14 +2295,13 @@ export default function AdminDashboard() {
                   <button
                     type="submit"
                     disabled={
-                      status ===
-                        'loading' ||
+                      status === 'loading' ||
                       !formData.title.trim() ||
                       !formData.location.trim() ||
                       !formData.price.trim() ||
-                      images.length === 0
+                      !images.length
                     }
-                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-900 px-8 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-900 px-8 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {status ===
                     'loading' ? (
@@ -2821,9 +2326,9 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* =================================================
+          {/* =====================================================
               SETTINGS
-              ================================================= */}
+          ===================================================== */}
 
           {activeSection ===
             'settings' && (
@@ -2853,7 +2358,7 @@ export default function AdminDashboard() {
                     Database
                   </h3>
 
-                  <p className="mt-2 text-sm text-slate-500">
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
                     PostgreSQL database is connected and synchronized with the current Prisma schema.
                   </p>
 
@@ -2872,7 +2377,7 @@ export default function AdminDashboard() {
                     Security
                   </h3>
 
-                  <p className="mt-2 text-sm text-slate-500">
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
                     Administrator authentication is required for property management operations.
                   </p>
 
@@ -2888,10 +2393,9 @@ export default function AdminDashboard() {
             </div>
           )}
 
-        </div>
+        </main>
 
-      </main>
-
+      </div>
     </div>
   );
 }
