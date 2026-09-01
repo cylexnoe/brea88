@@ -4,12 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin,
+  Phone,
   MessageCircle,
   Building2,
   Mail,
   ExternalLink,
   Loader2,
+  X,
   Send,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 interface Property {
@@ -55,6 +59,25 @@ export default function AgentProfilePage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Inquiry form
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
+
+  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+
+  /*
+   * LOAD AGENT PROFILE
+   */
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -94,11 +117,180 @@ export default function AgentProfilePage({
   }, [params]);
 
   /*
-   * =========================================================
-   * LOADING
-   * =========================================================
+   * OPEN INQUIRY FORM
    */
+  const openInquiryForm = () => {
+    setSubmitError('');
+    setSubmitSuccess('');
 
+    // Automatically select the first property if available.
+    if (properties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(String(properties[0].id));
+    }
+
+    setShowInquiryForm(true);
+  };
+
+  /*
+   * CLOSE INQUIRY FORM
+   */
+  const closeInquiryForm = () => {
+    if (submitting) return;
+
+    setShowInquiryForm(false);
+    setSubmitError('');
+    setSubmitSuccess('');
+  };
+
+  /*
+   * HANDLE INPUT
+   */
+  const handleChange = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = event.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  /*
+   * SUBMIT INQUIRY
+   */
+  const handleSubmitInquiry = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (!agent) {
+      setSubmitError(
+        'Agent information is unavailable.'
+      );
+      return;
+    }
+
+    setSubmitError('');
+    setSubmitSuccess('');
+    setSubmitting(true);
+
+    try {
+      if (!selectedPropertyId) {
+        throw new Error(
+          'Please select a property.'
+        );
+      }
+
+      if (!form.name.trim()) {
+        throw new Error(
+          'Please enter your name.'
+        );
+      }
+
+      if (!form.email.trim()) {
+        throw new Error(
+          'Please enter your email address.'
+        );
+      }
+
+      if (!form.phone.trim()) {
+        throw new Error(
+          'Please enter your phone number.'
+        );
+      }
+
+      if (!form.message.trim()) {
+        throw new Error(
+          'Please enter your inquiry message.'
+        );
+      }
+
+      /*
+       * IMPORTANT:
+       *
+       * We send agentSlug, NOT agentId
+       * and NOT agent.email.
+       *
+       * Your API will look up the actual agent
+       * from the database using this slug.
+       */
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: form.name.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim(),
+            message: form.message.trim(),
+
+            propertyId: Number(selectedPropertyId),
+
+            agentSlug: agent.slug,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Failed to submit inquiry.'
+        );
+      }
+
+      setSubmitSuccess(
+        data?.message ||
+          'Your inquiry has been submitted successfully.'
+      );
+
+      /*
+       * Clear form after successful submission.
+       */
+      setForm({
+        name: '',
+        email: '',
+        phone: '',
+        message: '',
+      });
+
+      /*
+       * Keep selected property.
+       */
+
+      /*
+       * Close the form after a short delay.
+       */
+      setTimeout(() => {
+        setShowInquiryForm(false);
+        setSubmitSuccess('');
+      }, 2500);
+    } catch (err) {
+      console.error(
+        'Inquiry submission error:',
+        err
+      );
+
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to submit inquiry.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /*
+   * LOADING
+   */
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -108,11 +300,8 @@ export default function AgentProfilePage({
   }
 
   /*
-   * =========================================================
    * ERROR
-   * =========================================================
    */
-
   if (error || !agent) {
     return (
       <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
@@ -122,41 +311,13 @@ export default function AgentProfilePage({
           </h1>
 
           <p className="text-slate-400 mt-2">
-            {error || 'This profile does not exist.'}
+            {error ||
+              'This profile does not exist.'}
           </p>
         </div>
       </main>
     );
   }
-
-  /*
-   * =========================================================
-   * SEND INQUIRY
-   *
-   * The client does NOT need to log in.
-   *
-   * The agent slug is passed to the inquiry page so the
-   * inquiry can be associated with this specific agent.
-   * =========================================================
-   */
-
-  const sendInquiry = () => {
-    router.push(
-      `/inquiry?agent=${encodeURIComponent(agent.slug)}`
-    );
-  };
-
-  /*
-   * =========================================================
-   * VIEW PROPERTIES
-   * =========================================================
-   */
-
-  const viewProperties = () => {
-    router.push(
-      `/marketplace?agent=${encodeURIComponent(agent.slug)}`
-    );
-  };
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -192,10 +353,11 @@ export default function AgentProfilePage({
 
               {/* PROFILE IMAGE */}
               <div className="flex justify-center">
+
                 {agent.profileImage ? (
                   <img
                     src={agent.profileImage}
-                    alt={`${agent.fullName} profile`}
+                    alt={agent.fullName}
                     className="h-28 w-28 rounded-full object-cover border-4 border-white/20 shadow-xl sm:h-32 sm:w-32"
                   />
                 ) : (
@@ -207,6 +369,7 @@ export default function AgentProfilePage({
                     </span>
                   </div>
                 )}
+
               </div>
 
               {/* NAME */}
@@ -214,6 +377,7 @@ export default function AgentProfilePage({
 
                 <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-300">
                   <Building2 className="h-3.5 w-3.5" />
+
                   {agent.role}
                 </div>
 
@@ -256,12 +420,12 @@ export default function AgentProfilePage({
                   <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3.5">
 
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
-                      <MessageCircle className="h-5 w-5 text-slate-300" />
+                      <Phone className="h-5 w-5 text-slate-300" />
                     </div>
 
                     <div className="min-w-0">
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                        Contact Number
+                        Phone
                       </p>
 
                       <p className="mt-0.5 text-sm font-medium text-white">
@@ -295,16 +459,13 @@ export default function AgentProfilePage({
 
               </div>
 
-              {/* =================================================
-                  ACTION BUTTONS
-                  ================================================= */}
-
+              {/* CONTACT BUTTONS */}
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
                 {/* SEND INQUIRY */}
                 <button
                   type="button"
-                  onClick={sendInquiry}
+                  onClick={openInquiryForm}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98]"
                 >
                   <Send className="h-4 w-4" />
@@ -335,6 +496,7 @@ export default function AgentProfilePage({
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-200 transition hover:bg-white/10 active:scale-[0.98]"
                 >
                   Facebook
+
                   <ExternalLink className="h-4 w-4" />
                 </a>
               )}
@@ -346,7 +508,13 @@ export default function AgentProfilePage({
 
               <button
                 type="button"
-                onClick={viewProperties}
+                onClick={() =>
+                  router.push(
+                    `/marketplace?agent=${encodeURIComponent(
+                      agent.slug
+                    )}`
+                  )
+                }
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100 active:scale-[0.98]"
               >
                 <Building2 className="h-4 w-4" />
@@ -374,6 +542,278 @@ export default function AgentProfilePage({
         </div>
 
       </section>
+
+      {/* =====================================================
+          INQUIRY MODAL
+      ====================================================== */}
+
+      {showInquiryForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 px-4 py-6 backdrop-blur-sm">
+
+          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 shadow-2xl">
+
+            {/* MODAL HEADER */}
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 sm:px-6">
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">
+                  BREA 88 REALTY
+                </p>
+
+                <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">
+                  Send an Inquiry
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  Contact {agent.fullName}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeInquiryForm}
+                disabled={submitting}
+                aria-label="Close inquiry form"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+            </div>
+
+            {/* FORM */}
+            <form
+              onSubmit={handleSubmitInquiry}
+              className="space-y-5 p-5 sm:p-6"
+            >
+
+              {/* AGENT */}
+              <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
+
+                <p className="text-[11px] font-bold uppercase tracking-wider text-blue-300">
+                  Agent
+                </p>
+
+                <p className="mt-1 font-bold text-white">
+                  {agent.fullName}
+                </p>
+
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {agent.email}
+                </p>
+
+              </div>
+
+              {/* PROPERTY */}
+              <div>
+                <label
+                  htmlFor="inquiry-property"
+                  className="mb-2 block text-sm font-semibold text-slate-200"
+                >
+                  Property
+                </label>
+
+                <select
+                  id="inquiry-property"
+                  name="propertyId"
+                  value={selectedPropertyId}
+                  onChange={(event) =>
+                    setSelectedPropertyId(
+                      event.target.value
+                    )
+                  }
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="">
+                    Select a property
+                  </option>
+
+                  {properties.map((property) => (
+                    <option
+                      key={property.id}
+                      value={property.id}
+                    >
+                      {property.title}
+                    </option>
+                  ))}
+                </select>
+
+                {properties.length === 0 && (
+                  <p className="mt-2 text-xs text-amber-400">
+                    This agent currently has no listed
+                    properties.
+                  </p>
+                )}
+              </div>
+
+              {/* NAME */}
+              <div>
+                <label
+                  htmlFor="inquiry-name"
+                  className="mb-2 block text-sm font-semibold text-slate-200"
+                >
+                  Full Name
+                </label>
+
+                <input
+                  id="inquiry-name"
+                  name="name"
+                  type="text"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                  required
+                  maxLength={100}
+                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              {/* EMAIL */}
+              <div>
+                <label
+                  htmlFor="inquiry-email"
+                  className="mb-2 block text-sm font-semibold text-slate-200"
+                >
+                  Email Address
+                </label>
+
+                <input
+                  id="inquiry-email"
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
+                  maxLength={255}
+                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              {/* PHONE */}
+              <div>
+                <label
+                  htmlFor="inquiry-phone"
+                  className="mb-2 block text-sm font-semibold text-slate-200"
+                >
+                  Phone Number
+                </label>
+
+                <input
+                  id="inquiry-phone"
+                  name="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="09XX XXX XXXX"
+                  autoComplete="tel"
+                  required
+                  maxLength={30}
+                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              {/* MESSAGE */}
+              <div>
+                <label
+                  htmlFor="inquiry-message"
+                  className="mb-2 block text-sm font-semibold text-slate-200"
+                >
+                  Message
+                </label>
+
+                <textarea
+                  id="inquiry-message"
+                  name="message"
+                  value={form.message}
+                  onChange={handleChange}
+                  placeholder={`Hi ${agent.fullName}, I am interested in this property...`}
+                  autoComplete="off"
+                  required
+                  maxLength={2000}
+                  rows={5}
+                  className="w-full resize-none rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm leading-6 text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                />
+
+                <p className="mt-1 text-right text-xs text-slate-500">
+                  {form.message.length}/2000
+                </p>
+              </div>
+
+              {/* ERROR */}
+              {submitError && (
+                <div className="flex gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+
+                  <p className="text-sm leading-6 text-red-300">
+                    {submitError}
+                  </p>
+
+                </div>
+              )}
+
+              {/* SUCCESS */}
+              {submitSuccess && (
+                <div className="flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+
+                  <p className="text-sm leading-6 text-emerald-300">
+                    {submitSuccess}
+                  </p>
+
+                </div>
+              )}
+
+              {/* BUTTONS */}
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+
+                <button
+                  type="button"
+                  onClick={closeInquiryForm}
+                  disabled={submitting}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Submit Inquiry
+                    </>
+                  )}
+                </button>
+
+              </div>
+
+              {/* PRIVACY NOTE */}
+              <p className="text-center text-[11px] leading-5 text-slate-500">
+                By submitting this form, your inquiry
+                will be sent to the selected BREA 88
+                REALTY agent.
+              </p>
+
+            </form>
+
+          </div>
+
+        </div>
+      )}
 
     </main>
   );
