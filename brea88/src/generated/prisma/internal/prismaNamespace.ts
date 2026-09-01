@@ -693,6 +693,7 @@ export const AgentScalarFieldEnum = {
   facebook: 'facebook',
   messenger: 'messenger',
   isActive: 'isActive',
+  lastSeen: 'lastSeen',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   address: 'address'

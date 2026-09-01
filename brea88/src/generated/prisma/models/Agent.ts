@@ -47,6 +47,7 @@ export type AgentMinAggregateOutputType = {
   facebook: string | null
   messenger: string | null
   isActive: boolean | null
+  lastSeen: Date | null
   createdAt: Date | null
   updatedAt: Date | null
   address: string | null
@@ -65,6 +66,7 @@ export type AgentMaxAggregateOutputType = {
   facebook: string | null
   messenger: string | null
   isActive: boolean | null
+  lastSeen: Date | null
   createdAt: Date | null
   updatedAt: Date | null
   address: string | null
@@ -83,6 +85,7 @@ export type AgentCountAggregateOutputType = {
   facebook: number
   messenger: number
   isActive: number
+  lastSeen: number
   createdAt: number
   updatedAt: number
   address: number
@@ -111,6 +114,7 @@ export type AgentMinAggregateInputType = {
   facebook?: true
   messenger?: true
   isActive?: true
+  lastSeen?: true
   createdAt?: true
   updatedAt?: true
   address?: true
@@ -129,6 +133,7 @@ export type AgentMaxAggregateInputType = {
   facebook?: true
   messenger?: true
   isActive?: true
+  lastSeen?: true
   createdAt?: true
   updatedAt?: true
   address?: true
@@ -147,6 +152,7 @@ export type AgentCountAggregateInputType = {
   facebook?: true
   messenger?: true
   isActive?: true
+  lastSeen?: true
   createdAt?: true
   updatedAt?: true
   address?: true
@@ -252,6 +258,7 @@ export type AgentGroupByOutputType = {
   facebook: string | null
   messenger: string | null
   isActive: boolean
+  lastSeen: Date | null
   createdAt: Date
   updatedAt: Date
   address: string | null
@@ -293,6 +300,7 @@ export type AgentWhereInput = {
   facebook?: Prisma.StringNullableFilter<"Agent"> | string | null
   messenger?: Prisma.StringNullableFilter<"Agent"> | string | null
   isActive?: Prisma.BoolFilter<"Agent"> | boolean
+  lastSeen?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   address?: Prisma.StringNullableFilter<"Agent"> | string | null
@@ -313,6 +321,7 @@ export type AgentOrderByWithRelationInput = {
   facebook?: Prisma.SortOrderInput | Prisma.SortOrder
   messenger?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  lastSeen?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -336,6 +345,7 @@ export type AgentWhereUniqueInput = Prisma.AtLeast<{
   facebook?: Prisma.StringNullableFilter<"Agent"> | string | null
   messenger?: Prisma.StringNullableFilter<"Agent"> | string | null
   isActive?: Prisma.BoolFilter<"Agent"> | boolean
+  lastSeen?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
   address?: Prisma.StringNullableFilter<"Agent"> | string | null
@@ -356,6 +366,7 @@ export type AgentOrderByWithAggregationInput = {
   facebook?: Prisma.SortOrderInput | Prisma.SortOrder
   messenger?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  lastSeen?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -382,6 +393,7 @@ export type AgentScalarWhereWithAggregatesInput = {
   facebook?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
   messenger?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Agent"> | boolean
+  lastSeen?: Prisma.DateTimeNullableWithAggregatesFilter<"Agent"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Agent"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Agent"> | Date | string
   address?: Prisma.StringNullableWithAggregatesFilter<"Agent"> | string | null
@@ -399,6 +411,7 @@ export type AgentCreateInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -419,6 +432,7 @@ export type AgentUncheckedCreateInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -438,6 +452,7 @@ export type AgentUpdateInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -458,6 +473,7 @@ export type AgentUncheckedUpdateInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -478,6 +494,7 @@ export type AgentCreateManyInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -495,6 +512,7 @@ export type AgentUpdateManyMutationInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -513,6 +531,7 @@ export type AgentUncheckedUpdateManyInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -531,6 +550,7 @@ export type AgentCountOrderByAggregateInput = {
   facebook?: Prisma.SortOrder
   messenger?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  lastSeen?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   address?: Prisma.SortOrder
@@ -553,6 +573,7 @@ export type AgentMaxOrderByAggregateInput = {
   facebook?: Prisma.SortOrder
   messenger?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  lastSeen?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   address?: Prisma.SortOrder
@@ -571,6 +592,7 @@ export type AgentMinOrderByAggregateInput = {
   facebook?: Prisma.SortOrder
   messenger?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  lastSeen?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   address?: Prisma.SortOrder
@@ -595,6 +617,10 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -653,6 +679,7 @@ export type AgentCreateWithoutPropertiesInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -672,6 +699,7 @@ export type AgentUncheckedCreateWithoutPropertiesInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -706,6 +734,7 @@ export type AgentUpdateWithoutPropertiesInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -725,6 +754,7 @@ export type AgentUncheckedUpdateWithoutPropertiesInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -743,6 +773,7 @@ export type AgentCreateWithoutInquiriesInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -762,6 +793,7 @@ export type AgentUncheckedCreateWithoutInquiriesInput = {
   facebook?: string | null
   messenger?: string | null
   isActive?: boolean
+  lastSeen?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   address?: string | null
@@ -796,6 +828,7 @@ export type AgentUpdateWithoutInquiriesInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -815,6 +848,7 @@ export type AgentUncheckedUpdateWithoutInquiriesInput = {
   facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   messenger?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -874,6 +908,7 @@ export type AgentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   facebook?: boolean
   messenger?: boolean
   isActive?: boolean
+  lastSeen?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   address?: boolean
@@ -895,6 +930,7 @@ export type AgentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   facebook?: boolean
   messenger?: boolean
   isActive?: boolean
+  lastSeen?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   address?: boolean
@@ -913,6 +949,7 @@ export type AgentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   facebook?: boolean
   messenger?: boolean
   isActive?: boolean
+  lastSeen?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   address?: boolean
@@ -931,12 +968,13 @@ export type AgentSelectScalar = {
   facebook?: boolean
   messenger?: boolean
   isActive?: boolean
+  lastSeen?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   address?: boolean
 }
 
-export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "passwordHash" | "role" | "slug" | "phone" | "profileImage" | "bio" | "facebook" | "messenger" | "isActive" | "createdAt" | "updatedAt" | "address", ExtArgs["result"]["agent"]>
+export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fullName" | "email" | "passwordHash" | "role" | "slug" | "phone" | "profileImage" | "bio" | "facebook" | "messenger" | "isActive" | "lastSeen" | "createdAt" | "updatedAt" | "address", ExtArgs["result"]["agent"]>
 export type AgentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   inquiries?: boolean | Prisma.Agent$inquiriesArgs<ExtArgs>
   properties?: boolean | Prisma.Agent$propertiesArgs<ExtArgs>
@@ -964,6 +1002,7 @@ export type $AgentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     facebook: string | null
     messenger: string | null
     isActive: boolean
+    lastSeen: Date | null
     createdAt: Date
     updatedAt: Date
     address: string | null
@@ -1404,6 +1443,7 @@ export interface AgentFieldRefs {
   readonly facebook: Prisma.FieldRef<"Agent", 'String'>
   readonly messenger: Prisma.FieldRef<"Agent", 'String'>
   readonly isActive: Prisma.FieldRef<"Agent", 'Boolean'>
+  readonly lastSeen: Prisma.FieldRef<"Agent", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Agent", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Agent", 'DateTime'>
   readonly address: Prisma.FieldRef<"Agent", 'String'>

@@ -20,6 +20,7 @@ model Agent {
   facebook     String?
   messenger    String?
   isActive     Boolean    @default(true)
+  lastSeen     DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   address      String?
@@ -28,6 +29,7 @@ model Agent {
 
   @@index([slug])
   @@index([role])
+  @@index([lastSeen])
   @@map("agents")
 }
 

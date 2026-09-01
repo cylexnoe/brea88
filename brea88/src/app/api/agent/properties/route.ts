@@ -1,27 +1,36 @@
 import { NextResponse } from 'next/server';
+
+import {getAgentFromSession,} from '@/lib/agent-auth';
+
 import { prisma } from '@/lib/prisma';
-import { getCurrentAgentId } from '@/lib/agent-auth';
 
 /*
 |--------------------------------------------------------------------------
 | GET /api/agent/properties
 |--------------------------------------------------------------------------
-| Agents can only VIEW properties assigned to their own account.
 |
-| Agents cannot:
-| - Create properties
-| - Update properties
-| - Delete properties
+| Returns properties assigned to the currently authenticated agent.
 |
-| Property management is restricted to Admin.
-|--------------------------------------------------------------------------
+| SECURITY:
+|
+| The browser does NOT provide agentId.
+|
+| We get the authenticated agent from the signed HttpOnly
+| agent_session cookie and use that ID for the database query.
+|
 */
 
 export async function GET() {
   try {
-    const agentId = await getCurrentAgentId();
+    /*
+    |--------------------------------------------------------------------------
+    | AUTHENTICATE AGENT
+    |--------------------------------------------------------------------------
+    */
 
-    if (!agentId) {
+    const agent = await getAgentFromSession();
+
+    if (!agent) {
       return NextResponse.json(
         {
           success: false,
@@ -33,63 +42,48 @@ export async function GET() {
       );
     }
 
-    const agent = await prisma.agent.findUnique({
-      where: {
-        id: agentId,
-      },
-      select: {
-        id: true,
-        isActive: true,
-      },
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | FIND ASSIGNED PROPERTIES
+    |--------------------------------------------------------------------------
+    |
+    | Only properties where agentId matches the authenticated
+    | agent's ID will be returned.
+    |
+    */
 
-    if (!agent) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Agent account not found.',
+    const properties =
+      await prisma.property.findMany({
+        where: {
+          agentId: agent.id,
         },
-        {
-          status: 401,
-        }
-      );
-    }
 
-    if (!agent.isActive) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Your agent account is inactive.',
+        select: {
+          id: true,
+          title: true,
+          tag: true,
+          price: true,
+          location: true,
+          image: true,
+          images: true,
+          beds: true,
+          baths: true,
+          sqft: true,
+          agentId: true,
+          createdAt: true,
+          updatedAt: true,
         },
-        {
-          status: 403,
-        }
-      );
-    }
 
-    const properties = await prisma.property.findMany({
-      where: {
-        agentId: agent.id,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: {
-        id: true,
-        title: true,
-        tag: true,
-        price: true,
-        location: true,
-        image: true,
-        images: true,
-        beds: true,
-        baths: true,
-        sqft: true,
-        agentId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
 
     return NextResponse.json(
       {
@@ -102,8 +96,18 @@ export async function GET() {
     );
   } catch (error) {
     console.error(
-      'GET /api/agent/properties error:',
-      error
+      '========== AGENT PROPERTIES ERROR =========='
+    );
+
+    console.error('Error:', error);
+
+    if (error instanceof Error) {
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+    }
+
+    console.error(
+      '============================================'
     );
 
     return NextResponse.json(
@@ -118,86 +122,3 @@ export async function GET() {
   }
 }
 
-/*
-|--------------------------------------------------------------------------
-| POST
-|--------------------------------------------------------------------------
-| Agents cannot create properties.
-|--------------------------------------------------------------------------
-*/
-
-export async function POST() {
-  return NextResponse.json(
-    {
-      success: false,
-      message:
-        'Agents are not allowed to create properties. Property management is restricted to administrators.',
-    },
-    {
-      status: 403,
-    }
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| PUT
-|--------------------------------------------------------------------------
-| Agents cannot update properties.
-|--------------------------------------------------------------------------
-*/
-
-export async function PUT() {
-  return NextResponse.json(
-    {
-      success: false,
-      message:
-        'Agents are not allowed to update properties. Property management is restricted to administrators.',
-    },
-    {
-      status: 403,
-    }
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| PATCH
-|--------------------------------------------------------------------------
-| Agents cannot update properties.
-|--------------------------------------------------------------------------
-*/
-
-export async function PATCH() {
-  return NextResponse.json(
-    {
-      success: false,
-      message:
-        'Agents are not allowed to update properties. Property management is restricted to administrators.',
-    },
-    {
-      status: 403,
-    }
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| DELETE
-|--------------------------------------------------------------------------
-| Agents cannot delete properties.
-|--------------------------------------------------------------------------
-*/
-
-export async function DELETE() {
-  return NextResponse.json(
-    {
-      success: false,
-      message:
-        'Agents are not allowed to delete properties. Property management is restricted to administrators.',
-    },
-    {
-      status: 403,
-    }
-  );
-}

@@ -31,7 +31,10 @@ function safeCompare(a: string, b: string): boolean {
     return false;
   }
 
-  return crypto.timingSafeEqual(bufferA, bufferB);
+  return crypto.timingSafeEqual(
+    bufferA,
+    bufferB
+  );
 }
 
 /*
@@ -104,7 +107,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Email and password are required.',
+          message:
+            'Email and password are required.',
         },
         { status: 400 }
       );
@@ -116,20 +120,21 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const agent = await prisma.agent.findUnique({
-      where: {
-        email,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        passwordHash: true,
-        role: true,
-        slug: true,
-        isActive: true,
-      },
-    });
+    const agent =
+      await prisma.agent.findUnique({
+        where: {
+          email,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          passwordHash: true,
+          role: true,
+          slug: true,
+          isActive: true,
+        },
+      });
 
     /*
     |--------------------------------------------------------------------------
@@ -141,7 +146,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid email or password.',
+          message:
+            'Invalid email or password.',
         },
         { status: 401 }
       );
@@ -157,7 +163,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid email or password.',
+          message:
+            'Invalid email or password.',
         },
         { status: 401 }
       );
@@ -193,18 +200,21 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const passwordHash = hashPassword(password);
+    const passwordHash =
+      hashPassword(password);
 
-    const passwordMatches = safeCompare(
-      passwordHash,
-      agent.passwordHash
-    );
+    const passwordMatches =
+      safeCompare(
+        passwordHash,
+        agent.passwordHash
+      );
 
     if (!passwordMatches) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid email or password.',
+          message:
+            'Invalid email or password.',
         },
         { status: 401 }
       );
@@ -212,11 +222,32 @@ export async function POST(request: Request) {
 
     /*
     |--------------------------------------------------------------------------
+    | UPDATE LAST SEEN
+    |--------------------------------------------------------------------------
+    |
+    | Only update activity AFTER successful authentication.
+    |
+    */
+
+    await prisma.agent.update({
+      where: {
+        id: agent.id,
+      },
+      data: {
+        lastSeen: new Date(),
+      },
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | CREATE SESSION
     |--------------------------------------------------------------------------
     */
 
-    const token = createAgentSessionToken(agent.id);
+    const token =
+      createAgentSessionToken(
+        agent.id
+      );
 
     /*
     |--------------------------------------------------------------------------
@@ -224,17 +255,20 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const response = NextResponse.json({
-      success: true,
-      message: 'Login successful.',
-      agent: {
-        id: agent.id,
-        fullName: agent.fullName,
-        email: agent.email,
-        role: agent.role,
-        slug: agent.slug,
-      },
-    });
+    const response =
+      NextResponse.json({
+        success: true,
+        message:
+          'Login successful.',
+        agent: {
+          id: agent.id,
+          fullName:
+            agent.fullName,
+          email: agent.email,
+          role: agent.role,
+          slug: agent.slug,
+        },
+      });
 
     /*
     |--------------------------------------------------------------------------
@@ -246,35 +280,50 @@ export async function POST(request: Request) {
       name: 'agent_session',
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure:
+        process.env.NODE_ENV ===
+        'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge:
+        60 * 60 * 24 * 30,
       path: '/',
     });
 
     return response;
-      } catch (error) {
-    console.error('========== AGENT LOGIN ERROR ==========');
-    console.error('Error:', error);
+  } catch (error) {
+    console.error(
+      '========== AGENT LOGIN ERROR =========='
+    );
+
+    console.error(
+      'Error:',
+      error
+    );
 
     if (error instanceof Error) {
-      console.error('Message:', error.message);
-      console.error('Stack:', error.stack);
+      console.error(
+        'Message:',
+        error.message
+      );
+
+      console.error(
+        'Stack:',
+        error.stack
+      );
     }
 
-    console.error('========================================');
-
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : 'Unknown server error';
+    console.error(
+      '========================================'
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Unable to process login.',
+        message:
+          'Unable to process login.',
       },
       { status: 500 }
     );
   }
 }
+
