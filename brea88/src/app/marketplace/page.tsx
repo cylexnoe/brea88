@@ -592,14 +592,12 @@ function MarketplaceContent() {
           },
           credentials: 'include',
           body: JSON.stringify({
-            name: inquiryName.trim(),
-            email: inquiryEmail.trim(),
-            phone: inquiryPhone.trim(),
-            message:
-              inquiryMessage.trim(),
-            propertyId:
-              selectedProperty.id,
-          }),
+          name: inquiryName.trim(),
+          email: inquiryEmail.trim(),
+          phone: inquiryPhone.trim(),
+          message: inquiryMessage.trim(),
+          propertyId: selectedProperty.id,
+        })
         }
       );
 
