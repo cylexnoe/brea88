@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   PlusCircle,
@@ -33,6 +34,7 @@ import {
   UserRound,
   Building,
   Warehouse,
+  ChevronRight,
 } from 'lucide-react';
 
 const MAX_IMAGES = 10;
@@ -1322,6 +1324,29 @@ export default function AdminDashboard() {
             Add Property
           </button>
 
+          <Link
+            href="/admin/agents"
+            className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                <UserRound className="h-5 w-5 text-slate-700" />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Active Accounts
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Manage agent accounts
+                </p>
+              </div>
+            </div>
+
+            <ChevronRight className="h-5 w-5 text-slate-400 transition group-hover:translate-x-1" />
+          </Link>
+          
           <button
             type="button"
             onClick={() =>
