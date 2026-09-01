@@ -34,7 +34,6 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-import { useSearchParams } from 'next/navigation';
 import PropertyCard from '../propertyCard';
 
 interface Agent {
@@ -127,7 +126,6 @@ const STOREY_OPTIONS = [
 function MarketplaceContent() {
   const searchParams = useSearchParams();
 
-  const agentSlug = searchParams.get('agent');
 
   /* =======================================================
      PROPERTY STATE
@@ -301,10 +299,7 @@ function MarketplaceContent() {
                 query
               );
 
-            const matchesAgent =
-              !agentSlug ||
-              property.agent?.slug ===
-                agentSlug;
+            const matchesAgent = true;
 
             const matchesCategory =
               selectedCategory ===
@@ -342,7 +337,6 @@ function MarketplaceContent() {
 
             return (
               matchesSearch &&
-              matchesAgent &&
               matchesCategory &&
               matchesPropertyType &&
               matchesHouseType &&
@@ -378,19 +372,17 @@ function MarketplaceContent() {
         );
       }
 
-      return result;
-    }, [
-      properties,
-      searchQuery,
-      selectedCategory,
-      selectedPropertyType,
-      selectedHouseType,
-      selectedStorey,
-      maxPrice,
-      sortBy,
-      agentSlug,
-    ]);
-
+       return result;
+        }, [
+          properties,
+          searchQuery,
+          selectedCategory,
+          selectedPropertyType,
+          selectedHouseType,
+          selectedStorey,
+          maxPrice,
+          sortBy,
+        ]);
   /* =======================================================
      RESET FILTERS
   ======================================================= */
