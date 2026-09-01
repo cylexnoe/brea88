@@ -124,7 +124,6 @@ const STOREY_OPTIONS = [
 ========================================================= */
 
 function MarketplaceContent() {
-  const searchParams = useSearchParams();
 
 
   /* =======================================================
