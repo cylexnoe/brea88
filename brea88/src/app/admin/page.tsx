@@ -1,7 +1,14 @@
 'use client';
 
-import React, { FormEvent, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, {
+  Suspense,
+  useEffect,
+  useState,
+  type FormEvent,
+} from 'react';
+
+import { useSearchParams, useRouter } from 'next/navigation';
+
 import {
   Eye,
   EyeOff,
@@ -11,7 +18,7 @@ import {
   User,
 } from 'lucide-react';
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -260,3 +267,21 @@ export default function AdminLoginPage() {
   );
 }
 
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+            <p className="text-sm text-slate-400">
+              Loading administrator portal...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <AdminLoginContent />
+    </Suspense>
+  );
+}
