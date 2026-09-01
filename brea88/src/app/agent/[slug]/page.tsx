@@ -307,25 +307,26 @@ export default function AgentProfilePage({
 
             {/* PROPERTY BUTTON */}
             <div className="border-t border-white/10 bg-black/20 p-5 sm:p-6">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/marketplace?agent=${encodeURIComponent(agent.slug)}`
+                  )
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100 active:scale-[0.98]"
+              >
+                <Building2 className="h-4 w-4" />
+                View Properties
+              </button>
 
-              <div className="mt-8 border-t border-slate-200 pt-6">
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push(
-                      `/marketplace?agent=${encodeURIComponent(agent.slug)}`
-                    )
-                  }
-                  className="..."
-                >
-                  Property
-                </button>
-              </div>
-
-            </div>
-
+              {properties.length > 0 && (
+                <p className="mt-2 text-center text-xs text-slate-500">
+                  View {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+                </p>
+              )}
+            </div>  
           </div>
-
           {/* FOOTER */}
           <p className="mt-6 text-center text-xs text-slate-600">
             BREA 88 REALTY • Official Agent Contact
