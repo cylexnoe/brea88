@@ -2,21 +2,18 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 import { prisma } from '@/lib/prisma';
-import {
-  createAgentSessionToken,
-} from '@/lib/agent-auth';
+import { createAgentSessionToken } from '@/lib/agent-auth';
 
 /*
 |--------------------------------------------------------------------------
 | PASSWORD HASHING
 |--------------------------------------------------------------------------
-| NOTE:
-| This keeps your current authentication system compatible.
-| We should migrate existing passwords to Argon2id/bcrypt later.
+| Keeps compatibility with the current authentication system.
+| Existing accounts using SHA-256 will continue to work.
 |--------------------------------------------------------------------------
 */
 
-function hashPassword(password: string) {
+function hashPassword(password: string): string {
   return crypto
     .createHash('sha256')
     .update(password)
@@ -29,7 +26,7 @@ function hashPassword(password: string) {
 |--------------------------------------------------------------------------
 */
 
-function createSlug(name: string) {
+function createSlug(name: string): string {
   const slug = name
     .toLowerCase()
     .trim()
@@ -45,12 +42,21 @@ function createSlug(name: string) {
 |--------------------------------------------------------------------------
 | POST /api/agent/register
 |--------------------------------------------------------------------------
-| Public agent registration.
 |
-| SECURITY:
-| - Users cannot choose their own role.
-| - Every public registration becomes "Agent".
-| - Broker/Admin privileges must be assigned separately.
+| PUBLIC REGISTRATION
+|
+| IMPORTANT:
+| Public registration ALWAYS creates an Agent.
+|
+| The user cannot submit:
+|
+| {
+|   "role": "Broker"
+| }
+|
+| and become a Broker.
+|
+| Broker/Admin privileges must be assigned by the Admin.
 |--------------------------------------------------------------------------
 */
 
@@ -115,7 +121,7 @@ export async function POST(request: Request) {
 
     /*
     |--------------------------------------------------------------------------
-    | VALIDATION
+    | FULL NAME VALIDATION
     |--------------------------------------------------------------------------
     */
 
@@ -208,8 +214,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Password must be at least 8 characters.',
+          message: 'Password must be at least 8 characters.',
         },
         { status: 400 }
       );
@@ -219,8 +224,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Password must not exceed 128 characters.',
+          message: 'Password must not exceed 128 characters.',
         },
         { status: 400 }
       );
@@ -279,41 +283,18 @@ export async function POST(request: Request) {
 
     /*
     |--------------------------------------------------------------------------
-    | SECURITY: PUBLIC REGISTRATION ROLE
+    | SECURITY
     |--------------------------------------------------------------------------
     |
-    | DO NOT use:
+    | NEVER take the role from the public request.
     |
-    | const role = body.role === 'Broker'
-    |   ? 'Broker'
-    |   : 'Agent';
+    | Every public registration is an Agent.
     |
-    | A user could simply submit:
-    |
-    | {
-    |   "role": "Broker"
-    | }
-    |
-    | Instead, public registration always creates an Agent.
+    | Admin can later change the role to Broker if appropriate.
     |--------------------------------------------------------------------------
     */
 
-    const role =
-      data.role === 'Broker'
-        ? 'Broker'
-        : data.role === 'Agent'
-          ? 'Agent'
-          : null;
-
-    if (!role) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid account role.',
-        },
-        { status: 400 }
-      );
-    }
+    const role = 'Agent';
 
     /*
     |--------------------------------------------------------------------------
@@ -321,7 +302,8 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     */
 
-    const agent = await prisma.agent.create({
+    const agent =
+      await prisma.agent.create({
         data: {
           fullName,
           email,
@@ -346,9 +328,7 @@ export async function POST(request: Request) {
     */
 
     const token =
-      createAgentSessionToken(
-        agent.id
-      );
+      createAgentSessionToken(agent.id);
 
     /*
     |--------------------------------------------------------------------------
@@ -360,8 +340,7 @@ export async function POST(request: Request) {
       NextResponse.json(
         {
           success: true,
-          message:
-            'Account created successfully.',
+          message: 'Account created successfully.',
           agent,
         },
         {
@@ -371,7 +350,7 @@ export async function POST(request: Request) {
 
     /*
     |--------------------------------------------------------------------------
-    | SECURE SESSION COOKIE
+    | SESSION COOKIE
     |--------------------------------------------------------------------------
     */
 
@@ -380,11 +359,9 @@ export async function POST(request: Request) {
       value: token,
       httpOnly: true,
       secure:
-        process.env.NODE_ENV ===
-        'production',
+        process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge:
-        60 * 60 * 24 * 30,
+      maxAge: 60 * 60 * 24 * 30,
       path: '/',
     });
 
@@ -399,17 +376,11 @@ export async function POST(request: Request) {
     |--------------------------------------------------------------------------
     | DATABASE UNIQUE CONSTRAINT
     |--------------------------------------------------------------------------
-    |
-    | Protect against a race condition where another registration
-    | creates the same email/slug between our check and create.
-    |--------------------------------------------------------------------------
     */
 
     if (
       error instanceof Error &&
-      error.message.includes(
-        'Unique constraint'
-      )
+      error.message.includes('Unique constraint')
     ) {
       return NextResponse.json(
         {
