@@ -15,8 +15,10 @@ function cleanString(value: unknown): string {
   return value.trim();
 }
 
-/* Escape HTML so client-submitted values cannot inject HTML
-   into the email. */
+/*
+ * Escape HTML so client-submitted values cannot inject HTML
+ * into the email.
+ */
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -28,6 +30,7 @@ function escapeHtml(value: string): string {
 
 /* =========================================================
    GET INQUIRIES
+
    - Only logged-in agents can access inquiries.
    - Agents only see inquiries assigned to themselves.
 ========================================================= */
@@ -97,7 +100,6 @@ export async function GET() {
       {
         success: false,
         message: 'Failed to load inquiries.',
-
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -112,11 +114,9 @@ export async function GET() {
 /* =========================================================
    POST INQUIRY
 
-   IMPORTANT:
-
    NORMAL CLIENTS DO NOT NEED TO LOG IN.
 
-   The client sends:
+   Client sends:
 
    - name
    - email
@@ -125,38 +125,25 @@ export async function GET() {
    - propertyId
    - agentSlug
 
-   The client NEVER sends:
+   Client NEVER sends:
 
    - agentId
    - agent.email
 
-   The server uses agentSlug to find the registered Agent
-   in the database.
+   The server uses agentSlug to find the registered
+   Agent in PostgreSQL.
 
-   Then:
+   Flow:
 
-   Agent.email
+   agentSlug
         ↓
-   Resend recipient
-
-   Example:
-
-   agentSlug = "john-doe"
-
-   Database:
-
-   Agent {
-      id: 5
-      slug: "john-doe"
-      email: "john@gmail.com"
-   }
-
-   Result:
-
-   Inquiry saved with agentId = 5
-
-   Email sent to:
-   john@gmail.com
+   Database Agent
+        ↓
+   Agent.id + Agent.email
+        ↓
+   Save Inquiry
+        ↓
+   Send Resend email to Agent.email
 ========================================================= */
 
 export async function POST(request: Request) {
@@ -200,11 +187,8 @@ export async function POST(request: Request) {
     ======================================================= */
 
     const name = cleanString(data.name);
-
     const email = cleanString(data.email).toLowerCase();
-
     const phone = cleanString(data.phone);
-
     const message = cleanString(data.message);
 
     /* =======================================================
@@ -393,8 +377,6 @@ export async function POST(request: Request) {
     /* =======================================================
        FIND ACTIVE AGENT
 
-       IMPORTANT:
-
        We DO NOT trust an email from the client.
 
        We only accept agentSlug.
@@ -488,15 +470,15 @@ export async function POST(request: Request) {
     /* =======================================================
        CREATE INQUIRY
 
-       agentId comes from the database lookup.
+       agentId comes from the verified database record.
 
        NOT from the browser.
 
-       This means the client cannot simply submit:
+       This prevents the client from submitting:
 
        agentId: 123
 
-       and redirect an inquiry to another agent.
+       and redirecting the inquiry to another agent.
     ======================================================= */
 
     const inquiry = await prisma.inquiry.create({
@@ -506,10 +488,7 @@ export async function POST(request: Request) {
         phone,
         message,
         propertyId,
-
-        // Agent comes from the verified database record.
         agentId: agent.id,
-
         status: 'New',
       },
 
@@ -540,15 +519,12 @@ export async function POST(request: Request) {
     /* =======================================================
        RESEND CONFIGURATION
 
-       IMPORTANT:
+       Resend is initialized here instead of globally.
 
-       Resend is initialized HERE instead of globally.
-
-       This prevents Vercel from trying to construct:
+       This prevents build-time initialization problems such
+       as:
 
        new Resend(undefined)
-
-       during the build process.
     ======================================================= */
 
     const resendApiKey = cleanString(
@@ -601,26 +577,25 @@ export async function POST(request: Request) {
        ESCAPE VALUES FOR HTML EMAIL
     ======================================================= */
 
-    const safeAgentName = escapeHtml(agent.fullName);
+    const safeAgentName = escapeHtml(
+      cleanString(agent.fullName)
+    );
 
     const safeClientName = escapeHtml(name);
-
     const safeClientEmail = escapeHtml(email);
-
     const safePhone = escapeHtml(phone);
-
     const safeMessage = escapeHtml(message);
 
     const safePropertyTitle = escapeHtml(
-      property.title
+      cleanString(property.title)
     );
 
     const safePropertyLocation = escapeHtml(
-      property.location
+      cleanString(property.location)
     );
 
     const safePropertyPrice = escapeHtml(
-      property.price
+      String(property.price)
     );
 
     /* =======================================================
@@ -638,8 +613,11 @@ export async function POST(request: Request) {
 
        agent email from browser
 
-       The recipient is taken directly from the
-       authenticated/verified database record.
+       The recipient comes directly from the verified
+       database record.
+
+       replyTo is the client's email so the agent can
+       reply directly to the client.
     ======================================================= */
 
     try {
@@ -648,52 +626,60 @@ export async function POST(request: Request) {
       const resendResult = await resend.emails.send({
         from: fromEmail,
 
-        // THIS IS THE IMPORTANT PART
         to: [agentEmail],
 
-        // When the agent clicks Reply,
-        // the reply goes to the client.
         replyTo: email,
 
-        subject:
-          `New Property Inquiry - ${property.title}`,
+        subject: `New Property Inquiry - ${property.title}`,
 
         text: `
 NEW PROPERTY INQUIRY
+
 ====================
 
 A client has submitted a new property inquiry.
 
 PROPERTY
+
 --------
+
 Title: ${property.title}
 Price: ₱${property.price}
 Location: ${property.location}
 
 CLIENT
+
 ------
+
 Name: ${name}
 Email: ${email}
 Phone: ${phone}
 
 MESSAGE
+
 -------
+
 ${message}
 
 INQUIRY INFORMATION
+
 -------------------
+
 Inquiry ID: ${inquiry.id}
 Status: ${inquiry.status}
 Submitted: ${inquiry.createdAt.toLocaleString()}
 
 AGENT
+
 -----
+
 Name: ${agent.fullName}
 Email: ${agentEmail}
 
 You can reply directly to this email to contact the client.
 
 BREA 88 REALTY
+
 Service with a Heart
         `.trim(),
 
@@ -713,9 +699,7 @@ Service with a Heart
     font-family:Arial,Helvetica,sans-serif;
   "
 >
-
   <div style="padding:30px 15px;">
-
     <div
       style="
         max-width:650px;
@@ -735,7 +719,6 @@ Service with a Heart
           padding:30px;
         "
       >
-
         <h1
           style="
             margin:0;
@@ -755,7 +738,6 @@ Service with a Heart
         >
           BREA 88 Realty
         </p>
-
       </div>
 
       <!-- CONTENT -->
@@ -796,7 +778,6 @@ Service with a Heart
             border-radius:12px;
           "
         >
-
           <h2
             style="
               margin:0 0 15px;
@@ -839,7 +820,6 @@ Service with a Heart
             <strong>Location:</strong>
             ${safePropertyLocation}
           </p>
-
         </div>
 
         <!-- CLIENT -->
@@ -853,7 +833,6 @@ Service with a Heart
             border-radius:12px;
           "
         >
-
           <h2
             style="
               margin:0 0 15px;
@@ -883,6 +862,7 @@ Service with a Heart
             "
           >
             <strong>Email:</strong>
+
             <a
               href="mailto:${encodeURIComponent(email)}"
               style="color:#1d4ed8;"
@@ -901,7 +881,6 @@ Service with a Heart
             <strong>Phone:</strong>
             ${safePhone}
           </p>
-
         </div>
 
         <!-- MESSAGE -->
@@ -915,7 +894,6 @@ Service with a Heart
             border-radius:12px;
           "
         >
-
           <h2
             style="
               margin:0 0 15px;
@@ -937,7 +915,6 @@ Service with a Heart
           >
             ${safeMessage}
           </p>
-
         </div>
 
         <!-- REPLY BUTTON -->
@@ -948,7 +925,6 @@ Service with a Heart
             text-align:center;
           "
         >
-
           <a
             href="mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
               `Re: Property Inquiry - ${property.title}`
@@ -966,7 +942,6 @@ Service with a Heart
           >
             Reply to Client
           </a>
-
         </div>
 
         <!-- FOOTER -->
@@ -978,7 +953,6 @@ Service with a Heart
             border-top:1px solid #e2e8f0;
           "
         >
-
           <p
             style="
               margin:0;
@@ -990,7 +964,10 @@ Service with a Heart
             Inquiry ID: ${inquiry.id}
             <br />
 
-            Status: ${escapeHtml(inquiry.status)}
+            Status: ${escapeHtml(
+              cleanString(inquiry.status)
+            )}
+
             <br />
 
             Submitted:
@@ -1019,19 +996,19 @@ Service with a Heart
           >
             Service with a Heart
           </p>
-
         </div>
 
       </div>
-
     </div>
-
   </div>
-
 </body>
 </html>
         `.trim(),
       });
+
+      /* =====================================================
+         CHECK RESEND RESULT
+      ===================================================== */
 
       if (resendResult.error) {
         console.error(
@@ -1065,12 +1042,17 @@ Service with a Heart
         },
         { status: 201 }
       );
-
     } catch (emailError) {
       console.error(
         'Failed to send inquiry email:',
         emailError
       );
+
+      /*
+       * The inquiry is already safely stored in PostgreSQL.
+       * Therefore, email failure does not cause the inquiry
+       * itself to be lost.
+       */
 
       return NextResponse.json(
         {
@@ -1083,7 +1065,6 @@ Service with a Heart
         { status: 201 }
       );
     }
-
   } catch (error) {
     console.error(
       'POST /api/inquiries error:',
@@ -1094,7 +1075,6 @@ Service with a Heart
       {
         success: false,
         message: 'Failed to submit inquiry.',
-
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -1167,7 +1147,6 @@ export async function PATCH(request: Request) {
     const data = body as Record<string, unknown>;
 
     const inquiryId = Number(data.id);
-
     const status = cleanString(data.status);
 
     /* =======================================================
@@ -1215,7 +1194,7 @@ export async function PATCH(request: Request) {
     /* =======================================================
        FIND INQUIRY
 
-       BOTH:
+       Both:
 
        id
        +
@@ -1292,7 +1271,6 @@ export async function PATCH(request: Request) {
       },
       { status: 200 }
     );
-
   } catch (error) {
     console.error(
       'PATCH /api/inquiries error:',
@@ -1303,7 +1281,6 @@ export async function PATCH(request: Request) {
       {
         success: false,
         message: 'Failed to update inquiry.',
-
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
