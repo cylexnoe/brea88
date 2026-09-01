@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -59,10 +58,8 @@ export default function AgentProfilePage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Inquiry form
-  const [showInquiryForm, setShowInquiryForm] = useState(false);
-
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [showInquiryForm, setShowInquiryForm] =
+    useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -71,9 +68,14 @@ export default function AgentProfilePage({
     message: '',
   });
 
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [submitError, setSubmitError] =
+    useState('');
+
+  const [submitSuccess, setSubmitSuccess] =
+    useState('');
 
   /*
    * LOAD AGENT PROFILE
@@ -101,7 +103,10 @@ export default function AgentProfilePage({
         setAgent(data.agent);
         setProperties(data.properties || []);
       } catch (err) {
-        console.error('Failed to load agent profile:', err);
+        console.error(
+          'Failed to load agent profile:',
+          err
+        );
 
         setError(
           err instanceof Error
@@ -122,12 +127,6 @@ export default function AgentProfilePage({
   const openInquiryForm = () => {
     setSubmitError('');
     setSubmitSuccess('');
-
-    // Automatically select the first property if available.
-    if (properties.length > 0 && !selectedPropertyId) {
-      setSelectedPropertyId(String(properties[0].id));
-    }
-
     setShowInquiryForm(true);
   };
 
@@ -147,7 +146,7 @@ export default function AgentProfilePage({
    */
   const handleChange = (
     event: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      HTMLInputElement | HTMLTextAreaElement
     >
   ) => {
     const { name, value } = event.target;
@@ -178,12 +177,6 @@ export default function AgentProfilePage({
     setSubmitting(true);
 
     try {
-      if (!selectedPropertyId) {
-        throw new Error(
-          'Please select a property.'
-        );
-      }
-
       if (!form.name.trim()) {
         throw new Error(
           'Please enter your name.'
@@ -211,11 +204,9 @@ export default function AgentProfilePage({
       /*
        * IMPORTANT:
        *
-       * We send agentSlug, NOT agentId
-       * and NOT agent.email.
+       * propertyId is completely removed.
        *
-       * Your API will look up the actual agent
-       * from the database using this slug.
+       * The inquiry is assigned using agentSlug.
        */
       const response = await fetch(
         '/api/inquiries',
@@ -229,9 +220,6 @@ export default function AgentProfilePage({
             email: form.email.trim(),
             phone: form.phone.trim(),
             message: form.message.trim(),
-
-            propertyId: Number(selectedPropertyId),
-
             agentSlug: agent.slug,
           }),
         }
@@ -251,9 +239,6 @@ export default function AgentProfilePage({
           'Your inquiry has been submitted successfully.'
       );
 
-      /*
-       * Clear form after successful submission.
-       */
       setForm({
         name: '',
         email: '',
@@ -261,13 +246,6 @@ export default function AgentProfilePage({
         message: '',
       });
 
-      /*
-       * Keep selected property.
-       */
-
-      /*
-       * Close the form after a short delay.
-       */
       setTimeout(() => {
         setShowInquiryForm(false);
         setSubmitSuccess('');
@@ -377,7 +355,6 @@ export default function AgentProfilePage({
 
                 <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-300">
                   <Building2 className="h-3.5 w-3.5" />
-
                   {agent.role}
                 </div>
 
@@ -460,13 +437,13 @@ export default function AgentProfilePage({
               </div>
 
               {/* CONTACT BUTTONS */}
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="mt-6">
 
                 {/* SEND INQUIRY */}
                 <button
                   type="button"
                   onClick={openInquiryForm}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98]"
                 >
                   <Send className="h-4 w-4" />
                   Send Inquiry
@@ -478,7 +455,7 @@ export default function AgentProfilePage({
                     href={agent.messenger}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100 active:scale-[0.98]"
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100 active:scale-[0.98]"
                   >
                     <MessageCircle className="h-4 w-4" />
                     Messenger
@@ -496,7 +473,6 @@ export default function AgentProfilePage({
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-200 transition hover:bg-white/10 active:scale-[0.98]"
                 >
                   Facebook
-
                   <ExternalLink className="h-4 w-4" />
                 </a>
               )}
@@ -591,7 +567,7 @@ export default function AgentProfilePage({
               <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
 
                 <p className="text-[11px] font-bold uppercase tracking-wider text-blue-300">
-                  Agent
+                  Sending to
                 </p>
 
                 <p className="mt-1 font-bold text-white">
@@ -602,49 +578,6 @@ export default function AgentProfilePage({
                   {agent.email}
                 </p>
 
-              </div>
-
-              {/* PROPERTY */}
-              <div>
-                <label
-                  htmlFor="inquiry-property"
-                  className="mb-2 block text-sm font-semibold text-slate-200"
-                >
-                  Property
-                </label>
-
-                <select
-                  id="inquiry-property"
-                  name="propertyId"
-                  value={selectedPropertyId}
-                  onChange={(event) =>
-                    setSelectedPropertyId(
-                      event.target.value
-                    )
-                  }
-                  required
-                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                >
-                  <option value="">
-                    Select a property
-                  </option>
-
-                  {properties.map((property) => (
-                    <option
-                      key={property.id}
-                      value={property.id}
-                    >
-                      {property.title}
-                    </option>
-                  ))}
-                </select>
-
-                {properties.length === 0 && (
-                  <p className="mt-2 text-xs text-amber-400">
-                    This agent currently has no listed
-                    properties.
-                  </p>
-                )}
               </div>
 
               {/* NAME */}
@@ -730,7 +663,7 @@ export default function AgentProfilePage({
                   name="message"
                   value={form.message}
                   onChange={handleChange}
-                  placeholder={`Hi ${agent.fullName}, I am interested in this property...`}
+                  placeholder={`Hi ${agent.fullName}, I am interested in learning more about your services and available properties.`}
                   autoComplete="off"
                   required
                   maxLength={2000}
@@ -801,11 +734,9 @@ export default function AgentProfilePage({
 
               </div>
 
-              {/* PRIVACY NOTE */}
               <p className="text-center text-[11px] leading-5 text-slate-500">
-                By submitting this form, your inquiry
-                will be sent to the selected BREA 88
-                REALTY agent.
+                Your inquiry will be sent directly to{' '}
+                {agent.fullName}.
               </p>
 
             </form>
