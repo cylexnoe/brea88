@@ -1,501 +1,3507 @@
 'use client';
 
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  FormEvent,
-  useState,
-} from 'react';
-
-import {
-  Eye,
-  EyeOff,
-  LockKeyhole,
-  Loader2,
-  LogIn,
-  User,
-  ShieldCheck,
+  PlusCircle,
+  CheckCircle2,
+  AlertCircle,
+  Pencil,
+  Trash2,
+  LogOut,
+  Upload,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  X,
+  Star,
   Building2,
+  Home,
+  MapPin,
+  BedDouble,
+  Bath,
+  Maximize,
+  Search,
+  LayoutDashboard,
+  Menu,
+  ChevronDown,
+  RefreshCw,
+  Activity,
+  Database,
+  ShieldCheck,
+  Eye,
+  Settings,
+  Loader2,
+  UserRound,
+  Building,
+  Warehouse,
+  Users,
+  UserCheck,
+  UserX,
+  Mail,
+  Phone,
+  MessageCircle,
+  ExternalLink,
 } from 'lucide-react';
 
-import { useRouter } from 'next/navigation';
+const MAX_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-export default function AdminLoginPage() {
-  const router = useRouter();
+const CATEGORY_OPTIONS = [
+  'House & Lot',
+  'Condominiums',
+  'For Rent',
+  'For Sale by Owner',
+];
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const HOUSE_LOT_TYPES = [
+  'Pre-Selling House & Lot',
+  'RFO House & Lot',
+  'Rent To Own House & Lot',
+  'RFO Subdivision House & Lot',
+  'Lot Only Subdivision',
+];
 
-  const handleSubmit = async (
-        event: FormEvent<HTMLFormElement>
-      ) => {
-        event.preventDefault();
+const CONDOMINIUM_TYPES = [
+  'Pre-Selling Condominium',
+  'RFO Condominium',
+  'Rent To Own Condominium',
+  'CondoTel',
+];
 
-        if (loading) return;
+const RENT_TYPES = [
+  'Condominiums For Rent',
+  'House For Rent',
+  'Warehouse For Rent',
+  'Commercial Space For Rent',
+];
 
-        setError('');
-        setLoading(true);
+const HOUSE_TYPES = [
+  'Town house or Row house',
+  'Single attached',
+  'Single detached',
+  'Duplex',
+];
 
-        try {
-          const response = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              username: username.trim(),
-              password,
-            }),
-          });
+const STOREY_OPTIONS = ['1', '2', '3 or more'];
 
-          const data = await response
-            .json()
-            .catch(() => null);
+type Status = 'idle' | 'loading' | 'success' | 'error';
 
-          if (!response.ok) {
-            setError(
-              data?.message ||
-                data?.error ||
-                'Invalid username or password.'
-            );
+type Section =
+  | 'overview'
+  | 'properties'
+  | 'profiles'
+  | 'add'
+  | 'settings';
 
-            setLoading(false);
-            return;
-          }
+interface ImageItem {
+  id: string;
+  url: string;
+  file?: File;
+  source: 'upload' | 'url';
+}
 
-          if (typeof window !== 'undefined') {
-            window.speechSynthesis.cancel();
+interface Property {
+  id?: number;
+  _id?: string;
+  title: string;
+  tag: string;
+  price: string;
+  location: string;
+  image: string;
+  images?: string[];
+  category?: string | null;
+  propertyType?: string | null;
+  houseType?: string | null;
+  storey?: string | null;
+  beds?: number | null;
+  baths?: number | null;
+  sqft?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
-            const welcomeMessage =
-              new SpeechSynthesisUtterance(
-                'Welcome to Brea Eighty Eight Admin.'
-              );
+interface Agent {
+  id: number;
+  fullName: string;
+  email: string;
+  role?: string | null;
+  slug?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  profileImage?: string | null;
+  bio?: string | null;
+  facebook?: string | null;
+  messenger?: string | null;
+  isActive: boolean;
+  lastSeen?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    properties: number;
+    inquiries: number;
+  };
+}
 
-            welcomeMessage.rate = 0.9;
-            welcomeMessage.pitch = 1;
-            welcomeMessage.volume = 1;
+interface FormData {
+  title: string;
+  category: string;
+  propertyType: string;
+  houseType: string;
+  storey: string;
+  tag: string;
+  price: string;
+  location: string;
+  beds: string;
+  baths: string;
+  sqft: string;
+}
 
-            window.speechSynthesis.speak(
-              welcomeMessage
-            );
-          }
+const INITIAL_FORM: FormData = {
+  title: '',
+  category: 'House & Lot',
+  propertyType: '',
+  houseType: '',
+  storey: '',
+  tag: 'Residential',
+  price: '',
+  location: '',
+  beds: '',
+  baths: '',
+  sqft: '',
+};
 
-          router.replace('/admin/dashboard');
-          router.refresh();
-
-        } catch (error) {
-          console.error(
-            'Admin login error:',
-            error
-          );
-
-          setError(
-            'Unable to connect to the server. Please try again.'
-          );
-
-          setLoading(false);
-        }
-      };
+function requiresHouseDetails(
+  category: string,
+  propertyType: string
+) {
+  if (category === 'House & Lot') {
+    return propertyType !== 'Lot Only Subdivision';
+  }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fa] text-slate-900">
+    category === 'For Rent' &&
+    propertyType === 'House For Rent'
+  );
+}
 
-      {/* =====================================================
-          BACKGROUND
-      ====================================================== */}
+function SelectField({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  required = false,
+  disabled = false,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => void;
+  options: string[];
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={name}
+        className="mb-2 block text-sm font-semibold text-slate-700"
+      >
+        {label}
 
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {required && (
+          <span className="ml-1 text-red-500">*</span>
+        )}
+      </label>
 
-        <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-slate-200/60 blur-3xl" />
+      <div className="relative">
+        <select
+          id={name}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          disabled={disabled}
+          className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+        >
+          <option value="">
+            Select {label}
+          </option>
 
-        <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-slate-200/60 blur-3xl" />
+          {options.map((option) => (
+            <option
+              key={option}
+              value={option}
+            >
+              {option}
+            </option>
+          ))}
+        </select>
 
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="rounded-xl bg-slate-100 p-3">
+          <Icon className="h-5 w-5 text-slate-700" />
+        </div>
+
+        <span className="text-2xl font-black text-slate-900">
+          {value}
+        </span>
       </div>
 
-      {/* =====================================================
-          MAIN LAYOUT
+      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function formatPrice(price: string | number) {
+  const numeric = Number(
+    String(price).replace(/[^0-9.]/g, '')
+  );
+
+  if (!Number.isFinite(numeric)) {
+    return String(price);
+  }
+
+  return numeric.toLocaleString('en-US');
+}
+
+function formatLastSeen(
+  lastSeen?: string | null
+) {
+  if (!lastSeen) {
+    return 'Never';
+  }
+
+  const date = new Date(lastSeen);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown';
+  }
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+export default function AdminDashboard() {
+  const router = useRouter();
+
+  const [formData, setFormData] =
+    useState<FormData>(INITIAL_FORM);
+
+  const [images, setImages] =
+    useState<ImageItem[]>([]);
+
+  const [imageSource, setImageSource] =
+    useState<'upload' | 'url'>('upload');
+
+  const [imageUrl, setImageUrl] =
+    useState('');
+
+  const [status, setStatus] =
+    useState<Status>('idle');
+
+  const [properties, setProperties] =
+    useState<Property[]>([]);
+
+  const [agents, setAgents] =
+    useState<Agent[]>([]);
+
+  const [editingId, setEditingId] =
+    useState<string | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [profilesLoading, setProfilesLoading] =
+    useState(false);
+
+  const [profileActionId, setProfileActionId] =
+    useState<number | null>(null);
+
+  const [searchTerm, setSearchTerm] =
+    useState('');
+
+  const [profileSearchTerm, setProfileSearchTerm] =
+    useState('');
+
+  const [activeSection, setActiveSection] =
+    useState<Section>('overview');
+
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
+
+  const propertyTypeOptions = useMemo(() => {
+    switch (formData.category) {
+      case 'House & Lot':
+        return HOUSE_LOT_TYPES;
+
+      case 'Condominiums':
+        return CONDOMINIUM_TYPES;
+
+      case 'For Rent':
+        return RENT_TYPES;
+
+      default:
+        return [];
+    }
+  }, [formData.category]);
+
+  const showHouseDetails =
+    requiresHouseDetails(
+      formData.category,
+      formData.propertyType
+    );
+
+  /*
+  ============================================================
+  WELCOME
+  ============================================================
+  */
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+
+        const message =
+          new SpeechSynthesisUtterance(
+            'Welcome to BREA 88 Realty Admin Dashboard.'
+          );
+
+        message.rate = 0.9;
+        message.pitch = 1;
+        message.volume = 1;
+
+        window.speechSynthesis.speak(message);
+      }
+    }, 700);
+
+    return () => {
+      window.clearTimeout(timer);
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  /*
+  ============================================================
+  FETCH PROPERTIES
+  ============================================================
+  */
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        '/api/properties',
+        {
+          cache: 'no-store',
+          credentials: 'include',
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Unable to load properties.'
+        );
+      }
+
+      setProperties(
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.properties)
+            ? data.properties
+            : []
+      );
+    } catch (error) {
+      console.error(
+        'Failed to fetch properties:',
+        error
+      );
+
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /*
+  ============================================================
+  FETCH AGENTS / ACTIVE PROFILES
+  ============================================================
+  */
+
+  const fetchAgents = async () => {
+    try {
+      setProfilesLoading(true);
+
+      const response = await fetch(
+        '/api/admin/agents',
+        {
+          cache: 'no-store',
+          credentials: 'include',
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Unable to load agent profiles.'
+        );
+      }
+
+      setAgents(
+        Array.isArray(data?.agents)
+          ? data.agents
+          : []
+      );
+    } catch (error) {
+      console.error(
+        'Failed to fetch agents:',
+        error
+      );
+
+      setAgents([]);
+    } finally {
+      setProfilesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+    fetchAgents();
+  }, []);
+
+  /*
+  ============================================================
+  FORM CHANGE
+  ============================================================
+  */
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement
+    >
+  ) => {
+    const {
+      name,
+      value,
+    } = e.target;
+
+    if (name === 'category') {
+      setFormData((previous) => ({
+        ...previous,
+        category: value,
+        propertyType: '',
+        houseType: '',
+        storey: '',
+      }));
+
+      return;
+    }
+
+    if (name === 'propertyType') {
+      setFormData((previous) => ({
+        ...previous,
+        propertyType: value,
+        houseType:
+          requiresHouseDetails(
+            formData.category,
+            value
+          )
+            ? previous.houseType
+            : '',
+        storey:
+          requiresHouseDetails(
+            formData.category,
+            value
+          )
+            ? previous.storey
+            : '',
+      }));
+
+      return;
+    }
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  /*
+  ============================================================
+  IMAGE UPLOAD
+  ============================================================
+  */
+
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = Array.from(
+      e.target.files || []
+    );
+
+    if (!files.length) {
+      return;
+    }
+
+    if (
+      images.length + files.length >
+      MAX_IMAGES
+    ) {
+      alert(
+        `You can upload a maximum of ${MAX_IMAGES} pictures.`
+      );
+
+      e.target.value = '';
+      return;
+    }
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    ];
+
+    const validImages: ImageItem[] = [];
+
+    files.forEach((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        alert(
+          `${file.name} is not supported. Use JPG, JPEG, PNG, or WEBP.`
+        );
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        alert(
+          `${file.name} is larger than 5MB.`
+        );
+        return;
+      }
+
+      validImages.push({
+        id: `${Date.now()}-${Math.random()}`,
+        url: URL.createObjectURL(file),
+        file,
+        source: 'upload',
+      });
+    });
+
+    setImages((previous) => [
+      ...previous,
+      ...validImages,
+    ]);
+
+    e.target.value = '';
+  };
+
+  /*
+  ============================================================
+  ADD IMAGE URL
+  ============================================================
+  */
+
+  const addImageUrl = () => {
+    const url = imageUrl.trim();
+
+    if (!url) {
+      return;
+    }
+
+    if (images.length >= MAX_IMAGES) {
+      alert(
+        `You can only add ${MAX_IMAGES} pictures.`
+      );
+      return;
+    }
+
+    try {
+      new URL(url);
+    } catch {
+      alert(
+        'Please enter a valid image URL.'
+      );
+      return;
+    }
+
+    setImages((previous) => [
+      ...previous,
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        url,
+        source: 'url',
+      },
+    ]);
+
+    setImageUrl('');
+  };
+
+  /*
+  ============================================================
+  REMOVE IMAGE
+  ============================================================
+  */
+
+  const removeImage = (id: string) => {
+    setImages((previous) => {
+      const image = previous.find(
+        (item) => item.id === id
+      );
+
+      if (
+        image?.source === 'upload' &&
+        image.url.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL(image.url);
+      }
+
+      return previous.filter(
+        (item) => item.id !== id
+      );
+    });
+  };
+
+  /*
+  ============================================================
+  COVER IMAGE
+  ============================================================
+  */
+
+  const setCoverImage = (id: string) => {
+    setImages((previous) => {
+      const selected = previous.find(
+        (image) => image.id === id
+      );
+
+      if (!selected) {
+        return previous;
+      }
+
+      return [
+        selected,
+        ...previous.filter(
+          (image) => image.id !== id
+        ),
+      ];
+    });
+  };
+
+  /*
+  ============================================================
+  UPLOAD TO BLOB
+  ============================================================
+  */
+
+  const uploadImageToBlob = async (
+    file: File
+  ): Promise<string> => {
+    if (!file) {
+      throw new Error(
+        'Image file is missing.'
+      );
+    }
+
+    const body = new FormData();
+
+    body.append('file', file);
+
+    const response = await fetch(
+      '/api/blob/upload',
+      {
+        method: 'POST',
+        body,
+        credentials: 'include',
+      }
+    );
+
+    const data = await response
+      .json()
+      .catch(() => null);
+
+    if (
+      !response.ok ||
+      !data?.success ||
+      !data?.url
+    ) {
+      throw new Error(
+        data?.message ||
+          'Failed to upload image.'
+      );
+    }
+
+    return data.url as string;
+  };
+
+  /*
+  ============================================================
+  RESET FORM
+  ============================================================
+  */
+
+  const resetForm = () => {
+    images.forEach((image) => {
+      if (
+        image.source === 'upload' &&
+        image.url.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL(image.url);
+      }
+    });
+
+    setFormData(INITIAL_FORM);
+    setImages([]);
+    setImageUrl('');
+    setImageSource('upload');
+    setEditingId(null);
+    setStatus('idle');
+  };
+
+  /*
+  ============================================================
+  EDIT PROPERTY
+  ============================================================
+  */
+
+  const handleEdit = (
+    property: Property
+  ) => {
+    const propertyId =
+      property.id !== undefined
+        ? String(property.id)
+        : property._id;
+
+    if (!propertyId) {
+      alert('Invalid property ID.');
+      return;
+    }
+
+    setEditingId(propertyId);
+
+    setFormData({
+      title: property.title || '',
+      category:
+        property.category ||
+        'House & Lot',
+      propertyType:
+        property.propertyType || '',
+      houseType:
+        property.houseType || '',
+      storey:
+        property.storey || '',
+      tag:
+        property.tag ||
+        'Residential',
+      price:
+        property.price || '',
+      location:
+        property.location || '',
+      beds:
+        property.beds != null
+          ? String(property.beds)
+          : '',
+      baths:
+        property.baths != null
+          ? String(property.baths)
+          : '',
+      sqft:
+        property.sqft != null
+          ? String(property.sqft)
+          : '',
+    });
+
+    const propertyImages =
+      property.images?.length
+        ? property.images
+        : property.image
+          ? [property.image]
+          : [];
+
+    setImages(
+      propertyImages.map(
+        (url, index) => ({
+          id: `existing-${Date.now()}-${index}`,
+          url,
+          source: 'url',
+        })
+      )
+    );
+
+    setImageSource('url');
+    setStatus('idle');
+    setActiveSection('add');
+    setSidebarOpen(false);
+  };
+
+  /*
+  ============================================================
+  DELETE PROPERTY
+  ============================================================
+  */
+
+  const handleDelete = async (
+    id: string | number
+  ) => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this property?'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/properties?id=${id}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Failed to delete property.'
+        );
+      }
+
+      await fetchProperties();
+    } catch (error) {
+      console.error(
+        'Delete property error:',
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to delete property.'
+      );
+    }
+  };
+
+  /*
+  ============================================================
+  SUBMIT PROPERTY
+  ============================================================
+  */
+
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      alert(
+        'Property title is required.'
+      );
+      return;
+    }
+
+    if (!formData.price.trim()) {
+      alert(
+        'Property price is required.'
+      );
+      return;
+    }
+
+    if (!formData.location.trim()) {
+      alert(
+        'Property location is required.'
+      );
+      return;
+    }
+
+    if (!formData.category) {
+      alert(
+        'Property category is required.'
+      );
+      return;
+    }
+
+    if (
+      formData.category !==
+        'For Sale by Owner' &&
+      !formData.propertyType
+    ) {
+      alert(
+        'Property type is required.'
+      );
+      return;
+    }
+
+    if (
+      showHouseDetails &&
+      (!formData.houseType ||
+        !formData.storey)
+    ) {
+      alert(
+        'House Type and Storey are required.'
+      );
+      return;
+    }
+
+    if (!images.length) {
+      alert(
+        'At least one property image is required.'
+      );
+      return;
+    }
+
+    setStatus('loading');
+
+    try {
+      const uploadedImages: string[] = [];
+
+      for (const image of images) {
+        if (image.source === 'url') {
+          uploadedImages.push(image.url);
+          continue;
+        }
+
+        if (!image.file) {
+          throw new Error(
+            'Image file is missing.'
+          );
+        }
+
+        const permanentUrl =
+          await uploadImageToBlob(
+            image.file
+          );
+
+        uploadedImages.push(
+          permanentUrl
+        );
+      }
+
+      if (!uploadedImages.length) {
+        throw new Error(
+          'No valid property images were uploaded.'
+        );
+      }
+
+      const response = await fetch(
+        '/api/properties',
+        {
+          method: editingId
+            ? 'PUT'
+            : 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          credentials: 'include',
+
+          body: JSON.stringify({
+            ...(editingId
+              ? {
+                  id: Number(editingId),
+                }
+              : {}),
+
+            title:
+              formData.title.trim(),
+
+            category:
+              formData.category,
+
+            propertyType:
+              formData.propertyType ||
+              null,
+
+            houseType:
+              showHouseDetails
+                ? formData.houseType ||
+                  null
+                : null,
+
+            storey:
+              showHouseDetails
+                ? formData.storey ||
+                  null
+                : null,
+
+            tag:
+              formData.tag ||
+              'Residential',
+
+            price:
+              formData.price.trim(),
+
+            location:
+              formData.location.trim(),
+
+            beds: formData.beds,
+            baths: formData.baths,
+            sqft: formData.sqft,
+
+            image:
+              uploadedImages[0],
+
+            images:
+              uploadedImages,
+          }),
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Failed to save property.'
+        );
+      }
+
+      setStatus('success');
+
+      await fetchProperties();
+
+      window.setTimeout(() => {
+        resetForm();
+        setActiveSection(
+          'properties'
+        );
+      }, 800);
+    } catch (error) {
+      console.error(
+        'Save property error:',
+        error
+      );
+
+      setStatus('error');
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Failed to save property.'
+      );
+    }
+  };
+
+  /*
+  ============================================================
+  ACTIVATE / DEACTIVATE AGENT
+  ============================================================
+  */
+
+  const toggleAgentStatus = async (
+    agent: Agent
+  ) => {
+    const nextStatus =
+      !agent.isActive;
+
+    const actionText = nextStatus
+      ? 'activate'
+      : 'deactivate';
+
+    if (
+      !confirm(
+        `Are you sure you want to ${actionText} ${agent.fullName}?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setProfileActionId(
+        agent.id
+      );
+
+      const response = await fetch(
+        '/api/admin/agents',
+        {
+          method: 'PATCH',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          credentials: 'include',
+
+          body: JSON.stringify({
+            id: agent.id,
+            isActive: nextStatus,
+          }),
+        }
+      );
+
+      const data = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Unable to ${actionText} agent.`
+        );
+      }
+
+      setAgents((previous) =>
+        previous.map((item) =>
+          item.id === agent.id
+            ? {
+                ...item,
+                isActive:
+                  nextStatus,
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error(
+        'Agent status error:',
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : `Unable to ${actionText} agent.`
+      );
+    } finally {
+      setProfileActionId(null);
+    }
+  };
+
+  /*
+  ============================================================
+  LOGOUT
+  ============================================================
+  */
+
+  const handleLogout = async () => {
+    try {
+      await fetch(
+        '/api/admin/logout',
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      );
+    } catch (error) {
+      console.error(
+        'Logout error:',
+        error
+      );
+    } finally {
+      router.replace('/');
+      router.refresh();
+    }
+  };
+
+  /*
+  ============================================================
+  FILTER PROPERTIES
+  ============================================================
+  */
+
+  const filteredProperties =
+    useMemo(() => {
+      const term =
+        searchTerm
+          .toLowerCase()
+          .trim();
+
+      if (!term) {
+        return properties;
+      }
+
+      return properties.filter(
+        (property) =>
+          property.title
+            ?.toLowerCase()
+            .includes(term) ||
+          property.location
+            ?.toLowerCase()
+            .includes(term) ||
+          property.tag
+            ?.toLowerCase()
+            .includes(term) ||
+          property.category
+            ?.toLowerCase()
+            .includes(term) ||
+          property.propertyType
+            ?.toLowerCase()
+            .includes(term) ||
+          property.price
+            ?.toLowerCase()
+            .includes(term)
+      );
+    }, [
+      properties,
+      searchTerm,
+    ]);
+
+  /*
+  ============================================================
+  FILTER PROFILES
+  ============================================================
+  */
+
+  const activeAgents = useMemo(
+    () =>
+      agents.filter(
+        (agent) =>
+          agent.isActive
+      ),
+    [agents]
+  );
+
+  const filteredAgents =
+    useMemo(() => {
+      const term =
+        profileSearchTerm
+          .toLowerCase()
+          .trim();
+
+      if (!term) {
+        return activeAgents;
+      }
+
+      return activeAgents.filter(
+        (agent) =>
+          agent.fullName
+            ?.toLowerCase()
+            .includes(term) ||
+          agent.email
+            ?.toLowerCase()
+            .includes(term) ||
+          agent.phone
+            ?.toLowerCase()
+            .includes(term) ||
+          agent.address
+            ?.toLowerCase()
+            .includes(term) ||
+          agent.role
+            ?.toLowerCase()
+            .includes(term)
+      );
+    }, [
+      activeAgents,
+      profileSearchTerm,
+    ]);
+
+  /*
+  ============================================================
+  STATS
+  ============================================================
+  */
+
+  const houseLotCount =
+    properties.filter(
+      (p) =>
+        p.category ===
+        'House & Lot'
+    ).length;
+
+  const condominiumCount =
+    properties.filter(
+      (p) =>
+        p.category ===
+        'Condominiums'
+    ).length;
+
+  const forRentCount =
+    properties.filter(
+      (p) =>
+        p.category ===
+        'For Rent'
+    ).length;
+
+  const ownerCount =
+    properties.filter(
+      (p) =>
+        p.category ===
+        'For Sale by Owner'
+    ).length;
+
+  const inactiveAgentCount =
+    agents.filter(
+      (agent) =>
+        !agent.isActive
+    ).length;
+
+  /*
+  ============================================================
+  NAVIGATION
+  ============================================================
+  */
+
+  const navigate = (
+    section: Section
+  ) => {
+    setActiveSection(section);
+    setSidebarOpen(false);
+
+    if (section === 'profiles') {
+      fetchAgents();
+    }
+
+    if (section === 'properties') {
+      fetchProperties();
+    }
+  };
+
+  /*
+  ============================================================
+  LOADING
+  ============================================================
+  */
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900">
+            <Loader2 className="h-7 w-7 animate-spin text-white" />
+          </div>
+
+          <p className="mt-5 text-sm font-bold text-white">
+            Loading dashboard...
+          </p>
+
+          <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-slate-500">
+            BREA 88 REALTY
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  /*
+  ============================================================
+  UI
+  ============================================================
+  */
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+
+      {/* MOBILE OVERLAY */}
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={() =>
+            setSidebarOpen(false)
+          }
+          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
+        />
+      )}
+
+      {/* ======================================================
+          SIDEBAR
       ====================================================== */}
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-800 bg-slate-950 text-white transition-transform duration-300 lg:translate-x-0 ${
+          sidebarOpen
+            ? 'translate-x-0'
+            : '-translate-x-full'
+        }`}
+      >
 
-        <div className="w-full max-w-6xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_70px_rgba(15,23,42,0.12)]">
+        {/* LOGO */}
 
-          <div className="grid min-h-[680px] lg:grid-cols-2">
+        <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
 
-            {/* =================================================
-                LEFT BRAND PANEL
-            ================================================== */}
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white">
 
-            <section className="relative hidden overflow-hidden bg-slate-950 lg:flex">
+            <img
+              src="/img/LOGO.png"
+              alt="BREA 88 Realty"
+              className="h-full w-full object-cover"
+            />
 
-              <div className="absolute inset-0">
+          </div>
 
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(148,163,184,0.15),transparent_35%)]" />
+          <div>
+            <p className="font-black">
+              BREA 88
+            </p>
 
-                <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-slate-800/40 blur-3xl" />
+            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
+              Realty Admin
+            </p>
+          </div>
 
-                <div className="absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full border border-white/5" />
+        </div>
 
-                <div className="absolute -left-20 -top-20 h-[300px] w-[300px] rounded-full border border-white/5" />
+        {/* NAVIGATION */}
+
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+
+          {[
+            {
+              id: 'overview' as Section,
+              label: 'Overview',
+              icon: LayoutDashboard,
+            },
+            {
+              id: 'properties' as Section,
+              label: 'Properties',
+              icon: Building2,
+            },
+            {
+              id: 'profiles' as Section,
+              label: 'Active Profiles',
+              icon: UserCheck,
+              badge:
+                activeAgents.length,
+            },
+            {
+              id: 'add' as Section,
+              label: 'Add Property',
+              icon: PlusCircle,
+            },
+            {
+              id: 'settings' as Section,
+              label: 'Settings',
+              icon: Settings,
+            },
+          ].map(
+            ({
+              id,
+              label,
+              icon: Icon,
+              badge,
+            }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() =>
+                  navigate(id)
+                }
+                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                  activeSection === id
+                    ? 'bg-white text-slate-900'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+
+                <span className="flex-1 text-left">
+                  {label}
+                </span>
+
+                {badge !== undefined && (
+                  <span
+                    className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${
+                      activeSection === id
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-white/10 text-slate-400'
+                    }`}
+                  >
+                    {badge}
+                  </span>
+                )}
+              </button>
+            )
+          )}
+
+        </nav>
+
+        {/* LOGOUT */}
+
+        <div className="border-t border-white/10 p-4">
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
+
+        </div>
+
+      </aside>
+
+      {/* ======================================================
+          MAIN
+      ====================================================== */}
+
+      <div className="lg:pl-72">
+
+        {/* HEADER */}
+
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+
+            <div className="flex items-center gap-3">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSidebarOpen(true)
+                }
+                className="rounded-xl p-2 hover:bg-slate-100 lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div>
+
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  Administration
+                </p>
+
+                <h1 className="text-sm font-black sm:text-base">
+                  BREA 88 Realty
+                </h1>
 
               </div>
 
-              <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <button
+                type="button"
+                onClick={() => {
+                  fetchProperties();
+                  fetchAgents();
+                }}
+                className="rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-50"
+                title="Refresh"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+
+              <div className="hidden items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 sm:flex">
+
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900">
+                  <UserRound className="h-3.5 w-3.5 text-white" />
+                </div>
 
                 <div>
 
-                  {/* Logo */}
+                  <p className="text-xs font-bold">
+                    Administrator
+                  </p>
 
-                  <div className="flex items-center gap-4">
+                  <p className="text-[9px] text-slate-400">
+                    Secure Session
+                  </p>
 
-                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-xl">
+                </div>
 
-                      <img
-                        src="/img/LOGO.png"
-                        alt="BREA 88 Realty"
-                        className="h-full w-full object-cover"
+              </div>
+
+            </div>
+
+          </div>
+
+        </header>
+
+        {/* ====================================================
+            CONTENT
+        ==================================================== */}
+
+        <main className="p-4 sm:p-6 lg:p-8">
+
+          {/* ==================================================
+              OVERVIEW
+          ================================================== */}
+
+          {activeSection ===
+            'overview' && (
+            <div className="mx-auto max-w-7xl space-y-6">
+
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+
+                <div>
+
+                  <p className="text-sm font-medium text-slate-400">
+                    Dashboard
+                  </p>
+
+                  <h1 className="mt-1 text-3xl font-black">
+                    Overview
+                  </h1>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Manage your BREA 88 Realty property marketplace.
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate('add')
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Property
+                </button>
+
+              </div>
+
+              {/* PROPERTY STATS */}
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+                <StatCard
+                  icon={Building2}
+                  label="House & Lot"
+                  value={houseLotCount}
+                />
+
+                <StatCard
+                  icon={Building}
+                  label="Condominiums"
+                  value={condominiumCount}
+                />
+
+                <StatCard
+                  icon={Warehouse}
+                  label="For Rent"
+                  value={forRentCount}
+                />
+
+                <StatCard
+                  icon={UserRound}
+                  label="Owner Listings"
+                  value={ownerCount}
+                />
+
+              </div>
+
+              {/* PROFILE STATS */}
+
+              <div className="grid gap-4 sm:grid-cols-3">
+
+                <StatCard
+                  icon={Users}
+                  label="Total Agents"
+                  value={agents.length}
+                />
+
+                <StatCard
+                  icon={UserCheck}
+                  label="Active Profiles"
+                  value={activeAgents.length}
+                />
+
+                <StatCard
+                  icon={UserX}
+                  label="Inactive Profiles"
+                  value={inactiveAgentCount}
+                />
+
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-3">
+
+                {/* RECENT PROPERTIES */}
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <h2 className="font-black">
+                        Recent Properties
+                      </h2>
+
+                      <p className="mt-1 text-xs text-slate-400">
+                        Latest listings in the marketplace.
+                      </p>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          'properties'
+                        )
+                      }
+                      className="text-xs font-bold text-slate-500 hover:text-slate-900"
+                    >
+                      View all
+                    </button>
+
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+
+                    {properties
+                      .slice(0, 5)
+                      .map(
+                        (property) => (
+                          <div
+                            key={
+                              property.id ??
+                              property._id
+                            }
+                            className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"
+                          >
+
+                            <div className="h-14 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+
+                              {property.image ? (
+                                <img
+                                  src={
+                                    property.image
+                                  }
+                                  alt={
+                                    property.title
+                                  }
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center">
+                                  <ImageIcon className="h-5 w-5 text-slate-300" />
+                                </div>
+                              )}
+
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+
+                              <p className="truncate text-sm font-bold">
+                                {
+                                  property.title
+                                }
+                              </p>
+
+                              <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                                <MapPin className="h-3 w-3" />
+                                {
+                                  property.location
+                                }
+                              </p>
+
+                            </div>
+
+                            <p className="hidden text-sm font-black sm:block">
+                              ₱{' '}
+                              {formatPrice(
+                                property.price
+                              )}
+                            </p>
+
+                          </div>
+                        )
+                      )}
+
+                    {!properties.length && (
+                      <div className="py-10 text-center">
+
+                        <Building2 className="mx-auto h-8 w-8 text-slate-200" />
+
+                        <p className="mt-3 text-sm font-bold text-slate-400">
+                          No properties yet.
+                        </p>
+
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+
+                {/* SYSTEM STATUS */}
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                    <Activity className="h-5 w-5 text-slate-700" />
+                  </div>
+
+                  <h2 className="mt-5 font-black">
+                    System Status
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Your property management system is connected to the PostgreSQL database.
+                  </p>
+
+                  <div className="mt-6 space-y-3">
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+
+                      <span className="text-xs font-semibold text-slate-500">
+                        Database
+                      </span>
+
+                      <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        Online
+                      </span>
+
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+
+                      <span className="text-xs font-semibold text-slate-500">
+                        Authentication
+                      </span>
+
+                      <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        Active
+                      </span>
+
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+
+                      <span className="text-xs font-semibold text-slate-500">
+                        Properties
+                      </span>
+
+                      <span className="text-xs font-bold text-slate-700">
+                        {properties.length}
+                      </span>
+
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+
+                      <span className="text-xs font-semibold text-slate-500">
+                        Active Profiles
+                      </span>
+
+                      <span className="text-xs font-bold text-slate-700">
+                        {activeAgents.length}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ==================================================
+              PROPERTIES
+          ================================================== */}
+
+          {activeSection ===
+            'properties' && (
+            <div className="mx-auto max-w-7xl space-y-6">
+
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+
+                <div>
+
+                  <p className="text-sm font-medium text-slate-400">
+                    Property Management
+                  </p>
+
+                  <h1 className="mt-1 text-3xl font-black">
+                    Properties
+                  </h1>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Manage all marketplace property listings.
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate('add')
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Property
+                </button>
+
+              </div>
+
+              <div className="relative">
+
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                <input
+                  value={searchTerm}
+                  onChange={(e) =>
+                    setSearchTerm(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Search properties..."
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
+
+              </div>
+
+              {!filteredProperties.length ? (
+                <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center">
+
+                  <Building2 className="mx-auto h-10 w-10 text-slate-200" />
+
+                  <h3 className="mt-4 font-black">
+                    No properties found
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    Try another search or add a new property.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate('add')
+                    }
+                    className="mt-5 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white"
+                  >
+                    Add Property
+                  </button>
+
+                </div>
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+
+                  {filteredProperties.map(
+                    (property) => {
+                      const propertyId =
+                        property.id ??
+                        property._id ??
+                        '';
+
+                      return (
+                        <div
+                          key={
+                            propertyId
+                          }
+                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                        >
+
+                          <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+
+                            {property.image ? (
+                              <img
+                                src={
+                                  property.image
+                                }
+                                alt={
+                                  property.title
+                                }
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <ImageIcon className="h-10 w-10 text-slate-300" />
+                              </div>
+                            )}
+
+                            {property.category && (
+                              <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-slate-700 shadow-sm">
+                                {
+                                  property.category
+                                }
+                              </div>
+                            )}
+
+                          </div>
+
+                          <div className="p-5">
+
+                            <h3 className="line-clamp-1 font-black">
+                              {
+                                property.title
+                              }
+                            </h3>
+
+                            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {
+                                property.location
+                              }
+                            </div>
+
+                            {property.propertyType && (
+                              <span className="mt-3 inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                                {
+                                  property.propertyType
+                                }
+                              </span>
+                            )}
+
+                            {property.houseType && (
+                              <p className="mt-2 text-xs text-slate-500">
+                                <b>House:</b>{' '}
+                                {
+                                  property.houseType
+                                }
+                              </p>
+                            )}
+
+                            {property.storey && (
+                              <p className="mt-1 text-xs text-slate-500">
+                                <b>Storey:</b>{' '}
+                                {
+                                  property.storey
+                                }
+                              </p>
+                            )}
+
+                            <div className="mt-4 flex items-center justify-between">
+
+                              <p className="text-lg font-black">
+                                ₱{' '}
+                                {formatPrice(
+                                  property.price
+                                )}
+                              </p>
+
+                              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase text-slate-500">
+                                {
+                                  property.tag
+                                }
+                              </span>
+
+                            </div>
+
+                            <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleEdit(
+                                    property
+                                  )
+                                }
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDelete(
+                                    propertyId
+                                  )
+                                }
+                                className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 hover:bg-red-50"
+                                aria-label="Delete property"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+                      );
+                    }
+                  )}
+
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* ==================================================
+              ACTIVE PROFILES
+          ================================================== */}
+
+          {activeSection ===
+            'profiles' && (
+            <div className="mx-auto max-w-7xl space-y-6">
+
+              {/* HEADER */}
+
+              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+
+                <div>
+
+                  <p className="text-sm font-medium text-slate-400">
+                    Agent Management
+                  </p>
+
+                  <h1 className="mt-1 text-3xl font-black">
+                    Active Profiles
+                  </h1>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Manage active BREA 88 Realty agent profiles.
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fetchAgents}
+                  disabled={
+                    profilesLoading
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+
+                  <RefreshCw
+                    className={`h-4 w-4 ${
+                      profilesLoading
+                        ? 'animate-spin'
+                        : ''
+                    }`}
+                  />
+
+                  Refresh Profiles
+
+                </button>
+
+              </div>
+
+              {/* PROFILE STATS */}
+
+              <div className="grid gap-4 sm:grid-cols-3">
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                  <div className="flex items-center justify-between">
+
+                    <div className="rounded-xl bg-emerald-50 p-3">
+                      <UserCheck className="h-5 w-5 text-emerald-600" />
+                    </div>
+
+                    <span className="text-2xl font-black">
+                      {activeAgents.length}
+                    </span>
+
+                  </div>
+
+                  <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    Active Profiles
+                  </p>
+
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                  <div className="flex items-center justify-between">
+
+                    <div className="rounded-xl bg-slate-100 p-3">
+                      <Users className="h-5 w-5 text-slate-600" />
+                    </div>
+
+                    <span className="text-2xl font-black">
+                      {agents.length}
+                    </span>
+
+                  </div>
+
+                  <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    Total Agents
+                  </p>
+
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                  <div className="flex items-center justify-between">
+
+                    <div className="rounded-xl bg-red-50 p-3">
+                      <UserX className="h-5 w-5 text-red-500" />
+                    </div>
+
+                    <span className="text-2xl font-black">
+                      {inactiveAgentCount}
+                    </span>
+
+                  </div>
+
+                  <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    Inactive Profiles
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* SEARCH */}
+
+              <div className="relative">
+
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                <input
+                  value={
+                    profileSearchTerm
+                  }
+                  onChange={(e) =>
+                    setProfileSearchTerm(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Search active profiles by name, email, phone, address..."
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
+
+              </div>
+
+              {/* LOADING */}
+
+              {profilesLoading ? (
+                <div className="rounded-2xl border border-slate-200 bg-white py-20 text-center">
+
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-slate-400" />
+
+                  <p className="mt-4 text-sm font-bold text-slate-500">
+                    Loading active profiles...
+                  </p>
+
+                </div>
+              ) : !filteredAgents.length ? (
+                <div className="rounded-2xl border border-slate-200 bg-white py-20 text-center">
+
+                  <Users className="mx-auto h-10 w-10 text-slate-200" />
+
+                  <h3 className="mt-4 font-black">
+                    No active profiles found
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    There are currently no active agent profiles matching your search.
+                  </p>
+
+                </div>
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+
+                  {filteredAgents.map(
+                    (agent) => (
+                      <div
+                        key={agent.id}
+                        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                      >
+
+                        {/* PROFILE IMAGE */}
+
+                        <div className="relative h-52 bg-slate-100">
+
+                          {agent.profileImage ? (
+                            <img
+                              src={
+                                agent.profileImage
+                              }
+                              alt={
+                                agent.fullName
+                              }
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center bg-slate-100">
+                              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-sm">
+                                <UserRound className="h-10 w-10 text-slate-300" />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* ACTIVE */}
+
+                          <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-emerald-600 shadow-sm">
+
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+                            Active
+
+                          </div>
+
+                          {agent.role && (
+                            <div className="absolute right-4 top-4 rounded-full bg-slate-900/90 px-3 py-1.5 text-[10px] font-bold text-white">
+                              {agent.role}
+                            </div>
+                          )}
+
+                        </div>
+
+                        {/* PROFILE DETAILS */}
+
+                        <div className="p-5">
+
+                          <div className="flex items-start justify-between gap-3">
+
+                            <div className="min-w-0">
+
+                              <h3 className="truncate text-lg font-black">
+                                {
+                                  agent.fullName
+                                }
+                              </h3>
+
+                              {agent.slug && (
+                                <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                  @{agent.slug}
+                                </p>
+                              )}
+
+                            </div>
+
+                            <div className="shrink-0 rounded-xl bg-slate-100 p-2">
+                              <UserCheck className="h-4 w-4 text-emerald-600" />
+                            </div>
+
+                          </div>
+
+                          {/* CONTACT */}
+
+                          <div className="mt-5 space-y-3">
+
+                            <div className="flex items-start gap-3">
+
+                              <div className="mt-0.5 rounded-lg bg-slate-100 p-2">
+                                <Mail className="h-3.5 w-3.5 text-slate-500" />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                  Email
+                                </p>
+
+                                <p className="mt-0.5 truncate text-xs font-semibold text-slate-700">
+                                  {
+                                    agent.email
+                                  }
+                                </p>
+                              </div>
+
+                            </div>
+
+                            {agent.phone && (
+                              <div className="flex items-start gap-3">
+
+                                <div className="mt-0.5 rounded-lg bg-slate-100 p-2">
+                                  <Phone className="h-3.5 w-3.5 text-slate-500" />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                    Phone
+                                  </p>
+
+                                  <p className="mt-0.5 text-xs font-semibold text-slate-700">
+                                    {
+                                      agent.phone
+                                    }
+                                  </p>
+                                </div>
+
+                              </div>
+                            )}
+
+                            {agent.address && (
+                              <div className="flex items-start gap-3">
+
+                                <div className="mt-0.5 rounded-lg bg-slate-100 p-2">
+                                  <MapPin className="h-3.5 w-3.5 text-slate-500" />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                    Address
+                                  </p>
+
+                                  <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-slate-700">
+                                    {
+                                      agent.address
+                                    }
+                                  </p>
+                                </div>
+
+                              </div>
+                            )}
+
+                          </div>
+
+                          {/* BIO */}
+
+                          {agent.bio && (
+                            <p className="mt-4 line-clamp-3 text-xs leading-5 text-slate-500">
+                              {
+                                agent.bio
+                              }
+                            </p>
+                          )}
+
+                          {/* COUNTS */}
+
+                          <div className="mt-5 grid grid-cols-2 gap-2">
+
+                            <div className="rounded-xl bg-slate-50 p-3">
+
+                              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                                Properties
+                              </p>
+
+                              <p className="mt-1 text-lg font-black">
+                                {
+                                  agent
+                                    ._count
+                                    ?.properties ??
+                                  0
+                                }
+                              </p>
+
+                            </div>
+
+                            <div className="rounded-xl bg-slate-50 p-3">
+
+                              <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
+                                Inquiries
+                              </p>
+
+                              <p className="mt-1 text-lg font-black">
+                                {
+                                  agent
+                                    ._count
+                                    ?.inquiries ??
+                                  0
+                                }
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                          {/* SOCIAL */}
+
+                          {(agent.facebook ||
+                            agent.messenger) && (
+                            <div className="mt-4 flex gap-2">
+
+                              {agent.facebook && (
+                                <a
+                                  href={
+                                    agent.facebook
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                                >
+                                  <span className="font-bold">Facebook</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+
+                              {agent.messenger && (
+                                <a
+                                  href={
+                                    agent.messenger
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                  aria-label="Messenger"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </a>
+                              )}
+
+                            </div>
+                          )}
+
+                          {/* LAST SEEN */}
+
+                          <div className="mt-4 border-t border-slate-100 pt-4">
+
+                            <div className="flex items-center justify-between">
+
+                              <div className="flex items-center gap-2">
+
+                                <Eye className="h-3.5 w-3.5 text-slate-400" />
+
+                                <span className="text-[10px] font-semibold text-slate-400">
+                                  Last seen
+                                </span>
+
+                              </div>
+
+                              <span className="text-[10px] font-bold text-slate-500">
+                                {formatLastSeen(
+                                  agent.lastSeen
+                                )}
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                          {/* ACTION */}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              toggleAgentStatus(
+                                agent
+                              )
+                            }
+                            disabled={
+                              profileActionId ===
+                              agent.id
+                            }
+                            className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-100 text-xs font-bold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+
+                            {profileActionId ===
+                            agent.id ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Updating...
+                              </>
+                            ) : (
+                              <>
+                                <UserX className="h-3.5 w-3.5" />
+                                Deactivate Profile
+                              </>
+                            )}
+
+                          </button>
+
+                        </div>
+
+                      </div>
+                    )
+                  )}
+
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* ==================================================
+              ADD / EDIT PROPERTY
+          ================================================== */}
+
+          {activeSection ===
+            'add' && (
+            <div className="mx-auto max-w-5xl space-y-6">
+
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+
+                <div>
+
+                  <p className="text-sm font-medium text-slate-400">
+                    Property Management
+                  </p>
+
+                  <h1 className="mt-1 text-3xl font-black">
+                    {editingId
+                      ? 'Edit Property'
+                      : 'Add Property'}
+                  </h1>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    Add detailed property information to the marketplace.
+                  </p>
+
+                </div>
+
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600"
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel Edit
+                  </button>
+                )}
+
+              </div>
+
+              {status ===
+                'success' && (
+                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Property saved successfully.
+                </div>
+              )}
+
+              {status === 'error' && (
+                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  <AlertCircle className="h-5 w-5" />
+                  Something went wrong while saving the property.
+                </div>
+              )}
+
+              <form
+                onSubmit={
+                  handleSubmit
+                }
+                className="space-y-6"
+              >
+
+                {/* CLASSIFICATION */}
+
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                  <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="rounded-xl bg-slate-100 p-2.5">
+                        <Building2 className="h-5 w-5 text-slate-700" />
+                      </div>
+
+                      <div>
+
+                        <h2 className="font-black">
+                          Property Classification
+                        </h2>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          Select how this property should appear.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-2">
+
+                    <SelectField
+                      label="Category"
+                      name="category"
+                      value={
+                        formData.category
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      options={
+                        CATEGORY_OPTIONS
+                      }
+                      required
+                      disabled={
+                        status ===
+                        'loading'
+                      }
+                    />
+
+                    {formData.category !==
+                    'For Sale by Owner' ? (
+                      <SelectField
+                        label="Property Type"
+                        name="propertyType"
+                        value={
+                          formData.propertyType
+                        }
+                        onChange={
+                          handleInputChange
+                        }
+                        options={
+                          propertyTypeOptions
+                        }
+                        required
+                        disabled={
+                          status ===
+                          'loading'
+                        }
+                      />
+                    ) : (
+                      <div>
+
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                          Property Type
+                        </label>
+
+                        <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500">
+                          For Sale by Owner
+                        </div>
+
+                      </div>
+                    )}
+
+                    {showHouseDetails && (
+                      <>
+                        <SelectField
+                          label="House Type"
+                          name="houseType"
+                          value={
+                            formData.houseType
+                          }
+                          onChange={
+                            handleInputChange
+                          }
+                          options={
+                            HOUSE_TYPES
+                          }
+                          required
+                          disabled={
+                            status ===
+                            'loading'
+                          }
+                        />
+
+                        <SelectField
+                          label="Storey"
+                          name="storey"
+                          value={
+                            formData.storey
+                          }
+                          onChange={
+                            handleInputChange
+                          }
+                          options={
+                            STOREY_OPTIONS
+                          }
+                          required
+                          disabled={
+                            status ===
+                            'loading'
+                          }
+                        />
+                      </>
+                    )}
+
+                  </div>
+
+                </section>
+
+                {/* BASIC INFORMATION */}
+
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                  <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="rounded-xl bg-slate-100 p-2.5">
+                        <Home className="h-5 w-5 text-slate-700" />
+                      </div>
+
+                      <div>
+
+                        <h2 className="font-black">
+                          Property Information
+                        </h2>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          Basic information about the listing.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-2">
+
+                    <div className="md:col-span-2">
+
+                      <label
+                        htmlFor="title"
+                        className="mb-2 block text-sm font-semibold text-slate-700"
+                      >
+                        Property Title
+                        <span className="ml-1 text-red-500">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        id="title"
+                        name="title"
+                        value={
+                          formData.title
+                        }
+                        onChange={
+                          handleInputChange
+                        }
+                        placeholder="e.g. Modern Family House in Cebu"
+                        required
+                        disabled={
+                          status ===
+                          'loading'
+                        }
+                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
                       />
 
                     </div>
 
                     <div>
 
-                      <p className="text-lg font-bold tracking-tight text-white">
-                        BREA 88
-                      </p>
+                      <label
+                        htmlFor="price"
+                        className="mb-2 block text-sm font-semibold text-slate-700"
+                      >
+                        Price
+                        <span className="ml-1 text-red-500">
+                          *
+                        </span>
+                      </label>
 
-                      <p className="text-xs font-medium uppercase tracking-[0.25em] text-slate-400">
-                        Realty
-                      </p>
+                      <div className="relative">
 
-                    </div>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                          ₱
+                        </span>
 
-                  </div>
+                        <input
+                          id="price"
+                          name="price"
+                          value={
+                            formData.price
+                          }
+                          onChange={
+                            handleInputChange
+                          }
+                          placeholder="0"
+                          inputMode="decimal"
+                          required
+                          disabled={
+                            status ===
+                            'loading'
+                          }
+                          className="h-11 w-full rounded-xl border border-slate-200 pl-9 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                        />
 
-                  {/* Heading */}
-
-                  <div className="mt-28">
-
-                    <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5">
-
-                      <Building2 className="h-6 w-6 text-slate-300" />
-
-                    </div>
-
-                    <h1 className="max-w-md text-4xl font-bold leading-tight tracking-tight text-white xl:text-5xl">
-
-                      Manage your
-                      <br />
-
-                      <span className="text-slate-400">
-                        real estate business.
-                      </span>
-
-                    </h1>
-
-                    <p className="mt-6 max-w-md text-sm leading-7 text-slate-400">
-                      Access the BREA 88 Realty administration
-                      platform to manage property listings,
-                      inquiries, agents, and your real estate
-                      operations.
-                    </p>
-
-                  </div>
-
-                </div>
-
-                {/* Bottom information */}
-
-                <div>
-
-                  <div className="mb-8 h-px w-full bg-white/10" />
-
-                  <div className="flex items-center gap-3">
-
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5">
-
-                      <ShieldCheck className="h-4 w-4 text-slate-300" />
+                      </div>
 
                     </div>
 
                     <div>
 
-                      <p className="text-xs font-semibold text-white">
-                        Secure Administration
-                      </p>
+                      <label
+                        htmlFor="location"
+                        className="mb-2 block text-sm font-semibold text-slate-700"
+                      >
+                        Location
+                        <span className="ml-1 text-red-500">
+                          *
+                        </span>
+                      </label>
 
-                      <p className="mt-0.5 text-[10px] text-slate-500">
-                        Authorized personnel only
-                      </p>
+                      <div className="relative">
+
+                        <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                        <input
+                          id="location"
+                          name="location"
+                          value={
+                            formData.location
+                          }
+                          onChange={
+                            handleInputChange
+                          }
+                          placeholder="e.g. Liloan, Cebu"
+                          required
+                          disabled={
+                            status ===
+                            'loading'
+                          }
+                          className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                        />
+
+                      </div>
 
                     </div>
 
-                  </div>
+                    {showHouseDetails && (
+                      <>
+                        <div>
 
-                </div>
+                          <label
+                            htmlFor="beds"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Bedrooms
+                          </label>
 
-              </div>
+                          <div className="relative">
 
-            </section>
+                            <BedDouble className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-            {/* =================================================
-                RIGHT LOGIN PANEL
-            ================================================== */}
+                            <input
+                              id="beds"
+                              name="beds"
+                              type="number"
+                              min="0"
+                              value={
+                                formData.beds
+                              }
+                              onChange={
+                                handleInputChange
+                              }
+                              placeholder="0"
+                              className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                            />
 
-            <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-14 xl:px-20">
+                          </div>
 
-              <div className="w-full max-w-md">
+                        </div>
 
-                {/* Mobile Logo */}
+                        <div>
 
-                <div className="mb-10 flex flex-col items-center text-center lg:hidden">
+                          <label
+                            htmlFor="baths"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Bathrooms
+                          </label>
 
-                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_10px_30px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
+                          <div className="relative">
 
-                    <img
-                      src="/img/LOGO.png"
-                      alt="BREA 88 Realty"
-                      className="h-full w-full object-cover"
+                            <Bath className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                            <input
+                              id="baths"
+                              name="baths"
+                              type="number"
+                              min="0"
+                              value={
+                                formData.baths
+                              }
+                              onChange={
+                                handleInputChange
+                              }
+                              placeholder="0"
+                              className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                            />
+
+                          </div>
+
+                        </div>
+                      </>
+                    )}
+
+                    <div>
+
+                      <label
+                        htmlFor="sqft"
+                        className="mb-2 block text-sm font-semibold text-slate-700"
+                      >
+                        Floor Area / Lot Area
+                      </label>
+
+                      <div className="relative">
+
+                        <Maximize className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                        <input
+                          id="sqft"
+                          name="sqft"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={
+                            formData.sqft
+                          }
+                          onChange={
+                            handleInputChange
+                          }
+                          placeholder="e.g. 120"
+                          className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                        />
+
+                      </div>
+
+                    </div>
+
+                    <SelectField
+                      label="Legacy Tag"
+                      name="tag"
+                      value={
+                        formData.tag
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      options={[
+                        'Residential',
+                        'Commercial',
+                        'Investment',
+                        'All',
+                      ]}
                     />
 
                   </div>
 
-                  <h1 className="mt-4 text-xl font-bold text-slate-900">
-                    BREA 88 REALTY
-                  </h1>
+                </section>
 
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                    Administration Portal
-                  </p>
+                {/* PHOTOS */}
 
-                </div>
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                {/* Header */}
+                  <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-6">
 
-                <div className="mb-8">
+                    <div className="flex items-center gap-3">
 
-                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                      <div className="rounded-xl bg-slate-100 p-2.5">
+                        <ImageIcon className="h-5 w-5" />
+                      </div>
 
-                    <ShieldCheck className="h-5 w-5 text-slate-700" />
+                      <div>
 
-                  </div>
+                        <h2 className="font-black">
+                          Property Photos
+                        </h2>
 
-                  <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-                    Welcome back
-                  </h2>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Add up to {MAX_IMAGES} photos.
+                        </p>
 
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Sign in to access the BREA 88 Realty
-                    administration dashboard.
-                  </p>
-
-                </div>
-
-                {/* Error */}
-
-                {error && (
-
-                  <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-
-                    <div className="flex items-start gap-3">
-
-                      <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
-
-                      <p className="text-xs font-medium leading-5 text-red-600">
-                        {error}
-                      </p>
+                      </div>
 
                     </div>
 
-                  </div>
-
-                )}
-
-                {/* =================================================
-                    LOGIN FORM
-                ================================================== */}
-
-                <form
-                  onSubmit={handleSubmit}
-                  className="space-y-5"
-                >
-
-                  {/* Username */}
-
-                  <div>
-
-                    <label
-                      htmlFor="admin-username"
-                      className="mb-2 block text-xs font-semibold text-slate-700"
-                    >
-                      Username
-                    </label>
-
-                    <div className="relative">
-
-                      <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                      <input
-                        id="admin-username"
-                        type="text"
-                        value={username}
-                        onChange={(event) =>
-                          setUsername(
-                            event.target.value
-                          )
-                        }
-                        placeholder="Enter your username"
-                        autoComplete="username"
-                        required
-                        disabled={loading}
-                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-500 focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
-                      />
-
-                    </div>
+                    <span className="text-xs font-bold text-slate-400">
+                      {images.length}/
+                      {MAX_IMAGES}
+                    </span>
 
                   </div>
 
-                  {/* Password */}
+                  <div className="p-5 sm:p-6">
 
-                  <div>
-
-                    <label
-                      htmlFor="admin-password"
-                      className="mb-2 block text-xs font-semibold text-slate-700"
-                    >
-                      Password
-                    </label>
-
-                    <div className="relative">
-
-                      <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                      <input
-                        id="admin-password"
-                        type={
-                          showPassword
-                            ? 'text'
-                            : 'password'
-                        }
-                        value={password}
-                        onChange={(event) =>
-                          setPassword(
-                            event.target.value
-                          )
-                        }
-                        placeholder="Enter your password"
-                        autoComplete="current-password"
-                        required
-                        disabled={loading}
-                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-500 focus:ring-4 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
-                      />
+                    <div className="mb-5 flex rounded-xl bg-slate-100 p-1">
 
                       <button
                         type="button"
                         onClick={() =>
-                          setShowPassword(
-                            (previous) =>
-                              !previous
+                          setImageSource(
+                            'upload'
                           )
                         }
-                        disabled={loading}
-                        className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed"
-                        aria-label={
-                          showPassword
-                            ? 'Hide password'
-                            : 'Show password'
-                        }
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold ${
+                          imageSource ===
+                          'upload'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500'
+                        }`}
                       >
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </button>
 
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageSource(
+                            'url'
+                          )
+                        }
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold ${
+                          imageSource ===
+                          'url'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                        Image URL
                       </button>
 
                     </div>
 
+                    {imageSource ===
+                    'upload' ? (
+                      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center hover:border-slate-400 hover:bg-white">
+
+                        <div className="rounded-xl bg-white p-3 shadow-sm">
+                          <Upload className="h-6 w-6 text-slate-500" />
+                        </div>
+
+                        <p className="mt-4 text-sm font-bold">
+                          Click to upload photos
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          JPG, PNG, WEBP up to 5MB each
+                        </p>
+
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          multiple
+                          onChange={
+                            handleImageUpload
+                          }
+                          className="hidden"
+                          disabled={
+                            status ===
+                            'loading'
+                          }
+                        />
+
+                      </label>
+                    ) : (
+                      <div className="flex gap-2">
+
+                        <div className="relative flex-1">
+
+                          <LinkIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                          <input
+                            type="url"
+                            value={
+                              imageUrl
+                            }
+                            onChange={(e) =>
+                              setImageUrl(
+                                e.target.value
+                              )
+                            }
+                            placeholder="https://example.com/image.jpg"
+                            className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                          />
+
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={
+                            addImageUrl
+                          }
+                          className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white"
+                        >
+                          Add
+                        </button>
+
+                      </div>
+                    )}
+
+                    {images.length > 0 && (
+                      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+
+                        {images.map(
+                          (
+                            image,
+                            index
+                          ) => (
+                            <div
+                              key={
+                                image.id
+                              }
+                              className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                            >
+
+                              <img
+                                src={
+                                  image.url
+                                }
+                                alt={`Property photo ${index + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+
+                              {index ===
+                                0 && (
+                                <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-slate-900 px-2 py-1 text-[9px] font-bold text-white">
+                                  <Star className="h-3 w-3 fill-current" />
+                                  COVER
+                                </div>
+                              )}
+
+                              <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
+
+                                {index !==
+                                  0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setCoverImage(
+                                        image.id
+                                      )
+                                    }
+                                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-white text-[9px] font-bold shadow"
+                                  >
+                                    <Star className="h-3 w-3" />
+                                    Cover
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeImage(
+                                      image.id
+                                    )
+                                  }
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+
+                              </div>
+
+                            </div>
+                          )
+                        )}
+
+                      </div>
+                    )}
+
                   </div>
 
-                  {/* Security notice */}
+                </section>
 
-                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                {/* SUBMIT */}
 
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-slate-500" />
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 
-                    <p className="text-[11px] leading-5 text-slate-500">
-                      Your administrator session is protected
-                      with secure authentication.
-                    </p>
-
-                  </div>
-
-                  {/* Login Button */}
+                  <button
+                    type="button"
+                    onClick={
+                      resetForm
+                    }
+                    disabled={
+                      status ===
+                      'loading'
+                    }
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
 
                   <button
                     type="submit"
                     disabled={
-                      loading ||
-                      !username.trim() ||
-                      !password
+                      status ===
+                        'loading' ||
+                      !formData.title.trim() ||
+                      !formData.location.trim() ||
+                      !formData.price.trim() ||
+                      !images.length
                     }
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 hover:shadow-lg active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-900 px-8 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                   >
 
-                    {loading ? (
+                    {status ===
+                    'loading' ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-
-                        Signing in...
+                        Saving Property...
                       </>
                     ) : (
                       <>
-                        <LogIn className="h-4 w-4" />
+                        <CheckCircle2 className="h-4 w-4" />
 
-                        Sign in
+                        {editingId
+                          ? 'Update Property'
+                          : 'Publish Property'}
                       </>
                     )}
 
                   </button>
 
-                </form>
+                </div>
 
-                {/* =================================================
-                    FOOTER
-                ================================================== */}
+              </form>
 
-                <div className="mt-8 text-center">
+            </div>
+          )}
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      router.push('/home')
-                    }
-                    className="text-xs font-medium text-slate-500 transition hover:text-slate-900 hover:underline"
-                  >
-                    ← Return to BREA 88 Realty
-                  </button>
+          {/* ==================================================
+              SETTINGS
+          ================================================== */}
 
-                  <p className="mt-6 text-[10px] uppercase tracking-[0.2em] text-slate-300">
-                    BREA 88 REALTY • ADMIN PORTAL
+          {activeSection ===
+            'settings' && (
+            <div className="mx-auto max-w-4xl space-y-6">
+
+              <div>
+
+                <p className="text-sm font-medium text-slate-400">
+                  System
+                </p>
+
+                <h1 className="mt-1 text-3xl font-black">
+                  Settings
+                </h1>
+
+                <p className="mt-2 text-sm text-slate-500">
+                  Administrator system information.
+                </p>
+
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+                  <Database className="h-6 w-6 text-slate-600" />
+
+                  <h3 className="mt-4 font-black">
+                    Database
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    PostgreSQL database is connected and synchronized with the current Prisma schema.
                   </p>
+
+                  <div className="mt-5 flex items-center gap-2 text-xs font-bold text-emerald-600">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Database Online
+                  </div>
+
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+
+                  <ShieldCheck className="h-6 w-6 text-slate-600" />
+
+                  <h3 className="mt-4 font-black">
+                    Security
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Administrator authentication is required for property management and agent management operations.
+                  </p>
+
+                  <div className="mt-5 flex items-center gap-2 text-xs font-bold text-emerald-600">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Authentication Active
+                  </div>
 
                 </div>
 
               </div>
 
-            </section>
+              {/* AGENT SYSTEM INFORMATION */}
 
-          </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
-        </div>
+                <div className="flex items-center gap-3">
+
+                  <div className="rounded-xl bg-slate-100 p-3">
+                    <Users className="h-5 w-5 text-slate-700" />
+                  </div>
+
+                  <div>
+
+                    <h3 className="font-black">
+                      Agent Profiles
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-400">
+                      Current agent profile status.
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Total
+                    </p>
+                    <p className="mt-1 text-2xl font-black">
+                      {agents.length}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-emerald-50 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+                      Active
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-emerald-700">
+                      {activeAgents.length}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-red-50 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-red-500">
+                      Inactive
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-red-600">
+                      {inactiveAgentCount}
+                    </p>
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(
+                      'profiles'
+                    )
+                  }
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-xs font-bold text-white hover:bg-slate-800"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  Manage Active Profiles
+                </button>
+
+              </div>
+
+            </div>
+          )}
+
+        </main>
 
       </div>
 
-    </main>
+    </div>
   );
 }
