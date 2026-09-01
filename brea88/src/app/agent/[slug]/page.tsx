@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin,
-  Phone,
   MessageCircle,
   Building2,
   Mail,
   ExternalLink,
   Loader2,
+  Send,
 } from 'lucide-react';
 
 interface Property {
@@ -25,7 +25,6 @@ interface Property {
   sqft?: number | null;
 }
 
-
 interface Agent {
   id: number;
   fullName: string;
@@ -40,8 +39,6 @@ interface Agent {
   messenger?: string | null;
 }
 
-
-
 interface PageProps {
   params: Promise<{
     slug: string;
@@ -52,10 +49,10 @@ export default function AgentProfilePage({
   params,
 }: PageProps) {
   const router = useRouter();
+
   const [agent, setAgent] = useState<Agent | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showProperties, setShowProperties] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -64,7 +61,7 @@ export default function AgentProfilePage({
         const { slug } = await params;
 
         const response = await fetch(
-          `/api/agent/profile/${slug}`,
+          `/api/agent/profile/${encodeURIComponent(slug)}`,
           {
             cache: 'no-store',
           }
@@ -81,7 +78,7 @@ export default function AgentProfilePage({
         setAgent(data.agent);
         setProperties(data.properties || []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load agent profile:', err);
 
         setError(
           err instanceof Error
@@ -96,6 +93,12 @@ export default function AgentProfilePage({
     loadProfile();
   }, [params]);
 
+  /*
+   * =========================================================
+   * LOADING
+   * =========================================================
+   */
+
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -104,11 +107,13 @@ export default function AgentProfilePage({
     );
   }
 
+  /*
+   * =========================================================
+   * ERROR
+   * =========================================================
+   */
+
   if (error || !agent) {
-
-
-
-
     return (
       <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
         <div className="text-center">
@@ -123,6 +128,35 @@ export default function AgentProfilePage({
       </main>
     );
   }
+
+  /*
+   * =========================================================
+   * SEND INQUIRY
+   *
+   * The client does NOT need to log in.
+   *
+   * The agent slug is passed to the inquiry page so the
+   * inquiry can be associated with this specific agent.
+   * =========================================================
+   */
+
+  const sendInquiry = () => {
+    router.push(
+      `/inquiry?agent=${encodeURIComponent(agent.slug)}`
+    );
+  };
+
+  /*
+   * =========================================================
+   * VIEW PROPERTIES
+   * =========================================================
+   */
+
+  const viewProperties = () => {
+    router.push(
+      `/marketplace?agent=${encodeURIComponent(agent.slug)}`
+    );
+  };
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -158,11 +192,10 @@ export default function AgentProfilePage({
 
               {/* PROFILE IMAGE */}
               <div className="flex justify-center">
-
                 {agent.profileImage ? (
                   <img
                     src={agent.profileImage}
-                    alt={agent.fullName}
+                    alt={`${agent.fullName} profile`}
                     className="h-28 w-28 rounded-full object-cover border-4 border-white/20 shadow-xl sm:h-32 sm:w-32"
                   />
                 ) : (
@@ -174,7 +207,6 @@ export default function AgentProfilePage({
                     </span>
                   </div>
                 )}
-
               </div>
 
               {/* NAME */}
@@ -224,12 +256,12 @@ export default function AgentProfilePage({
                   <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3.5">
 
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
-                      <Phone className="h-5 w-5 text-slate-300" />
+                      <MessageCircle className="h-5 w-5 text-slate-300" />
                     </div>
 
                     <div className="min-w-0">
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                        Phone
+                        Contact Number
                       </p>
 
                       <p className="mt-0.5 text-sm font-medium text-white">
@@ -240,42 +272,46 @@ export default function AgentProfilePage({
                   </div>
                 )}
 
-              </div>
-            
-              {/* ADDRESS */}
-              {agent.address && (
-                <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3.5">
+                {/* ADDRESS */}
+                {agent.address && (
+                  <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3.5">
 
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
-                    <MapPin className="h-5 w-5 text-slate-300" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                      <MapPin className="h-5 w-5 text-slate-300" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Address
+                      </p>
+
+                      <p className="mt-0.5 text-sm font-medium text-white">
+                        {agent.address}
+                      </p>
+                    </div>
+
                   </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                      Address
-                    </p>
-
-                    <p className="mt-0.5 text-sm font-medium text-white">
-                      {agent.address}
-                    </p>
-                  </div>
-
-                </div>
-              )}
-
-              {/* CONTACT BUTTONS */}
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                {agent.phone && (
-                  <a
-                    href={`tel:${agent.phone}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98]"
-                  >
-                    <Phone className="h-4 w-4" />
-                    Call Agent
-                  </a>
                 )}
 
+              </div>
+
+              {/* =================================================
+                  ACTION BUTTONS
+                  ================================================= */}
+
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+                {/* SEND INQUIRY */}
+                <button
+                  type="button"
+                  onClick={sendInquiry}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98]"
+                >
+                  <Send className="h-4 w-4" />
+                  Send Inquiry
+                </button>
+
+                {/* MESSENGER */}
                 {agent.messenger && (
                   <a
                     href={agent.messenger}
@@ -307,13 +343,10 @@ export default function AgentProfilePage({
 
             {/* PROPERTY BUTTON */}
             <div className="border-t border-white/10 bg-black/20 p-5 sm:p-6">
+
               <button
                 type="button"
-                onClick={() =>
-                  router.push(
-                    `/marketplace?agent=${encodeURIComponent(agent.slug)}`
-                  )
-                }
+                onClick={viewProperties}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100 active:scale-[0.98]"
               >
                 <Building2 className="h-4 w-4" />
@@ -322,11 +355,17 @@ export default function AgentProfilePage({
 
               {properties.length > 0 && (
                 <p className="mt-2 text-center text-xs text-slate-500">
-                  View {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+                  View {properties.length}{' '}
+                  {properties.length === 1
+                    ? 'property'
+                    : 'properties'}
                 </p>
               )}
-            </div>  
+
+            </div>
+
           </div>
+
           {/* FOOTER */}
           <p className="mt-6 text-center text-xs text-slate-600">
             BREA 88 REALTY • Official Agent Contact
