@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,8 +12,6 @@ import {
   Loader2,
   X,
   Send,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 
 interface Property {
@@ -48,6 +47,8 @@ interface PageProps {
   }>;
 }
 
+type SubmitStatus = 'idle' | 'success' | 'error';
+
 export default function AgentProfilePage({
   params,
 }: PageProps) {
@@ -58,28 +59,25 @@ export default function AgentProfilePage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [showInquiryForm, setShowInquiryForm] =
-    useState(false);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] =
+    useState<SubmitStatus>('idle');
 
   const [form, setForm] = useState({
     name: '',
     email: '',
-    phone: '',
+    contact_number: '',
+    prefer_location: '',
     message: '',
   });
 
-  const [submitting, setSubmitting] =
-    useState(false);
-
-  const [submitError, setSubmitError] =
-    useState('');
-
-  const [submitSuccess, setSubmitSuccess] =
-    useState('');
-
   /*
+   * ============================================================
    * LOAD AGENT PROFILE
+   * ============================================================
    */
+
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -122,28 +120,44 @@ export default function AgentProfilePage({
   }, [params]);
 
   /*
+   * ============================================================
    * OPEN INQUIRY FORM
+   * ============================================================
    */
+
   const openInquiryForm = () => {
-    setSubmitError('');
-    setSubmitSuccess('');
+    setSubmitStatus('idle');
+
+    setForm({
+      name: '',
+      email: '',
+      contact_number: '',
+      prefer_location: '',
+      message: '',
+    });
+
     setShowInquiryForm(true);
   };
 
   /*
+   * ============================================================
    * CLOSE INQUIRY FORM
+   * ============================================================
    */
+
   const closeInquiryForm = () => {
-    if (submitting) return;
+    if (isSubmitting) return;
 
     setShowInquiryForm(false);
-    setSubmitError('');
-    setSubmitSuccess('');
+    setSubmitStatus('idle');
   };
 
   /*
-   * HANDLE INPUT
+   * ============================================================
+   * HANDLE FORM INPUT
+   * ============================================================
    */
+
   const handleChange = (
     event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement
@@ -155,120 +169,90 @@ export default function AgentProfilePage({
       ...previous,
       [name]: value,
     }));
+
+    if (submitStatus !== 'idle') {
+      setSubmitStatus('idle');
+    }
   };
 
   /*
+   * ============================================================
    * SUBMIT INQUIRY
+   *
+   * IMPORTANT:
+   * - NO propertyId
+   * - Agent is automatically determined by agent.slug
+   * - Uses the same field names as /home
+   * ============================================================
    */
+
   const handleSubmitInquiry = async (
     event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
-    if (!agent) {
-      setSubmitError(
-        'Agent information is unavailable.'
-      );
+    if (!agent?.slug) {
+      setSubmitStatus('error');
       return;
     }
 
-    setSubmitError('');
-    setSubmitSuccess('');
-    setSubmitting(true);
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
 
     try {
-      if (!form.name.trim()) {
-        throw new Error(
-          'Please enter your name.'
-        );
-      }
+      const response = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          contact_number: form.contact_number.trim(),
+          prefer_location: form.prefer_location.trim(),
+          message: form.message.trim(),
 
-      if (!form.email.trim()) {
-        throw new Error(
-          'Please enter your email address.'
-        );
-      }
-
-      if (!form.phone.trim()) {
-        throw new Error(
-          'Please enter your phone number.'
-        );
-      }
-
-      if (!form.message.trim()) {
-        throw new Error(
-          'Please enter your inquiry message.'
-        );
-      }
-
-      /*
-       * IMPORTANT:
-       *
-       * propertyId is completely removed.
-       *
-       * The inquiry is assigned using agentSlug.
-       */
-      const response = await fetch(
-        '/api/inquiries',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            email: form.email.trim(),
-            phone: form.phone.trim(),
-            message: form.message.trim(),
-            agentSlug: agent.slug,
-          }),
-        }
-      );
+          // Automatically assign inquiry
+          // to the current agent from /agent/[slug]
+          agentSlug: agent.slug,
+        }),
+      });
 
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         throw new Error(
-          data?.message ||
-            'Failed to submit inquiry.'
+          data?.message || 'Failed to send inquiry.'
         );
       }
 
-      setSubmitSuccess(
-        data?.message ||
-          'Your inquiry has been submitted successfully.'
-      );
+      setSubmitStatus('success');
 
       setForm({
         name: '',
         email: '',
-        phone: '',
+        contact_number: '',
+        prefer_location: '',
         message: '',
       });
-
-      setTimeout(() => {
-        setShowInquiryForm(false);
-        setSubmitSuccess('');
-      }, 2500);
     } catch (err) {
       console.error(
-        'Inquiry submission error:',
+        'Agent inquiry submission error:',
         err
       );
 
-      setSubmitError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to submit inquiry.'
-      );
+      setSubmitStatus('error');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   /*
+   * ============================================================
    * LOADING
+   * ============================================================
    */
+
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -278,8 +262,11 @@ export default function AgentProfilePage({
   }
 
   /*
+   * ============================================================
    * ERROR
+   * ============================================================
    */
+
   if (error || !agent) {
     return (
       <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
@@ -289,13 +276,18 @@ export default function AgentProfilePage({
           </h1>
 
           <p className="text-slate-400 mt-2">
-            {error ||
-              'This profile does not exist.'}
+            {error || 'This profile does not exist.'}
           </p>
         </div>
       </main>
     );
   }
+
+  /*
+   * ============================================================
+   * PAGE
+   * ============================================================
+   */
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -519,227 +511,250 @@ export default function AgentProfilePage({
 
       </section>
 
-      {/* =====================================================
+      {/* ============================================================
           INQUIRY MODAL
-      ====================================================== */}
+          SAME FORM AS /HOME
+          NO PROPERTY SELECTION
+          NO PROPERTY ID
+      ============================================================ */}
 
       {showInquiryForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 px-4 py-6 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 px-4 py-6 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeInquiryForm();
+            }
+          }}
+        >
 
-          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 shadow-2xl">
+          <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white shadow-2xl">
 
-            {/* MODAL HEADER */}
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 sm:px-6">
+            {/* CLOSE BUTTON */}
+            <button
+              type="button"
+              onClick={closeInquiryForm}
+              disabled={isSubmitting}
+              aria-label="Close inquiry form"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">
-                  BREA 88 REALTY
+            {/* =====================================================
+                INQUIRY FORM
+                SAME DESIGN AS /HOME
+            ====================================================== */}
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_15px_50px_rgba(15,23,42,0.07)] sm:p-8 lg:p-10">
+
+              <div className="pr-10">
+
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
+                  Property Inquiry
                 </p>
 
-                <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">
-                  Send an Inquiry
-                </h2>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                  Send us a message
+                </h3>
 
-                <p className="mt-1 text-sm text-slate-400">
-                  Contact {agent.fullName}
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Fill out the form below and our team will get back to you.
                 </p>
+
               </div>
 
-              <button
-                type="button"
-                onClick={closeInquiryForm}
-                disabled={submitting}
-                aria-label="Close inquiry form"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {/* AGENT INFORMATION */}
+              <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
 
-            </div>
-
-            {/* FORM */}
-            <form
-              onSubmit={handleSubmitInquiry}
-              className="space-y-5 p-5 sm:p-6"
-            >
-
-              {/* AGENT */}
-              <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
-
-                <p className="text-[11px] font-bold uppercase tracking-wider text-blue-300">
-                  Sending to
+                <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                  Sending inquiry to
                 </p>
 
-                <p className="mt-1 font-bold text-white">
+                <p className="mt-1 text-sm font-bold text-slate-900">
                   {agent.fullName}
                 </p>
 
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-500">
                   {agent.email}
                 </p>
 
               </div>
 
-              {/* NAME */}
-              <div>
-                <label
-                  htmlFor="inquiry-name"
-                  className="mb-2 block text-sm font-semibold text-slate-200"
-                >
-                  Full Name
-                </label>
+              {/* FORM */}
+              <form
+                onSubmit={handleSubmitInquiry}
+                className="mt-8 space-y-5"
+              >
 
-                <input
-                  id="inquiry-name"
-                  name="name"
-                  type="text"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  autoComplete="name"
-                  required
-                  maxLength={100}
-                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
+                {/* FULL NAME */}
+                <div>
+                  <label
+                    htmlFor="agent-contact-name"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Full Name
+                  </label>
 
-              {/* EMAIL */}
-              <div>
-                <label
-                  htmlFor="inquiry-email"
-                  className="mb-2 block text-sm font-semibold text-slate-200"
-                >
-                  Email Address
-                </label>
-
-                <input
-                  id="inquiry-email"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                  maxLength={255}
-                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-
-              {/* PHONE */}
-              <div>
-                <label
-                  htmlFor="inquiry-phone"
-                  className="mb-2 block text-sm font-semibold text-slate-200"
-                >
-                  Phone Number
-                </label>
-
-                <input
-                  id="inquiry-phone"
-                  name="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="09XX XXX XXXX"
-                  autoComplete="tel"
-                  required
-                  maxLength={30}
-                  className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-
-              {/* MESSAGE */}
-              <div>
-                <label
-                  htmlFor="inquiry-message"
-                  className="mb-2 block text-sm font-semibold text-slate-200"
-                >
-                  Message
-                </label>
-
-                <textarea
-                  id="inquiry-message"
-                  name="message"
-                  value={form.message}
-                  onChange={handleChange}
-                  placeholder={`Hi ${agent.fullName}, I am interested in learning more about your services and available properties.`}
-                  autoComplete="off"
-                  required
-                  maxLength={2000}
-                  rows={5}
-                  className="w-full resize-none rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-sm leading-6 text-white placeholder:text-slate-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                />
-
-                <p className="mt-1 text-right text-xs text-slate-500">
-                  {form.message.length}/2000
-                </p>
-              </div>
-
-              {/* ERROR */}
-              {submitError && (
-                <div className="flex gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
-
-                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-
-                  <p className="text-sm leading-6 text-red-300">
-                    {submitError}
-                  </p>
-
+                  <input
+                    id="agent-contact-name"
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    autoComplete="name"
+                    maxLength={100}
+                    placeholder="Enter your full name"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
                 </div>
-              )}
 
-              {/* SUCCESS */}
-              {submitSuccess && (
-                <div className="flex gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                {/* EMAIL */}
+                <div>
+                  <label
+                    htmlFor="agent-contact-email"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Email Address
+                  </label>
 
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-
-                  <p className="text-sm leading-6 text-emerald-300">
-                    {submitSuccess}
-                  </p>
-
+                  <input
+                    id="agent-contact-email"
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    autoComplete="email"
+                    maxLength={255}
+                    placeholder="Enter your email"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
                 </div>
-              )}
 
-              {/* BUTTONS */}
-              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                {/* CONTACT NUMBER */}
+                <div>
+                  <label
+                    htmlFor="agent-contact-number"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Contact Number
+                  </label>
 
-                <button
-                  type="button"
-                  onClick={closeInquiryForm}
-                  disabled={submitting}
-                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Cancel
-                </button>
+                  <input
+                    id="agent-contact-number"
+                    type="tel"
+                    name="contact_number"
+                    value={form.contact_number}
+                    onChange={handleChange}
+                    required
+                    autoComplete="tel"
+                    maxLength={30}
+                    placeholder="09XX XXX XXXX"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
 
+                {/* PREFERRED LOCATION */}
+                <div>
+                  <label
+                    htmlFor="agent-prefer-location"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Preferred Location
+                  </label>
+
+                  <input
+                    id="agent-prefer-location"
+                    type="text"
+                    name="prefer_location"
+                    value={form.prefer_location}
+                    onChange={handleChange}
+                    required
+                    autoComplete="address-level2"
+                    maxLength={255}
+                    placeholder="e.g. Cebu City, Mandaue, Lapu-Lapu"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+
+                {/* MESSAGE */}
+                <div>
+                  <label
+                    htmlFor="agent-contact-message"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Message
+                  </label>
+
+                  <textarea
+                    id="agent-contact-message"
+                    name="message"
+                    value={form.message}
+                    onChange={handleChange}
+                    required
+                    rows={5}
+                    maxLength={2000}
+                    placeholder="Tell us what you're looking for..."
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+
+                  <p className="mt-1 text-right text-xs text-slate-400">
+                    {form.message.length}/2000
+                  </p>
+                </div>
+
+                {/* SUBMIT */}
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSubmitting}
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/10 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
-                  {submitting ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" />
-                      Submit Inquiry
+                      Send Inquiry
+
+                      <span
+                        aria-hidden="true"
+                        className="transition-transform duration-300 group-hover:translate-x-1"
+                      >
+                        →
+                      </span>
                     </>
                   )}
                 </button>
 
-              </div>
+                {/* SUCCESS */}
+                {submitStatus === 'success' &&
+                  !isSubmitting && (
+                    <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-center text-sm font-semibold text-green-700">
+                      ✓ Inquiry sent successfully! We'll get back to you soon.
+                    </div>
+                  )}
 
-              <p className="text-center text-[11px] leading-5 text-slate-500">
-                Your inquiry will be sent directly to{' '}
-                {agent.fullName}.
-              </p>
+                {/* ERROR */}
+                {submitStatus === 'error' &&
+                  !isSubmitting && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
+                      ✕ Failed to send your inquiry. Please try again.
+                    </div>
+                  )}
 
-            </form>
+                {/* PRIVACY / AGREEMENT */}
+                <p className="text-center text-[11px] leading-5 text-slate-400">
+                  By submitting this form, you agree to be contacted regarding
+                  your inquiry.
+                </p>
+
+              </form>
+
+            </div>
 
           </div>
 
@@ -749,4 +764,3 @@ export default function AgentProfilePage({
     </main>
   );
 }
-
