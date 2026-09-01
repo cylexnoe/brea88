@@ -53,9 +53,73 @@ function parseOptionalFloat(value: unknown): number | null {
   return number;
 }
 
-// ==========================================
-// GET ALL PROPERTIES
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| AGENT VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+async function validateAgent(agentId: number | null) {
+  if (agentId === null) {
+    return null;
+  }
+
+  if (!Number.isInteger(agentId) || agentId <= 0) {
+    return {
+      error: NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid agent ID.',
+        },
+        { status: 400 }
+      ),
+    };
+  }
+
+  const agent = await prisma.agent.findUnique({
+    where: {
+      id: agentId,
+    },
+    select: {
+      id: true,
+      isActive: true,
+    },
+  });
+
+  if (!agent) {
+    return {
+      error: NextResponse.json(
+        {
+          success: false,
+          message: 'Assigned agent does not exist.',
+        },
+        { status: 400 }
+      ),
+    };
+  }
+
+  if (!agent.isActive) {
+    return {
+      error: NextResponse.json(
+        {
+          success: false,
+          message: 'Cannot assign a property to an inactive agent.',
+        },
+        { status: 400 }
+      ),
+    };
+  }
+
+  return {
+    agent,
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET ALL PROPERTIES
+|--------------------------------------------------------------------------
+*/
 
 export async function GET() {
   try {
@@ -81,6 +145,12 @@ export async function GET() {
       },
     });
 
+    console.log(
+      'GET /api/properties:',
+      properties.length,
+      'properties found'
+    );
+
     return NextResponse.json(properties);
   } catch (error) {
     console.error('GET /api/properties error:', error);
@@ -100,9 +170,11 @@ export async function GET() {
   }
 }
 
-// ==========================================
-// CREATE PROPERTY
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| CREATE PROPERTY
+|--------------------------------------------------------------------------
+*/
 
 export async function POST(request: Request) {
   try {
@@ -120,9 +192,11 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // ==========================================
-    // BASIC PROPERTY INFORMATION
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | BASIC PROPERTY INFORMATION
+    |--------------------------------------------------------------------------
+    */
 
     const title =
       typeof body.title === 'string'
@@ -144,9 +218,11 @@ export async function POST(request: Request) {
         ? body.location.trim()
         : '';
 
-    // ==========================================
-    // PROPERTY CLASSIFICATION
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY CLASSIFICATION
+    |--------------------------------------------------------------------------
+    */
 
     const category = cleanOptionalString(body.category);
 
@@ -162,9 +238,11 @@ export async function POST(request: Request) {
       body.storey
     );
 
-    // ==========================================
-    // IMAGES
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGES
+    |--------------------------------------------------------------------------
+    */
 
     const image =
       typeof body.image === 'string'
@@ -173,9 +251,11 @@ export async function POST(request: Request) {
 
     const images = cleanImages(body.images);
 
-    // ==========================================
-    // PROPERTY DETAILS
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY DETAILS
+    |--------------------------------------------------------------------------
+    */
 
     const beds = parseOptionalInteger(body.beds);
 
@@ -183,9 +263,24 @@ export async function POST(request: Request) {
 
     const sqft = parseOptionalFloat(body.sqft);
 
-    // ==========================================
-    // VALIDATION
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | AGENT
+    |--------------------------------------------------------------------------
+    */
+
+    const agentId =
+      body.agentId === null ||
+      body.agentId === undefined ||
+      body.agentId === ''
+        ? null
+        : Number(body.agentId);
+
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRED FIELD VALIDATION
+    |--------------------------------------------------------------------------
+    */
 
     if (!title) {
       return NextResponse.json(
@@ -227,6 +322,12 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGE VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
     if (!image && images.length === 0) {
       return NextResponse.json(
         {
@@ -236,6 +337,12 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NUMBER VALIDATION
+    |--------------------------------------------------------------------------
+    */
 
     if (
       body.beds !== undefined &&
@@ -282,9 +389,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // ==========================================
-    // PREPARE IMAGES
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE AGENT
+    |--------------------------------------------------------------------------
+    */
+
+    const agentValidation = await validateAgent(agentId);
+
+    if (agentValidation?.error) {
+      return agentValidation.error;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PREPARE IMAGES
+    |--------------------------------------------------------------------------
+    */
 
     const finalImages =
       images.length > 0
@@ -295,9 +416,21 @@ export async function POST(request: Request) {
 
     const coverImage = finalImages[0];
 
-    // ==========================================
-    // CREATE PROPERTY
-    // ==========================================
+    if (!coverImage) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'At least one property image is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PROPERTY
+    |--------------------------------------------------------------------------
+    */
 
     const property = await prisma.property.create({
       data: {
@@ -317,6 +450,25 @@ export async function POST(request: Request) {
         beds,
         baths,
         sqft,
+
+        agentId,
+      },
+
+      include: {
+        agent: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            slug: true,
+            phone: true,
+            profileImage: true,
+            bio: true,
+            facebook: true,
+            messenger: true,
+          },
+        },
       },
     });
 
@@ -346,9 +498,11 @@ export async function POST(request: Request) {
   }
 }
 
-// ==========================================
-// UPDATE PROPERTY
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| UPDATE PROPERTY
+|--------------------------------------------------------------------------
+*/
 
 export async function PUT(request: Request) {
   try {
@@ -378,9 +532,11 @@ export async function PUT(request: Request) {
       );
     }
 
-    // ==========================================
-    // BASIC PROPERTY INFORMATION
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | BASIC PROPERTY INFORMATION
+    |--------------------------------------------------------------------------
+    */
 
     const title =
       typeof body.title === 'string'
@@ -402,9 +558,11 @@ export async function PUT(request: Request) {
         ? body.location.trim()
         : '';
 
-    // ==========================================
-    // PROPERTY CLASSIFICATION
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY CLASSIFICATION
+    |--------------------------------------------------------------------------
+    */
 
     const category = cleanOptionalString(body.category);
 
@@ -420,9 +578,11 @@ export async function PUT(request: Request) {
       body.storey
     );
 
-    // ==========================================
-    // IMAGES
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGES
+    |--------------------------------------------------------------------------
+    */
 
     const image =
       typeof body.image === 'string'
@@ -431,9 +591,11 @@ export async function PUT(request: Request) {
 
     const images = cleanImages(body.images);
 
-    // ==========================================
-    // PROPERTY DETAILS
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY DETAILS
+    |--------------------------------------------------------------------------
+    */
 
     const beds = parseOptionalInteger(body.beds);
 
@@ -441,9 +603,24 @@ export async function PUT(request: Request) {
 
     const sqft = parseOptionalFloat(body.sqft);
 
-    // ==========================================
-    // VALIDATION
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | AGENT
+    |--------------------------------------------------------------------------
+    */
+
+    const agentId =
+      body.agentId === null ||
+      body.agentId === undefined ||
+      body.agentId === ''
+        ? null
+        : Number(body.agentId);
+
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRED FIELD VALIDATION
+    |--------------------------------------------------------------------------
+    */
 
     if (!title) {
       return NextResponse.json(
@@ -485,6 +662,12 @@ export async function PUT(request: Request) {
       );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGE VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
     if (!image && images.length === 0) {
       return NextResponse.json(
         {
@@ -494,6 +677,12 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NUMBER VALIDATION
+    |--------------------------------------------------------------------------
+    */
 
     if (
       body.beds !== undefined &&
@@ -540,9 +729,23 @@ export async function PUT(request: Request) {
       );
     }
 
-    // ==========================================
-    // PREPARE IMAGES
-    // ==========================================
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE AGENT
+    |--------------------------------------------------------------------------
+    */
+
+    const agentValidation = await validateAgent(agentId);
+
+    if (agentValidation?.error) {
+      return agentValidation.error;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PREPARE IMAGES
+    |--------------------------------------------------------------------------
+    */
 
     const finalImages =
       images.length > 0
@@ -553,14 +756,27 @@ export async function PUT(request: Request) {
 
     const coverImage = finalImages[0];
 
-    // ==========================================
-    // UPDATE PROPERTY
-    // ==========================================
+    if (!coverImage) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'At least one property image is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PROPERTY
+    |--------------------------------------------------------------------------
+    */
 
     const property = await prisma.property.update({
       where: {
         id,
       },
+
       data: {
         title,
         tag,
@@ -578,6 +794,25 @@ export async function PUT(request: Request) {
         beds,
         baths,
         sqft,
+
+        agentId,
+      },
+
+      include: {
+        agent: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            slug: true,
+            phone: true,
+            profileImage: true,
+            bio: true,
+            facebook: true,
+            messenger: true,
+          },
+        },
       },
     });
 
@@ -607,9 +842,11 @@ export async function PUT(request: Request) {
   }
 }
 
-// ==========================================
-// DELETE PROPERTY
-// ==========================================
+/*
+|--------------------------------------------------------------------------
+| DELETE PROPERTY
+|--------------------------------------------------------------------------
+*/
 
 export async function DELETE(request: Request) {
   try {
@@ -669,3 +906,4 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
