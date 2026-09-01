@@ -252,6 +252,7 @@ function StatCard({
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const [activeAccounts, setActiveAccounts] = useState(0);
 
   const [formData, setFormData] =
     useState<FormData>(INITIAL_FORM);
@@ -351,10 +352,48 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+    const fetchActiveAccounts = async () => {
+      try {
+        const response = await fetch(
+          '/api/admin/agents',
+          {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'include',
+          }
+        );
 
+        if (!response.ok) {
+          throw new Error(
+            'Failed to fetch agents.'
+          );
+        }
+
+        const data = await response.json();
+
+        const agents = Array.isArray(data?.agents)
+          ? data.agents
+          : [];
+
+        const activeCount = agents.filter(
+          (agent: { isActive?: boolean }) =>
+            agent.isActive === true
+        ).length;
+
+        setActiveAccounts(activeCount);
+      } catch (error) {
+        console.error(
+          'Failed to fetch active accounts:',
+          error
+        );
+
+        setActiveAccounts(0);
+      }
+    };
   useEffect(() => {
-    fetchProperties();
-  }, []);
+  fetchProperties();
+  fetchActiveAccounts();
+}, []);
 
   /* =========================================================
      WELCOME
@@ -1437,7 +1476,12 @@ export default function AdminDashboard() {
 
               {/* STATS */}
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <StatCard
+                  icon={UserRound}
+                  label="Active Accounts"
+                  value={activeAccounts}
+                />
 
                 <StatCard
                   icon={Building2}
