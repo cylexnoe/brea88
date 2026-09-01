@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-
 import { prisma } from '@/lib/prisma';
 import { getAgentFromSession } from '@/lib/agent-auth';
 import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 /* =========================================================
    HELPERS
@@ -18,9 +15,19 @@ function cleanString(value: unknown): string {
   return value.trim();
 }
 
+/* Escape HTML so client-submitted values cannot inject HTML
+   into the email. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 /* =========================================================
    GET INQUIRIES
-
    - Only logged-in agents can access inquiries.
    - Agents only see inquiries assigned to themselves.
 ========================================================= */
@@ -90,6 +97,7 @@ export async function GET() {
       {
         success: false,
         message: 'Failed to load inquiries.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -106,6 +114,8 @@ export async function GET() {
 
    IMPORTANT:
 
+   NORMAL CLIENTS DO NOT NEED TO LOG IN.
+
    The client sends:
 
    - name
@@ -113,38 +123,44 @@ export async function GET() {
    - phone
    - message
    - propertyId
+   - agentSlug
 
-   The client DOES NOT send agentId.
+   The client NEVER sends:
 
-   The authenticated agent is determined from the
-   agent session.
+   - agentId
+   - agent.email
 
-   After creating the inquiry:
+   The server uses agentSlug to find the registered Agent
+   in the database.
 
-   Resend sends an email to:
+   Then:
 
-   agent.email
+   Agent.email
+        ↓
+   Resend recipient
+
+   Example:
+
+   agentSlug = "john-doe"
+
+   Database:
+
+   Agent {
+      id: 5
+      slug: "john-doe"
+      email: "john@gmail.com"
+   }
+
+   Result:
+
+   Inquiry saved with agentId = 5
+
+   Email sent to:
+   john@gmail.com
 ========================================================= */
 
 export async function POST(request: Request) {
   try {
-    /* =======================================================
-       GET CURRENTLY LOGGED-IN AGENT
-    ======================================================= */
-
-    const agent = await getAgentFromSession();
-
-    if (!agent) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'You must be logged in as an active agent to submit an inquiry.',
-        },
-        { status: 401 }
-      );
-    }
-
     /* =======================================================
        READ REQUEST BODY
     ======================================================= */
@@ -192,13 +208,19 @@ export async function POST(request: Request) {
     const message = cleanString(data.message);
 
     /* =======================================================
+       AGENT SLUG
+    ======================================================= */
+
+    const agentSlug = cleanString(data.agentSlug);
+
+    /* =======================================================
        PROPERTY ID
     ======================================================= */
 
     const propertyId = Number(data.propertyId);
 
     /* =======================================================
-       VALIDATION
+       VALIDATE CLIENT NAME
     ======================================================= */
 
     if (!name) {
@@ -232,6 +254,10 @@ export async function POST(request: Request) {
       );
     }
 
+    /* =======================================================
+       VALIDATE CLIENT EMAIL
+    ======================================================= */
+
     if (!email) {
       return NextResponse.json(
         {
@@ -264,6 +290,10 @@ export async function POST(request: Request) {
       );
     }
 
+    /* =======================================================
+       VALIDATE PHONE
+    ======================================================= */
+
     if (!phone) {
       return NextResponse.json(
         {
@@ -294,6 +324,10 @@ export async function POST(request: Request) {
       );
     }
 
+    /* =======================================================
+       VALIDATE MESSAGE
+    ======================================================= */
+
     if (!message) {
       return NextResponse.json(
         {
@@ -314,6 +348,10 @@ export async function POST(request: Request) {
       );
     }
 
+    /* =======================================================
+       VALIDATE PROPERTY ID
+    ======================================================= */
+
     if (
       !Number.isInteger(propertyId) ||
       propertyId <= 0
@@ -328,21 +366,96 @@ export async function POST(request: Request) {
     }
 
     /* =======================================================
-       VERIFY AGENT EMAIL
+       VALIDATE AGENT SLUG
     ======================================================= */
 
-    if (!agent.email || !agent.email.trim()) {
+    if (!agentSlug) {
       return NextResponse.json(
         {
           success: false,
           message:
-            'The assigned agent does not have a registered email address.',
+            'No agent was specified for this inquiry.',
         },
         { status: 400 }
       );
     }
 
-    const agentEmail = agent.email.trim().toLowerCase();
+    if (agentSlug.length > 100) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid agent.',
+        },
+        { status: 400 }
+      );
+    }
+
+    /* =======================================================
+       FIND ACTIVE AGENT
+
+       IMPORTANT:
+
+       We DO NOT trust an email from the client.
+
+       We only accept agentSlug.
+
+       The server gets the actual email from PostgreSQL.
+    ======================================================= */
+
+    const agent = await prisma.agent.findFirst({
+      where: {
+        slug: agentSlug,
+        isActive: true,
+      },
+
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        phone: true,
+        profileImage: true,
+      },
+    });
+
+    if (!agent) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'The selected agent could not be found or is no longer active.',
+        },
+        { status: 404 }
+      );
+    }
+
+    /* =======================================================
+       VERIFY AGENT EMAIL
+    ======================================================= */
+
+    const agentEmail = cleanString(agent.email).toLowerCase();
+
+    if (!agentEmail) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'The selected agent does not have a registered email address.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!emailPattern.test(agentEmail)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'The selected agent has an invalid registered email address.',
+        },
+        { status: 400 }
+      );
+    }
 
     /* =======================================================
        VERIFY PROPERTY
@@ -358,6 +471,7 @@ export async function POST(request: Request) {
         title: true,
         price: true,
         location: true,
+        image: true,
       },
     });
 
@@ -374,11 +488,15 @@ export async function POST(request: Request) {
     /* =======================================================
        CREATE INQUIRY
 
-       agentId comes ONLY from the authenticated session.
+       agentId comes from the database lookup.
 
-       We intentionally DO NOT use:
+       NOT from the browser.
 
-       data.agentId
+       This means the client cannot simply submit:
+
+       agentId: 123
+
+       and redirect an inquiry to another agent.
     ======================================================= */
 
     const inquiry = await prisma.inquiry.create({
@@ -389,7 +507,7 @@ export async function POST(request: Request) {
         message,
         propertyId,
 
-        // Agent comes from authenticated session.
+        // Agent comes from the verified database record.
         agentId: agent.id,
 
         status: 'New',
@@ -420,21 +538,47 @@ export async function POST(request: Request) {
     });
 
     /* =======================================================
-       SEND EMAIL THROUGH RESEND
+       RESEND CONFIGURATION
 
-       The email recipient is the agent's registered email.
+       IMPORTANT:
 
-       Example:
+       Resend is initialized HERE instead of globally.
 
-       Agent.email = agent@gmail.com
+       This prevents Vercel from trying to construct:
 
-       Resend sends to:
+       new Resend(undefined)
 
-       agent@gmail.com
+       during the build process.
     ======================================================= */
 
-    const fromEmail =
-      process.env.RESEND_FROM_EMAIL;
+    const resendApiKey = cleanString(
+      process.env.RESEND_API_KEY
+    );
+
+    const fromEmail = cleanString(
+      process.env.RESEND_FROM_EMAIL
+    );
+
+    /* =======================================================
+       EMAIL CONFIGURATION CHECK
+    ======================================================= */
+
+    if (!resendApiKey) {
+      console.error(
+        'RESEND_API_KEY is not configured.'
+      );
+
+      return NextResponse.json(
+        {
+          success: true,
+          emailSent: false,
+          message:
+            'Inquiry was saved successfully, but email configuration is missing.',
+          inquiry,
+        },
+        { status: 201 }
+      );
+    }
 
     if (!fromEmail) {
       console.error(
@@ -443,56 +587,87 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          success: false,
+          success: true,
+          emailSent: false,
           message:
-            'Inquiry was saved, but email configuration is missing.',
+            'Inquiry was saved successfully, but the email sender is not configured.',
           inquiry,
         },
         { status: 201 }
       );
     }
 
-    if (!process.env.RESEND_API_KEY) {
-      console.error(
-        'RESEND_API_KEY is not configured.'
-      );
+    /* =======================================================
+       ESCAPE VALUES FOR HTML EMAIL
+    ======================================================= */
 
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'Inquiry was saved, but Resend API configuration is missing.',
-          inquiry,
-        },
-        { status: 201 }
-      );
-    }
+    const safeAgentName = escapeHtml(agent.fullName);
+
+    const safeClientName = escapeHtml(name);
+
+    const safeClientEmail = escapeHtml(email);
+
+    const safePhone = escapeHtml(phone);
+
+    const safeMessage = escapeHtml(message);
+
+    const safePropertyTitle = escapeHtml(
+      property.title
+    );
+
+    const safePropertyLocation = escapeHtml(
+      property.location
+    );
+
+    const safePropertyPrice = escapeHtml(
+      property.price
+    );
+
+    /* =======================================================
+       SEND EMAIL TO AGENT
+
+       Recipient:
+
+       agent.email
+
+       NOT:
+
+       client email
+
+       NOT:
+
+       agent email from browser
+
+       The recipient is taken directly from the
+       authenticated/verified database record.
+    ======================================================= */
 
     try {
+      const resend = new Resend(resendApiKey);
+
       const resendResult = await resend.emails.send({
         from: fromEmail,
 
+        // THIS IS THE IMPORTANT PART
         to: [agentEmail],
 
+        // When the agent clicks Reply,
+        // the reply goes to the client.
         replyTo: email,
 
-        subject: `New Property Inquiry - ${property.title}`,
+        subject:
+          `New Property Inquiry - ${property.title}`,
 
         text: `
 NEW PROPERTY INQUIRY
 ====================
 
-A client has submitted a property inquiry.
+A client has submitted a new property inquiry.
 
 PROPERTY
 --------
 Title: ${property.title}
-Price: ₱${Number(
-          String(property.price).replace(
-            /[^0-9.]/g,
-            ''
-          )
-        ).toLocaleString('en-US')}
+Price: ₱${property.price}
 Location: ${property.location}
 
 CLIENT
@@ -523,148 +698,339 @@ Service with a Heart
         `.trim(),
 
         html: `
-          <div style="font-family: Arial, Helvetica, sans-serif; background-color: #f8fafc; padding: 30px;">
-            
-            <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
-              
-              <div style="background-color: #020617; padding: 30px;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px;">
-                  New Property Inquiry
-                </h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>New Property Inquiry</title>
+</head>
 
-                <p style="margin: 8px 0 0; color: #94a3b8; font-size: 14px;">
-                  BREA 88 Realty
-                </p>
-              </div>
+<body
+  style="
+    margin:0;
+    padding:0;
+    background-color:#f8fafc;
+    font-family:Arial,Helvetica,sans-serif;
+  "
+>
 
-              <div style="padding: 30px;">
+  <div style="padding:30px 15px;">
 
-                <p style="font-size: 16px; color: #334155; line-height: 1.6;">
-                  Hello <strong>${agent.fullName}</strong>,
-                </p>
+    <div
+      style="
+        max-width:650px;
+        margin:0 auto;
+        background:#ffffff;
+        border:1px solid #e2e8f0;
+        border-radius:16px;
+        overflow:hidden;
+      "
+    >
 
-                <p style="font-size: 15px; color: #475569; line-height: 1.6;">
-                  A client has submitted a new inquiry about one of your property listings.
-                </p>
+      <!-- HEADER -->
 
-                <!-- PROPERTY -->
+      <div
+        style="
+          background:#020617;
+          padding:30px;
+        "
+      >
 
-                <div style="margin-top: 25px; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h1
+          style="
+            margin:0;
+            color:#ffffff;
+            font-size:24px;
+          "
+        >
+          New Property Inquiry
+        </h1>
 
-                  <h2 style="margin: 0 0 15px; font-size: 16px; color: #0f172a;">
-                    Property Details
-                  </h2>
+        <p
+          style="
+            margin:8px 0 0;
+            color:#94a3b8;
+            font-size:14px;
+          "
+        >
+          BREA 88 Realty
+        </p>
 
-                  <p style="margin: 8px 0; font-size: 14px; color: #475569;">
-                    <strong>Property:</strong>
-                    ${property.title}
-                  </p>
+      </div>
 
-                  <p style="margin: 8px 0; font-size: 14px; color: #475569;">
-                    <strong>Price:</strong>
-                    ₱${Number(
-                      String(property.price).replace(
-                        /[^0-9.]/g,
-                        ''
-                      )
-                    ).toLocaleString('en-US')}
-                  </p>
+      <!-- CONTENT -->
 
-                  <p style="margin: 8px 0; font-size: 14px; color: #475569;">
-                    <strong>Location:</strong>
-                    ${property.location}
-                  </p>
+      <div style="padding:30px;">
 
-                </div>
+        <p
+          style="
+            margin:0 0 15px;
+            color:#334155;
+            font-size:16px;
+            line-height:1.6;
+          "
+        >
+          Hello
+          <strong>${safeAgentName}</strong>,
+        </p>
 
-                <!-- CLIENT -->
+        <p
+          style="
+            color:#475569;
+            font-size:15px;
+            line-height:1.6;
+          "
+        >
+          A client has submitted a new inquiry
+          about a property.
+        </p>
 
-                <div style="margin-top: 20px; padding: 20px; background-color: #eff6ff; border-radius: 12px; border: 1px solid #bfdbfe;">
+        <!-- PROPERTY -->
 
-                  <h2 style="margin: 0 0 15px; font-size: 16px; color: #1e3a8a;">
-                    Client Information
-                  </h2>
+        <div
+          style="
+            margin-top:25px;
+            padding:20px;
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+          "
+        >
 
-                  <p style="margin: 8px 0; font-size: 14px; color: #334155;">
-                    <strong>Name:</strong>
-                    ${name}
-                  </p>
+          <h2
+            style="
+              margin:0 0 15px;
+              color:#0f172a;
+              font-size:16px;
+            "
+          >
+            Property Details
+          </h2>
 
-                  <p style="margin: 8px 0; font-size: 14px; color: #334155;">
-                    <strong>Email:</strong>
-                    <a
-                      href="mailto:${email}"
-                      style="color: #1d4ed8;"
-                    >
-                      ${email}
-                    </a>
-                  </p>
+          <p
+            style="
+              margin:8px 0;
+              color:#475569;
+              font-size:14px;
+            "
+          >
+            <strong>Property:</strong>
+            ${safePropertyTitle}
+          </p>
 
-                  <p style="margin: 8px 0; font-size: 14px; color: #334155;">
-                    <strong>Phone:</strong>
-                    <a
-                      href="tel:${phone}"
-                      style="color: #1d4ed8;"
-                    >
-                      ${phone}
-                    </a>
-                  </p>
+          <p
+            style="
+              margin:8px 0;
+              color:#475569;
+              font-size:14px;
+            "
+          >
+            <strong>Price:</strong>
+            ₱${safePropertyPrice}
+          </p>
 
-                </div>
+          <p
+            style="
+              margin:8px 0;
+              color:#475569;
+              font-size:14px;
+            "
+          >
+            <strong>Location:</strong>
+            ${safePropertyLocation}
+          </p>
 
-                <!-- MESSAGE -->
+        </div>
 
-                <div style="margin-top: 20px; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <!-- CLIENT -->
 
-                  <h2 style="margin: 0 0 15px; font-size: 16px; color: #0f172a;">
-                    Client Message
-                  </h2>
+        <div
+          style="
+            margin-top:20px;
+            padding:20px;
+            background:#eff6ff;
+            border:1px solid #bfdbfe;
+            border-radius:12px;
+          "
+        >
 
-                  <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.7; white-space: pre-line;">
-                    ${message}
-                  </p>
+          <h2
+            style="
+              margin:0 0 15px;
+              color:#1e3a8a;
+              font-size:16px;
+            "
+          >
+            Client Information
+          </h2>
 
-                </div>
+          <p
+            style="
+              margin:8px 0;
+              color:#334155;
+              font-size:14px;
+            "
+          >
+            <strong>Name:</strong>
+            ${safeClientName}
+          </p>
 
-                <!-- REPLY BUTTON -->
+          <p
+            style="
+              margin:8px 0;
+              color:#334155;
+              font-size:14px;
+            "
+          >
+            <strong>Email:</strong>
+            <a
+              href="mailto:${encodeURIComponent(email)}"
+              style="color:#1d4ed8;"
+            >
+              ${safeClientEmail}
+            </a>
+          </p>
 
-                <div style="margin-top: 25px; text-align: center;">
+          <p
+            style="
+              margin:8px 0;
+              color:#334155;
+              font-size:14px;
+            "
+          >
+            <strong>Phone:</strong>
+            ${safePhone}
+          </p>
 
-                  <a
-                    href="mailto:${email}?subject=Re: Property Inquiry - ${encodeURIComponent(property.title)}"
-                    style="display: inline-block; padding: 13px 22px; background-color: #1e3a8a; color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: bold;"
-                  >
-                    Reply to Client
-                  </a>
+        </div>
 
-                </div>
+        <!-- MESSAGE -->
 
-                <!-- FOOTER -->
+        <div
+          style="
+            margin-top:20px;
+            padding:20px;
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+          "
+        >
 
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+          <h2
+            style="
+              margin:0 0 15px;
+              color:#0f172a;
+              font-size:16px;
+            "
+          >
+            Client Message
+          </h2>
 
-                  <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.6;">
-                    Inquiry ID: ${inquiry.id}<br />
-                    Status: ${inquiry.status}<br />
-                    Submitted: ${inquiry.createdAt.toLocaleString()}
-                  </p>
+          <p
+            style="
+              margin:0;
+              color:#475569;
+              font-size:14px;
+              line-height:1.7;
+              white-space:pre-line;
+            "
+          >
+            ${safeMessage}
+          </p>
 
-                  <p style="margin-top: 15px; margin-bottom: 0; font-size: 13px; font-weight: bold; color: #0f172a;">
-                    BREA 88 REALTY
-                  </p>
+        </div>
 
-                  <p style="margin-top: 3px; margin-bottom: 0; font-size: 12px; color: #64748b;">
-                    Service with a Heart
-                  </p>
+        <!-- REPLY BUTTON -->
 
-                </div>
+        <div
+          style="
+            margin-top:25px;
+            text-align:center;
+          "
+        >
 
-              </div>
+          <a
+            href="mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
+              `Re: Property Inquiry - ${property.title}`
+            )}"
+            style="
+              display:inline-block;
+              padding:13px 22px;
+              background:#1e3a8a;
+              color:#ffffff;
+              text-decoration:none;
+              border-radius:10px;
+              font-size:14px;
+              font-weight:bold;
+            "
+          >
+            Reply to Client
+          </a>
 
-            </div>
+        </div>
 
-          </div>
-        `,
+        <!-- FOOTER -->
+
+        <div
+          style="
+            margin-top:30px;
+            padding-top:20px;
+            border-top:1px solid #e2e8f0;
+          "
+        >
+
+          <p
+            style="
+              margin:0;
+              color:#94a3b8;
+              font-size:12px;
+              line-height:1.6;
+            "
+          >
+            Inquiry ID: ${inquiry.id}
+            <br />
+
+            Status: ${escapeHtml(inquiry.status)}
+            <br />
+
+            Submitted:
+            ${escapeHtml(
+              inquiry.createdAt.toLocaleString()
+            )}
+          </p>
+
+          <p
+            style="
+              margin:15px 0 0;
+              color:#0f172a;
+              font-size:13px;
+              font-weight:bold;
+            "
+          >
+            BREA 88 REALTY
+          </p>
+
+          <p
+            style="
+              margin:3px 0 0;
+              color:#64748b;
+              font-size:12px;
+            "
+          >
+            Service with a Heart
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
+        `.trim(),
       });
 
       if (resendResult.error) {
@@ -694,11 +1060,12 @@ Service with a Heart
           success: true,
           emailSent: true,
           message:
-            'Inquiry submitted and sent to the assigned agent successfully.',
+            'Inquiry submitted successfully and sent to the assigned agent.',
           inquiry,
         },
         { status: 201 }
       );
+
     } catch (emailError) {
       console.error(
         'Failed to send inquiry email:',
@@ -716,6 +1083,7 @@ Service with a Heart
         { status: 201 }
       );
     }
+
   } catch (error) {
     console.error(
       'POST /api/inquiries error:',
@@ -726,6 +1094,7 @@ Service with a Heart
       {
         success: false,
         message: 'Failed to submit inquiry.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -740,8 +1109,8 @@ Service with a Heart
 /* =========================================================
    PATCH INQUIRY STATUS
 
-   - Agent can update their own inquiry.
-   - Agent cannot update another agent's inquiry.
+   - Only logged-in agents can update inquiries.
+   - Agents can update only their own inquiries.
 ========================================================= */
 
 export async function PATCH(request: Request) {
@@ -802,7 +1171,7 @@ export async function PATCH(request: Request) {
     const status = cleanString(data.status);
 
     /* =======================================================
-       VALIDATION
+       VALIDATE INQUIRY ID
     ======================================================= */
 
     if (
@@ -817,6 +1186,10 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
+
+    /* =======================================================
+       ALLOWED STATUSES
+    ======================================================= */
 
     const allowedStatuses = [
       'New',
@@ -842,11 +1215,13 @@ export async function PATCH(request: Request) {
     /* =======================================================
        FIND INQUIRY
 
-       We check:
+       BOTH:
 
        id
        +
        agentId
+
+       are checked.
 
        This prevents an agent from modifying another
        agent's inquiry.
@@ -917,6 +1292,7 @@ export async function PATCH(request: Request) {
       },
       { status: 200 }
     );
+
   } catch (error) {
     console.error(
       'PATCH /api/inquiries error:',
@@ -927,6 +1303,7 @@ export async function PATCH(request: Request) {
       {
         success: false,
         message: 'Failed to update inquiry.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
