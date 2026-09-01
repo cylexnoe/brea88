@@ -2358,25 +2358,6 @@ export default function AdminDashboard() {
 
                     {/* LEGACY TAG */}
 
-                    <SelectField
-                      label="Legacy Tag"
-                      name="tag"
-                      value={
-                        formData.tag
-                      }
-                      onChange={
-                        handleInputChange
-                      }
-                      options={[
-                        'Residential',
-                        'Commercial',
-                        'Investment',
-                        'All',
-                      ]}
-                      disabled={
-                        status === 'loading'
-                      }
-                    />
 
                   </div>
 
