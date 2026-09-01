@@ -1324,30 +1324,15 @@ export default function AdminDashboard() {
             Add Property
           </button>
 
-          <button
+            <button
               type="button"
               onClick={() => {
                 window.location.href = '/admin/agents';
               }}
-              className="group flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
-                  <UserRound className="h-5 w-5 text-slate-700" />
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Active Accounts
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    Manage agent accounts
-                  </p>
-                </div>
-              </div>
-
-              <ChevronRight className="h-5 w-5 text-slate-400 transition group-hover:translate-x-1" />
+              <UserRound className="h-4 w-4" />
+              Active Accounts
             </button>
           
           <button
