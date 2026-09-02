@@ -688,7 +688,7 @@ export default function AdminAgentsPage() {
             </div>
 
             <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
-              Total Agents
+              Total Team
             </p>
 
           </div>
@@ -1006,7 +1006,7 @@ export default function AdminAgentsPage() {
                             </h2>
 
                             <p className="mt-0.5 text-xs font-semibold text-blue-200">
-                              {agent.role}
+                              {agent.role === 'Broker' ? 'Broker' : 'Agent'}
                             </p>
 
                             <div className="mt-2 flex items-center gap-2">
