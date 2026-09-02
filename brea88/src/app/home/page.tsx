@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 
 import { PROPERTIES } from '../data';
-import emailjs from '@emailjs/browser';
 
 export default function HomePage() {
   const [agent, setAgent] = useState<{
@@ -113,9 +112,18 @@ export default function HomePage() {
       window.location.href = '/home';
     }
   };
-  
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [filter, setFilter] = useState<string>('All');
+
+const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+const [agentSlug, setAgentSlug] = useState('');
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('agent') || '';
+  setAgentSlug(slug);
+}, []);
+
+const [filter, setFilter] = useState<string>('All');
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -141,39 +149,55 @@ export default function HomePage() {
   // EMAILJS
   // =========================================================
 
+  // =========================================================
+// HOME INQUIRY
+// =========================================================
+
   const sendEmail = async (
-  e: React.FormEvent<HTMLFormElement>
-) => {
-  e.preventDefault();
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
 
-  if (!formRef.current) return;
+    if (!formRef.current) return;
 
-  setIsSubmitting(true);
-  setSubmitStatus('idle');
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
 
-  try {
-    await emailjs.sendForm(
-      'service_ypezpkv',
-      'template_ab5mkom',
-      formRef.current,
-      'PVaFDUtH8z3a_c3NS'
-    );
+    try {
+      const formData = new FormData(formRef.current);
 
-    // EmailJS successfully accepted the email
-    setSubmitStatus('success');
-    formRef.current.reset();
+      const response = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: String(formData.get('name') || '').trim(),
+          email: String(formData.get('email') || '').trim(),
+          phone: String(formData.get('contact_number') || '').trim(),
+          message: String(formData.get('message') || '').trim(),
+          agentSlug: agentSlug || undefined,
+        }),
+      });
 
-  } catch (error) {
-    console.error('EmailJS Error:', error);
+      const data = await response.json();
 
-    // EmailJS failed
-    setSubmitStatus('error');
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send inquiry');
+      }
 
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      setSubmitStatus('success');
+      formRef.current.reset();
 
+    } catch (error) {
+      console.error('Inquiry Error:', error);
+      setSubmitStatus('error');
+
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   // =========================================================
   // ADMIN LOGIN
   // =========================================================
@@ -331,7 +355,7 @@ export default function HomePage() {
           </a>
 
           <a
-            href="/marketplace"
+            href={agentSlug ? `/marketplace?agent=${encodeURIComponent(agentSlug)}` : '/marketplace'}
             className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-blue-950"
           >
             <Building2 className="h-4 w-4" />
@@ -529,7 +553,7 @@ export default function HomePage() {
               </a>
 
               <a
-                href="/marketplace"
+                href={agentSlug ? `/marketplace?agent=${encodeURIComponent(agentSlug)}` : '/marketplace'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
@@ -696,7 +720,7 @@ export default function HomePage() {
                       {/* PROPERTY BUTTON */}
                       <div className="md:col-span-4">
                         <a
-                          href="/marketplace"
+                          href={agentSlug ? `/marketplace?agent=${encodeURIComponent(agentSlug)}` : '/marketplace'}
                           className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg active:translate-y-0"
                         >
                           <Building2 className="h-4 w-4" />
@@ -1164,7 +1188,7 @@ export default function HomePage() {
                   </p>
 
                   <a
-                    href="/marketplace"
+                    href={agentSlug ? `/marketplace?agent=${encodeURIComponent(agentSlug)}` : '/marketplace'}
                     className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                   >
                     Browse Properties
@@ -1369,7 +1393,7 @@ export default function HomePage() {
                 <div className="flex flex-col gap-3 sm:flex-row">
 
                   <a
-                    href="/marketplace"
+                    href={agentSlug ? `/marketplace?agent=${encodeURIComponent(agentSlug)}` : '/marketplace'}
                     className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-950 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-50"
                   >
                     View Properties

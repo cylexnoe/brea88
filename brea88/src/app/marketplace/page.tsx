@@ -1,12 +1,11 @@
 'use client';
-
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, {
   Suspense,
   useEffect,
   useMemo,
   useState,
 } from 'react';
-
 import {
   Search,
   MapPin,
@@ -76,6 +75,7 @@ interface Property {
 /* =========================================================
    CLASSIFICATION OPTIONS
 ========================================================= */
+
 
 const PROPERTY_CATEGORIES = [
   'All',
@@ -586,7 +586,7 @@ function MarketplaceContent() {
             phone: inquiryPhone.trim(),
             message: inquiryMessage.trim(),
             propertyId: selectedProperty.id,
-            agentSlug: selectedProperty.agent?.slug ?? '',
+            agentSlug: agentSlug || selectedProperty.agent?.slug || '',
           }),
         }
       );
@@ -666,7 +666,9 @@ function MarketplaceContent() {
 
     openInquiryForm();
   };
-
+const router = useRouter();
+const searchParams = useSearchParams();
+const agentSlug = searchParams.get('agent') || '';
   /* =======================================================
      RETURN
   ======================================================= */

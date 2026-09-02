@@ -65,7 +65,7 @@ type Inquiry = {
   email: string;
   phone: string;
   message: string;
-  propertyId: number;
+  propertyId: number | null;
   agentId: number | null;
   status: string;
   createdAt: string;
@@ -1328,8 +1328,8 @@ export default function AgentDashboardPage() {
 
                   <p className="text-xs text-slate-500">
                     Messages from clients
-                    interested in your
-                    properties.
+                    interested in your properties
+                    or contacting you directly.
                   </p>
 
                 </div>
@@ -1513,7 +1513,7 @@ export default function AgentDashboardPage() {
 
                     {searchQuery
                       ? 'Try searching using another client name, email, phone number, or property.'
-                      : 'When a client sends an inquiry about one of your assigned properties, the message will appear here.'}
+                      : 'When a client sends you an inquiry from your profile or about a property, the message will appear here.'}
 
                   </p>
 

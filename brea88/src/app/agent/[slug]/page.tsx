@@ -208,12 +208,8 @@ export default function AgentProfilePage({
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          contact_number: form.contact_number.trim(),
-          prefer_location: form.prefer_location.trim(),
+          phone: form.contact_number.trim(),
           message: form.message.trim(),
-
-          // Automatically assign inquiry
-          // to the current agent from /agent/[slug]
           agentSlug: agent.slug,
         }),
       });
