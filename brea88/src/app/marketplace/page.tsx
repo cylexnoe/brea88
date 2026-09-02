@@ -577,17 +577,17 @@ function MarketplaceContent() {
         {
           method: 'POST',
           headers: {
-            'Content-Type':
-              'application/json',
+            'Content-Type': 'application/json',
           },
           credentials: 'include',
           body: JSON.stringify({
-          name: inquiryName.trim(),
-          email: inquiryEmail.trim(),
-          phone: inquiryPhone.trim(),
-          message: inquiryMessage.trim(),
-          propertyId: selectedProperty.id,
-        })
+            name: inquiryName.trim(),
+            email: inquiryEmail.trim(),
+            phone: inquiryPhone.trim(),
+            message: inquiryMessage.trim(),
+            propertyId: selectedProperty.id,
+            agentSlug: selectedProperty.agent?.slug ?? '',
+          }),
         }
       );
 

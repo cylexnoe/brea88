@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import ButterflyLoader from '@/components/ButterflyLoader';
 
@@ -13,18 +13,22 @@ import {
   X,
   ChevronRight,
   Loader2,
-  Phone,
   LayoutDashboard,
-  MapPin,
-  BedDouble,
-  Bath,
-  Maximize,
-  ArrowRight,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
   Clock3,
+  Mail,
+  Phone,
+  Search,
+  MessageSquare,
+  CalendarDays,
+  MapPin,
   ExternalLink,
+  ChevronDown,
+  Inbox,
+  Check,
+  Circle,
 } from 'lucide-react';
 
 type Agent = {
@@ -43,49 +47,165 @@ type Agent = {
   lastSeen?: string | null;
 };
 
-type Property = {
+type InquiryProperty = {
   id: number;
   title: string;
-  tag: string;
   price: string;
   location: string;
   image: string;
-  images: string[];
-  beds: number | null;
-  baths: number | null;
-  sqft: number | null;
+  category?: string | null;
+  propertyType?: string | null;
+  houseType?: string | null;
+  storey?: string | null;
+};
+
+type Inquiry = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  propertyId: number;
   agentId: number | null;
+  status: string;
   createdAt: string;
   updatedAt: string;
+  property: InquiryProperty | null;
 };
+
+const INQUIRY_STATUSES = [
+  'New',
+  'Read',
+  'Contacted',
+  'Viewing Scheduled',
+  'Viewing Completed',
+  'Follow Up',
+  'Closed',
+  'Cancelled',
+];
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown date';
+  }
+
+  return date.toLocaleDateString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatDateTime(dateString: string) {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown date';
+  }
+
+  return date.toLocaleString('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function getStatusClasses(status: string) {
+  switch (status) {
+    case 'New':
+      return 'bg-blue-100 text-blue-700 border-blue-200';
+
+    case 'Read':
+      return 'bg-slate-100 text-slate-600 border-slate-200';
+
+    case 'Contacted':
+      return 'bg-purple-100 text-purple-700 border-purple-200';
+
+    case 'Viewing Scheduled':
+      return 'bg-amber-100 text-amber-700 border-amber-200';
+
+    case 'Viewing Completed':
+      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+
+    case 'Follow Up':
+      return 'bg-orange-100 text-orange-700 border-orange-200';
+
+    case 'Closed':
+      return 'bg-slate-200 text-slate-700 border-slate-300';
+
+    case 'Cancelled':
+      return 'bg-red-100 text-red-700 border-red-200';
+
+    default:
+      return 'bg-slate-100 text-slate-600 border-slate-200';
+  }
+}
+
+function getStatusIcon(status: string) {
+  switch (status) {
+    case 'New':
+      return <Circle size={10} fill="currentColor" />;
+
+    case 'Read':
+      return <Check size={13} />;
+
+    case 'Contacted':
+      return <Phone size={13} />;
+
+    case 'Viewing Scheduled':
+      return <CalendarDays size={13} />;
+
+    case 'Viewing Completed':
+      return <CheckCircle2 size={13} />;
+
+    case 'Follow Up':
+      return <Clock3 size={13} />;
+
+    case 'Closed':
+      return <CheckCircle2 size={13} />;
+
+    case 'Cancelled':
+      return <X size={13} />;
+
+    default:
+      return <Circle size={10} />;
+  }
+}
 
 export default function AgentDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [agent, setAgent] =
-    useState<Agent | null>(null);
+  const [agent, setAgent] = useState<Agent | null>(null);
 
-  const [properties, setProperties] =
-    useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const [propertiesLoading, setPropertiesLoading] =
-    useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const [propertiesError, setPropertiesError] =
-    useState('');
+  const [heartbeatActive, setHeartbeatActive] = useState(false);
 
-  const [mobileMenuOpen, setMobileMenuOpen] =
-    useState(false);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
-  const [loggingOut, setLoggingOut] =
-    useState(false);
+  const [inquiriesLoading, setInquiriesLoading] = useState(true);
 
-  const [heartbeatActive, setHeartbeatActive] =
-    useState(false);
+  const [inquiriesError, setInquiriesError] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [selectedInquiry, setSelectedInquiry] =
+    useState<Inquiry | null>(null);
+
+  const [updatingInquiryId, setUpdatingInquiryId] =
+    useState<number | null>(null);
+
+  const [lastUpdated, setLastUpdated] =
+    useState<Date | null>(null);
 
   // =========================================================
   // LOAD CURRENT AGENT
@@ -96,22 +216,18 @@ export default function AgentDashboardPage() {
 
     const loadAgent = async () => {
       try {
-        const response = await fetch(
-          '/api/agent/me',
-          {
-            method: 'GET',
-            credentials: 'include',
-            cache: 'no-store',
-          }
-        );
+        const response = await fetch('/api/agent/me', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+        });
 
         if (!response.ok) {
           router.replace('/agent/login');
           return;
         }
 
-        const data =
-          await response.json();
+        const data = await response.json();
 
         if (
           !data?.success ||
@@ -127,10 +243,7 @@ export default function AgentDashboardPage() {
           setLoading(false);
         }
       } catch (error) {
-        console.error(
-          'Failed to load agent:',
-          error
-        );
+        console.error('Failed to load agent:', error);
 
         router.replace('/agent/login');
       }
@@ -145,15 +258,6 @@ export default function AgentDashboardPage() {
 
   // =========================================================
   // AGENT HEARTBEAT
-  //
-  // Updates Agent.lastSeen every 60 seconds.
-  //
-  // Admin uses lastSeen to determine:
-  //
-  // Online  = lastSeen within 5 minutes
-  // Offline = lastSeen older than 5 minutes
-  //
-  // Agents do NOT manage properties here.
   // =========================================================
 
   useEffect(() => {
@@ -190,24 +294,14 @@ export default function AgentDashboardPage() {
           return;
         }
 
-        const data =
-          await response.json();
+        const data = await response.json();
 
-        if (
-          data?.success &&
-          mounted
-        ) {
+        if (data?.success && mounted) {
           setHeartbeatActive(true);
 
-          /*
-           * Keep the local agent state synchronized
-           * with the server.
-           */
           if (data.agent) {
             setAgent((previous) => {
-              if (!previous) {
-                return previous;
-              }
+              if (!previous) return previous;
 
               return {
                 ...previous,
@@ -230,14 +324,8 @@ export default function AgentDashboardPage() {
       }
     };
 
-    /*
-     * Send immediately when dashboard opens.
-     */
     sendHeartbeat();
 
-    /*
-     * Then send every 60 seconds.
-     */
     const heartbeatInterval =
       window.setInterval(
         sendHeartbeat,
@@ -246,6 +334,7 @@ export default function AgentDashboardPage() {
 
     return () => {
       mounted = false;
+
       window.clearInterval(
         heartbeatInterval
       );
@@ -253,16 +342,21 @@ export default function AgentDashboardPage() {
   }, [agent, router]);
 
   // =========================================================
-  // LOAD ASSIGNED PROPERTIES
+  // LOAD INQUIRIES
   // =========================================================
 
-  const loadProperties = async () => {
-    setPropertiesLoading(true);
-    setPropertiesError('');
+  const loadInquiries = async (
+    showLoading = true
+  ) => {
+    if (showLoading) {
+      setInquiriesLoading(true);
+    }
+
+    setInquiriesError('');
 
     try {
       const response = await fetch(
-        '/api/agent/properties',
+        '/api/inquiries',
         {
           method: 'GET',
           credentials: 'include',
@@ -275,45 +369,273 @@ export default function AgentDashboardPage() {
         return;
       }
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
-      if (
-        !response.ok ||
-        !data?.success
-      ) {
+      if (!response.ok) {
         throw new Error(
           data?.message ||
-            'Unable to load properties.'
+            data?.error ||
+            'Unable to load inquiry messages.'
         );
       }
 
-      setProperties(
-        Array.isArray(data.properties)
-          ? data.properties
-          : []
-      );
+      /*
+       * Supports both possible response formats:
+       *
+       * 1. { success: true, inquiries: [...] }
+       * 2. [...]
+       */
+
+      const receivedInquiries = Array.isArray(
+        data
+      )
+        ? data
+        : Array.isArray(data?.inquiries)
+          ? data.inquiries
+          : [];
+
+      setInquiries(receivedInquiries);
+
+      setLastUpdated(new Date());
     } catch (error) {
       console.error(
-        'Failed to load properties:',
+        'Failed to load inquiries:',
         error
       );
 
-      setPropertiesError(
+      setInquiriesError(
         error instanceof Error
           ? error.message
-          : 'Unable to load assigned properties.'
+          : 'Unable to load inquiry messages.'
       );
     } finally {
-      setPropertiesLoading(false);
+      if (showLoading) {
+        setInquiriesLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     if (!agent) return;
 
-    loadProperties();
+    loadInquiries(true);
+
+    /*
+     * Automatically check for new inquiries
+     * every 15 seconds.
+     */
+    const inquiryInterval =
+      window.setInterval(() => {
+        loadInquiries(false);
+      }, 15 * 1000);
+
+    return () => {
+      window.clearInterval(
+        inquiryInterval
+      );
+    };
   }, [agent]);
+
+  // =========================================================
+  // MARK INQUIRY AS READ
+  // =========================================================
+
+  const markInquiryAsRead = async (
+    inquiry: Inquiry
+  ) => {
+    if (inquiry.status !== 'New') {
+      return inquiry;
+    }
+
+    try {
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            id: inquiry.id,
+            status: 'Read',
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(
+          'Failed to mark inquiry as read:',
+          data?.message ||
+            data?.error
+        );
+
+        return inquiry;
+      }
+
+      const updatedInquiry =
+        data?.inquiry;
+
+      setInquiries((previous) =>
+        previous.map((item) =>
+          item.id === inquiry.id
+            ? {
+                ...item,
+                status:
+                  updatedInquiry?.status ??
+                  'Read',
+                updatedAt:
+                  updatedInquiry?.updatedAt ??
+                  item.updatedAt,
+              }
+            : item
+        )
+      );
+
+      if (
+        selectedInquiry?.id ===
+        inquiry.id
+      ) {
+        setSelectedInquiry(
+          (previous) =>
+            previous
+              ? {
+                  ...previous,
+                  status:
+                    updatedInquiry?.status ??
+                    'Read',
+                  updatedAt:
+                    updatedInquiry?.updatedAt ??
+                    previous.updatedAt,
+                }
+              : previous
+        );
+      }
+
+      return {
+        ...inquiry,
+        status:
+          updatedInquiry?.status ??
+          'Read',
+        updatedAt:
+          updatedInquiry?.updatedAt ??
+          inquiry.updatedAt,
+      };
+    } catch (error) {
+      console.error(
+        'Mark inquiry as read error:',
+        error
+      );
+
+      return inquiry;
+    }
+  };
+
+  // =========================================================
+  // OPEN INQUIRY
+  // =========================================================
+
+  const handleOpenInquiry = async (
+    inquiry: Inquiry
+  ) => {
+    setSelectedInquiry(inquiry);
+
+    if (inquiry.status === 'New') {
+      await markInquiryAsRead(inquiry);
+    }
+  };
+
+  // =========================================================
+  // UPDATE INQUIRY STATUS
+  // =========================================================
+
+  const updateInquiryStatus = async (
+    inquiryId: number,
+    status: string
+  ) => {
+    if (updatingInquiryId === inquiryId) {
+      return;
+    }
+
+    setUpdatingInquiryId(inquiryId);
+
+    try {
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            id: inquiryId,
+            status,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            'Unable to update inquiry status.'
+        );
+      }
+
+      const updatedInquiry =
+        data?.inquiry;
+
+      setInquiries((previous) =>
+        previous.map((item) =>
+          item.id === inquiryId
+            ? {
+                ...item,
+                status:
+                  updatedInquiry?.status ??
+                  status,
+                updatedAt:
+                  updatedInquiry?.updatedAt ??
+                  new Date().toISOString(),
+              }
+            : item
+        )
+      );
+
+      setSelectedInquiry((previous) =>
+        previous?.id === inquiryId
+          ? {
+              ...previous,
+              status:
+                updatedInquiry?.status ??
+                status,
+              updatedAt:
+                updatedInquiry?.updatedAt ??
+                new Date().toISOString(),
+            }
+          : previous
+      );
+    } catch (error) {
+      console.error(
+        'Failed to update inquiry:',
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Unable to update inquiry status.'
+      );
+    } finally {
+      setUpdatingInquiryId(null);
+    }
+  };
 
   // =========================================================
   // LOGOUT
@@ -371,7 +693,72 @@ export default function AgentDashboardPage() {
   ];
 
   // =========================================================
-  // VIEW PUBLIC PROFILE
+  // SEARCH
+  // =========================================================
+
+  const filteredInquiries = useMemo(() => {
+    const query =
+      searchQuery
+        .trim()
+        .toLowerCase();
+
+    if (!query) {
+      return inquiries;
+    }
+
+    return inquiries.filter(
+      (inquiry) => {
+        return (
+          inquiry.name
+            ?.toLowerCase()
+            .includes(query) ||
+          inquiry.email
+            ?.toLowerCase()
+            .includes(query) ||
+          inquiry.phone
+            ?.toLowerCase()
+            .includes(query) ||
+          inquiry.message
+            ?.toLowerCase()
+            .includes(query) ||
+          inquiry.property?.title
+            ?.toLowerCase()
+            .includes(query) ||
+          inquiry.property?.location
+            ?.toLowerCase()
+            .includes(query) ||
+          inquiry.status
+            ?.toLowerCase()
+            .includes(query)
+        );
+      }
+    );
+  }, [inquiries, searchQuery]);
+
+  // =========================================================
+  // STATS
+  // =========================================================
+
+  const unreadCount =
+    inquiries.filter(
+      (inquiry) =>
+        inquiry.status === 'New'
+    ).length;
+
+  const totalInquiries =
+    inquiries.length;
+
+  const contactedCount =
+    inquiries.filter(
+      (inquiry) =>
+        inquiry.status ===
+          'Contacted' ||
+        inquiry.status ===
+          'Viewing Scheduled'
+    ).length;
+
+  // =========================================================
+  // PUBLIC PROFILE
   // =========================================================
 
   const handleViewPublicProfile = () => {
@@ -458,7 +845,9 @@ export default function AgentDashboardPage() {
 
                   return (
                     <button
-                      key={item.href}
+                      key={
+                        item.href
+                      }
                       type="button"
                       onClick={() =>
                         router.push(
@@ -475,6 +864,18 @@ export default function AgentDashboardPage() {
                       <Icon size={17} />
 
                       {item.name}
+
+                      {item.name ===
+                        'Dashboard' &&
+                        unreadCount >
+                          0 && (
+                          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-black text-white">
+                            {unreadCount >
+                            99
+                              ? '99+'
+                              : unreadCount}
+                          </span>
+                        )}
 
                     </button>
                   );
@@ -671,6 +1072,18 @@ export default function AgentDashboardPage() {
                           {item.name}
                         </span>
 
+                        {item.name ===
+                          'Dashboard' &&
+                          unreadCount >
+                            0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-black text-white">
+                              {unreadCount >
+                              99
+                                ? '99+'
+                                : unreadCount}
+                            </span>
+                          )}
+
                         <ChevronRight
                           size={17}
                           className="opacity-50"
@@ -720,99 +1133,68 @@ export default function AgentDashboardPage() {
           MAIN CONTENT
       ====================================================== */}
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
-        {/* ===================================================
-            WELCOME
-        ==================================================== */}
+        {/* HEADER */}
 
-        <div className="rounded-3xl bg-blue-950 p-6 text-white shadow-xl sm:p-8">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
 
-            <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
 
-              <p className="text-sm font-medium text-blue-300">
-                Agent / Broker Portal
-              </p>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
 
-              <h1 className="mt-2 break-words text-2xl font-black sm:text-3xl">
-                Welcome,{" "}
-                {agent.fullName}
-              </h1>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
 
-              <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100">
-                View your assigned properties
-                and manage your professional
-                information from your agent
-                portal.
-              </p>
+                {heartbeatActive
+                  ? 'Online'
+                  : 'Connecting...'}
+
+              </span>
+
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                {agent.role}
+              </span>
 
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-black tracking-tight text-blue-950 sm:text-3xl">
+              Welcome, {agent.fullName}
+            </h1>
 
-              {/* ACCOUNT STATUS */}
-
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
-
-                <p className="text-xs text-blue-200">
-                  Account Status
-                </p>
-
-                <div className="mt-1 flex items-center gap-2">
-
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-
-                  <span className="text-sm font-bold">
-                    Active
-                  </span>
-
-                </div>
-
-              </div>
-
-              {/* HEARTBEAT STATUS */}
-
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
-
-                <p className="text-xs text-blue-200">
-                  Presence
-                </p>
-
-                <div className="mt-1 flex items-center gap-2">
-
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      heartbeatActive
-                        ? 'bg-emerald-400'
-                        : 'bg-amber-400'
-                    }`}
-                  />
-
-                  <span className="text-sm font-bold">
-                    {heartbeatActive
-                      ? 'Online'
-                      : 'Connecting...'}
-                  </span>
-
-                </div>
-
-              </div>
-
-            </div>
+            <p className="mt-1 text-sm text-slate-500">
+              Manage your client inquiry
+              messages from here.
+            </p>
 
           </div>
+
+          <button
+            type="button"
+            onClick={
+              handleViewPublicProfile
+            }
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 sm:w-auto"
+          >
+
+            <ExternalLink
+              size={16}
+            />
+
+            View Public Profile
+
+          </button>
 
         </div>
 
         {/* ===================================================
-            STATISTICS
+            STAT CARDS
         ==================================================== */}
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
 
-          {/* ASSIGNED PROPERTIES */}
+          {/* TOTAL */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
@@ -820,87 +1202,83 @@ export default function AgentDashboardPage() {
 
               <div>
 
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Assigned Properties
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Total Inquiries
                 </p>
 
-                <p className="mt-2 text-3xl font-black text-slate-900">
-                  {propertiesLoading
-                    ? '—'
-                    : properties.length}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  Properties assigned to you
+                <p className="mt-2 text-3xl font-black text-blue-950">
+                  {totalInquiries}
                 </p>
 
               </div>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-950">
-                <Building2
-                  size={23}
-                />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+
+                <Inbox size={23} />
+
               </div>
 
             </div>
 
           </div>
 
-          {/* PROFILE */}
+          {/* UNREAD */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
             <div className="flex items-center justify-between">
 
-              <div className="min-w-0">
+              <div>
 
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Profile
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Unread
                 </p>
 
-                <p className="mt-2 truncate text-lg font-black text-slate-900">
-                  {agent.role}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  Professional account
+                <p className="mt-2 text-3xl font-black text-red-600">
+                  {unreadCount}
                 </p>
 
               </div>
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-                <User size={23} />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+
+                <Mail size={23} />
+
+                {unreadCount >
+                  0 && (
+                  <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
+                )}
+
               </div>
 
             </div>
 
           </div>
 
-          {/* CONTACT */}
+          {/* ACTIVE */}
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
             <div className="flex items-center justify-between">
 
-              <div className="min-w-0">
+              <div>
 
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Contact
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Active Leads
                 </p>
 
-                <p className="mt-2 truncate text-sm font-black text-slate-900">
-                  {agent.phone ||
-                    'Phone not provided'}
-                </p>
-
-                <p className="mt-1 truncate text-xs text-slate-500">
-                  {agent.email}
+                <p className="mt-2 text-3xl font-black text-emerald-600">
+                  {contactedCount}
                 </p>
 
               </div>
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                <Phone size={22} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+
+                <MessageSquare
+                  size={23}
+                />
+
               </div>
 
             </div>
@@ -910,95 +1288,172 @@ export default function AgentDashboardPage() {
         </div>
 
         {/* ===================================================
-            ASSIGNED PROPERTIES
+            INQUIRY SECTION
         ==================================================== */}
 
-        <div className="mt-8">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          {/* SECTION HEADER */}
 
-            <div>
+          <div className="border-b border-slate-200 p-4 sm:p-5">
 
-              <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-900">
-                Property Portfolio
-              </p>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-              <h2 className="mt-1 text-2xl font-black text-slate-900">
-                Assigned Properties
-              </h2>
+              <div className="flex items-center gap-3">
 
-              <p className="mt-1 text-sm text-slate-500">
-                Properties assigned to you by
-                the BREA 88 Realty administrator.
-              </p>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-950 text-white">
+
+                  <MessageSquare
+                    size={19}
+                  />
+
+                </div>
+
+                <div>
+
+                  <div className="flex items-center gap-2">
+
+                    <h2 className="text-base font-black text-slate-900 sm:text-lg">
+                      Inquiry Messages
+                    </h2>
+
+                    {unreadCount >
+                      0 && (
+                      <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
+                        {unreadCount} NEW
+                      </span>
+                    )}
+
+                  </div>
+
+                  <p className="text-xs text-slate-500">
+                    Messages from clients
+                    interested in your
+                    properties.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+
+                {/* SEARCH */}
+
+                <div className="relative">
+
+                  <Search
+                    size={16}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="text"
+                    value={
+                      searchQuery
+                    }
+                    onChange={(event) =>
+                      setSearchQuery(
+                        event.target.value
+                      )
+                    }
+                    placeholder="Search inquiries..."
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 sm:w-64"
+                  />
+
+                </div>
+
+                {/* REFRESH */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    loadInquiries(
+                      true
+                    )
+                  }
+                  disabled={
+                    inquiriesLoading
+                  }
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+
+                  <RefreshCw
+                    size={16}
+                    className={
+                      inquiriesLoading
+                        ? 'animate-spin'
+                        : ''
+                    }
+                  />
+
+                  <span className="hidden sm:inline">
+                    Refresh
+                  </span>
+
+                </button>
+
+              </div>
 
             </div>
 
-            <button
-              type="button"
-              onClick={
-                loadProperties
-              }
-              disabled={
-                propertiesLoading
-              }
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-950 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-
-              <RefreshCw
-                size={16}
-                className={
-                  propertiesLoading
-                    ? 'animate-spin'
-                    : ''
-                }
-              />
-
-              Refresh
-
-            </button>
+            {lastUpdated && (
+              <p className="mt-3 text-[11px] text-slate-400">
+                Last updated{' '}
+                {lastUpdated.toLocaleTimeString(
+                  'en-PH',
+                  {
+                    hour: 'numeric',
+                    minute:
+                      '2-digit',
+                    second:
+                      '2-digit',
+                  }
+                )}
+                {' · '}
+                Auto-refreshes
+                every 15 seconds
+              </p>
+            )}
 
           </div>
 
           {/* ERROR */}
 
-          {propertiesError && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+          {inquiriesError && (
+            <div className="border-b border-red-100 bg-red-50 px-4 py-4 sm:px-5">
 
               <div className="flex items-start gap-3">
 
                 <AlertCircle
-                  size={20}
+                  size={19}
                   className="mt-0.5 shrink-0 text-red-600"
                 />
 
                 <div className="flex-1">
 
-                  <p className="font-bold text-red-900">
-                    Unable to load properties
+                  <p className="text-sm font-bold text-red-700">
+                    Unable to load
+                    inquiries
                   </p>
 
-                  <p className="mt-1 text-sm text-red-700">
-                    {propertiesError}
+                  <p className="mt-0.5 text-xs text-red-600">
+                    {inquiriesError}
                   </p>
-
-                  <button
-                    type="button"
-                    onClick={
-                      loadProperties
-                    }
-                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-700"
-                  >
-
-                    <RefreshCw
-                      size={14}
-                    />
-
-                    Try Again
-
-                  </button>
 
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    loadInquiries(
+                      true
+                    )
+                  }
+                  className="text-xs font-bold text-red-700 underline"
+                >
+                  Retry
+                </button>
 
               </div>
 
@@ -1007,433 +1462,631 @@ export default function AgentDashboardPage() {
 
           {/* LOADING */}
 
-          {propertiesLoading &&
-            !propertiesError && (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {inquiriesLoading &&
+            inquiries.length ===
+              0 && (
+              <div className="flex min-h-[300px] items-center justify-center">
 
-                {[1, 2, 3].map(
-                  (item) => (
-                    <div
-                      key={item}
-                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-                    >
+                <div className="text-center">
 
-                      <div className="h-52 animate-pulse bg-slate-200" />
+                  <Loader2
+                    size={30}
+                    className="mx-auto animate-spin text-blue-950"
+                  />
 
-                      <div className="space-y-3 p-5">
+                  <p className="mt-3 text-sm font-semibold text-slate-500">
+                    Loading inquiry
+                    messages...
+                  </p>
 
-                        <div className="h-5 animate-pulse rounded bg-slate-200" />
-
-                        <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
-
-                        <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200" />
-
-                      </div>
-
-                    </div>
-                  )
-                )}
+                </div>
 
               </div>
             )}
 
           {/* EMPTY */}
 
-          {!propertiesLoading &&
-            !propertiesError &&
-            properties.length === 0 && (
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+          {!inquiriesLoading &&
+            !inquiriesError &&
+            filteredInquiries.length ===
+              0 && (
+              <div className="flex min-h-[320px] items-center justify-center px-5">
 
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <div className="max-w-sm text-center">
 
-                  <Building2
-                    size={30}
-                  />
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+
+                    <Inbox
+                      size={30}
+                      className="text-slate-400"
+                    />
+
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-black text-slate-900">
+                    {searchQuery
+                      ? 'No inquiries found'
+                      : 'No inquiry messages yet'}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+
+                    {searchQuery
+                      ? 'Try searching using another client name, email, phone number, or property.'
+                      : 'When a client sends an inquiry about one of your assigned properties, the message will appear here.'}
+
+                  </p>
 
                 </div>
-
-                <h3 className="mt-5 text-lg font-bold text-slate-900">
-                  No properties assigned
-                </h3>
-
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  You currently don't have
-                  any properties assigned to
-                  your account. Contact the
-                  BREA 88 Realty administrator
-                  if you need assistance.
-                </p>
 
               </div>
             )}
 
-          {/* PROPERTY GRID */}
+          {/* INQUIRY LIST */}
 
-          {!propertiesLoading &&
-            !propertiesError &&
-            properties.length > 0 && (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {filteredInquiries.length >
+            0 && (
+            <div className="divide-y divide-slate-100">
 
-                {properties.map(
-                  (property) => {
-                    const coverImage =
-                      property.image ||
-                      property.images?.[0] ||
-                      '/img/placeholder-property.jpg';
+              {filteredInquiries.map(
+                (inquiry) => {
 
-                    return (
-                      <article
-                        key={
-                          property.id
-                        }
-                        className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-                      >
+                  const isNew =
+                    inquiry.status ===
+                    'New';
 
-                        {/* IMAGE */}
+                  return (
+                    <button
+                      key={
+                        inquiry.id
+                      }
+                      type="button"
+                      onClick={() =>
+                        handleOpenInquiry(
+                          inquiry
+                        )
+                      }
+                      className={`group flex w-full flex-col gap-4 p-4 text-left transition hover:bg-slate-50 sm:p-5 ${
+                        isNew
+                          ? 'bg-blue-50/40'
+                          : 'bg-white'
+                      }`}
+                    >
 
-                        <div className="relative h-56 overflow-hidden bg-slate-100">
+                      <div className="flex items-start gap-3 sm:gap-4">
 
-                          <img
-                            src={
-                              coverImage
-                            }
-                            alt={
-                              property.title
-                            }
-                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                          />
+                        {/* AVATAR */}
 
-                          <div className="absolute left-3 top-3">
+                        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-950 text-sm font-black text-white sm:h-12 sm:w-12">
 
-                            <span className="rounded-lg bg-white/95 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-blue-950 shadow-sm backdrop-blur-sm">
-                              {
-                                property.tag
-                              }
-                            </span>
+                          {inquiry.name
+                            ?.charAt(
+                              0
+                            )
+                            .toUpperCase() ||
+                            '?'}
 
-                          </div>
-
-                          <div className="absolute bottom-3 left-3">
-
-                            <span className="rounded-lg bg-blue-950/95 px-3 py-1.5 text-sm font-black text-white shadow-sm">
-                              {
-                                property.price
-                              }
-                            </span>
-
-                          </div>
+                          {isNew && (
+                            <span className="absolute right-0 top-0 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
+                          )}
 
                         </div>
 
-                        {/* DETAILS */}
+                        {/* CONTENT */}
 
-                        <div className="p-5">
+                        <div className="min-w-0 flex-1">
 
-                          <h3 className="line-clamp-2 min-h-[3.5rem] text-lg font-black text-slate-900">
-                            {
-                              property.title
-                            }
-                          </h3>
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
 
-                          <div className="mt-2 flex items-start gap-2 text-sm text-slate-500">
+                            <div className="flex min-w-0 items-center gap-2">
 
-                            <MapPin
-                              size={16}
-                              className="mt-0.5 shrink-0 text-blue-900"
-                            />
+                              <h3
+                                className={`truncate text-sm sm:text-base ${
+                                  isNew
+                                    ? 'font-black text-slate-950'
+                                    : 'font-bold text-slate-800'
+                                }`}
+                              >
+                                {
+                                  inquiry.name
+                                }
+                              </h3>
 
-                            <span className="line-clamp-2">
+                              {isNew && (
+                                <span className="shrink-0 rounded-full bg-blue-950 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
+                                  New
+                                </span>
+                              )}
+
+                            </div>
+
+                            <span className="shrink-0 text-[11px] text-slate-400">
+                              {formatDate(
+                                inquiry.createdAt
+                              )}
+                            </span>
+
+                          </div>
+
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+
+                            <span className="inline-flex items-center gap-1">
+                              <Mail
+                                size={
+                                  12
+                                }
+                              />
                               {
-                                property.location
+                                inquiry.email
+                              }
+                            </span>
+
+                            <span className="inline-flex items-center gap-1">
+                              <Phone
+                                size={
+                                  12
+                                }
+                              />
+                              {
+                                inquiry.phone
                               }
                             </span>
 
                           </div>
 
-                          {/* PROPERTY SPECS */}
+                          {inquiry.property && (
+                            <div className="mt-2 flex min-w-0 items-center gap-1.5 text-xs font-semibold text-blue-900">
 
-                          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-4">
+                              <Building2
+                                size={
+                                  13
+                                }
+                              />
 
-                            {property.beds !==
-                              null && (
-                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-
-                                <BedDouble
-                                  size={15}
-                                  className="text-slate-400"
-                                />
-
+                              <span className="truncate">
                                 {
-                                  property.beds
-                                }{' '}
-                                Beds
+                                  inquiry
+                                    .property
+                                    .title
+                                }
+                              </span>
 
-                              </div>
-                            )}
+                            </div>
+                          )}
 
-                            {property.baths !==
-                              null && (
-                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-
-                                <Bath
-                                  size={15}
-                                  className="text-slate-400"
-                                />
-
-                                {
-                                  property.baths
-                                }{' '}
-                                Baths
-
-                              </div>
-                            )}
-
-                            {property.sqft !==
-                              null && (
-                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-
-                                <Maximize
-                                  size={15}
-                                  className="text-slate-400"
-                                />
-
-                                {property.sqft.toLocaleString()}{' '}
-                                sqft
-
-                              </div>
-                            )}
-
-                          </div>
-
-                          {/* VIEW PROPERTY */}
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              router.push(
-                                `/marketplace?property=${property.id}`
-                              )
+                          <p
+                            className={`mt-2 line-clamp-2 text-xs leading-5 ${
+                              isNew
+                                ? 'font-medium text-slate-700'
+                                : 'text-slate-500'
+                            }`}
+                          >
+                            {
+                              inquiry.message
                             }
-                            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-900"
+                          </p>
+
+                        </div>
+
+                        {/* RIGHT */}
+
+                        <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
+
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClasses(
+                              inquiry.status
+                            )}`}
                           >
 
-                            View Property
+                            {getStatusIcon(
+                              inquiry.status
+                            )}
 
-                            <ArrowRight
-                              size={16}
-                              className="transition-transform group-hover:translate-x-1"
-                            />
+                            {
+                              inquiry.status
+                            }
 
-                          </button>
+                          </span>
+
+                          <ChevronRight
+                            size={17}
+                            className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-950"
+                          />
 
                         </div>
 
-                      </article>
-                    );
-                  }
-                )}
+                      </div>
 
-              </div>
-            )}
+                      {/* MOBILE STATUS */}
 
-        </div>
+                      <div className="flex items-center justify-between sm:hidden">
 
-        {/* ===================================================
-            AGENT PROFILE
-        ==================================================== */}
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClasses(
+                            inquiry.status
+                          )}`}
+                        >
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                          {getStatusIcon(
+                            inquiry.status
+                          )}
 
-          {/* PROFESSIONAL PROFILE */}
+                          {
+                            inquiry.status
+                          }
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+                        </span>
 
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-950">
+                          View
+                          <ChevronRight
+                            size={
+                              15
+                            }
+                          />
+                        </span>
 
-              {/* IMAGE */}
+                      </div>
 
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
-
-                {agent.profileImage ? (
-                  <img
-                    src={
-                      agent.profileImage
-                    }
-                    alt={
-                      agent.fullName
-                    }
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User
-                    size={35}
-                    className="text-slate-400"
-                  />
-                )}
-
-              </div>
-
-              {/* DETAILS */}
-
-              <div className="min-w-0 flex-1">
-
-                <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-900">
-                  Professional Profile
-                </p>
-
-                <h2 className="mt-1 break-words text-2xl font-black text-slate-900">
-                  {agent.fullName}
-                </h2>
-
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  {agent.role}
-                </p>
-
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                  <div className="flex min-w-0 items-center gap-2 text-sm text-slate-600">
-
-                    <Phone
-                      size={16}
-                      className="shrink-0 text-slate-400"
-                    />
-
-                    <span className="truncate">
-                      {agent.phone ||
-                        'Phone not provided'}
-                    </span>
-
-                  </div>
-
-                  <div className="flex min-w-0 items-center gap-2 text-sm text-slate-600">
-
-                    <User
-                      size={16}
-                      className="shrink-0 text-slate-400"
-                    />
-
-                    <span className="truncate">
-                      {agent.email}
-                    </span>
-
-                  </div>
-
-                </div>
-
-                {agent.bio && (
-                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-500">
-                    {agent.bio}
-                  </p>
-                )}
-
-              </div>
-
-            </div>
-
-            <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-5 sm:flex-row">
-
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    '/profile'
-                  )
+                    </button>
+                  );
                 }
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-900"
-              >
-
-                <User size={16} />
-
-                Manage Profile
-
-              </button>
-
-              {agent.slug && (
-                <button
-                  type="button"
-                  onClick={
-                    handleViewPublicProfile
-                  }
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                >
-
-                  <ExternalLink
-                    size={16}
-                  />
-
-                  View Public Profile
-
-                </button>
               )}
 
             </div>
-
-          </div>
-
-          {/* ONLINE STATUS */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <div className="flex items-center gap-3">
-
-              <div
-                className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                  heartbeatActive
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-amber-50 text-amber-600'
-                }`}
-              >
-
-                {heartbeatActive ? (
-                  <CheckCircle2
-                    size={21}
-                  />
-                ) : (
-                  <Clock3
-                    size={21}
-                  />
-                )}
-
-              </div>
-
-              <div>
-
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Presence
-                </p>
-
-                <p className="mt-1 text-lg font-black text-slate-900">
-                  {heartbeatActive
-                    ? 'Online'
-                    : 'Connecting...'}
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="mt-5 rounded-xl bg-slate-50 p-4">
-
-              <p className="text-sm leading-6 text-slate-500">
-                Your account automatically sends
-                a heartbeat while this dashboard
-                is open.
-              </p>
-
-              <p className="mt-2 text-xs font-medium leading-5 text-slate-400">
-                The administrator will see you as
-                Offline after your heartbeat stops
-                for more than 5 minutes.
-              </p>
-
-            </div>
-
-          </div>
+          )}
 
         </div>
 
       </section>
 
+      {/* =====================================================
+          INQUIRY MODAL
+      ====================================================== */}
+
+      {selectedInquiry && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              setSelectedInquiry(
+                null
+              );
+            }
+          }}
+        >
+
+          <div className="max-h-[92vh] w-full overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-3xl">
+
+            {/* MODAL HEADER */}
+
+            <div className="flex items-start justify-between border-b border-slate-200 p-5 sm:p-6">
+
+              <div className="flex min-w-0 items-center gap-3">
+
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-950 text-sm font-black text-white">
+
+                  {selectedInquiry.name
+                    ?.charAt(
+                      0
+                    )
+                    .toUpperCase() ||
+                    '?'}
+
+                </div>
+
+                <div className="min-w-0">
+
+                  <h2 className="truncate text-lg font-black text-slate-950">
+                    {
+                      selectedInquiry.name
+                    }
+                  </h2>
+
+                  <p className="truncate text-xs text-slate-500">
+                    Inquiry received{' '}
+                    {formatDateTime(
+                      selectedInquiry.createdAt
+                    )}
+                  </p>
+
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedInquiry(
+                    null
+                  )
+                }
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Close inquiry"
+              >
+
+                <X size={20} />
+
+              </button>
+
+            </div>
+
+            {/* MODAL CONTENT */}
+
+            <div className="max-h-[calc(92vh-80px)] overflow-y-auto p-5 sm:p-6">
+
+              {/* CLIENT DETAILS */}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+
+                <a
+                  href={`mailto:${selectedInquiry.email}`}
+                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 transition hover:border-blue-200 hover:bg-blue-50"
+                >
+
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm">
+
+                    <Mail
+                      size={16}
+                    />
+
+                  </div>
+
+                  <div className="min-w-0">
+
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Email
+                    </p>
+
+                    <p className="truncate text-sm font-semibold text-slate-800">
+                      {
+                        selectedInquiry.email
+                      }
+                    </p>
+
+                  </div>
+
+                </a>
+
+                <a
+                  href={`tel:${selectedInquiry.phone}`}
+                  className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 transition hover:border-blue-200 hover:bg-blue-50"
+                >
+
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-sm">
+
+                    <Phone
+                      size={16}
+                    />
+
+                  </div>
+
+                  <div className="min-w-0">
+
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Phone
+                    </p>
+
+                    <p className="truncate text-sm font-semibold text-slate-800">
+                      {
+                        selectedInquiry.phone
+                      }
+                    </p>
+
+                  </div>
+
+                </a>
+
+              </div>
+
+              {/* PROPERTY */}
+
+              {selectedInquiry.property && (
+                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+
+                  <div className="flex gap-3 p-3 sm:p-4">
+
+                    {selectedInquiry
+                      .property
+                      .image && (
+                      <img
+                        src={
+                          selectedInquiry
+                            .property
+                            .image
+                        }
+                        alt={
+                          selectedInquiry
+                            .property
+                            .title
+                        }
+                        className="h-20 w-24 shrink-0 rounded-xl object-cover sm:h-24 sm:w-32"
+                      />
+                    )}
+
+                    <div className="min-w-0">
+
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                        Property
+                      </p>
+
+                      <h3 className="mt-1 text-sm font-black text-slate-900 sm:text-base">
+                        {
+                          selectedInquiry
+                            .property
+                            .title
+                        }
+                      </h3>
+
+                      <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+
+                        <MapPin
+                          size={
+                            12
+                          }
+                        />
+
+                        <span className="truncate">
+                          {
+                            selectedInquiry
+                              .property
+                              .location
+                          }
+                        </span>
+
+                      </div>
+
+                      <p className="mt-1 text-sm font-black text-blue-950">
+                        ₱
+                        {
+                          selectedInquiry
+                            .property
+                            .price
+                        }
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+              )}
+
+              {/* MESSAGE */}
+
+              <div className="mt-5">
+
+                <div className="mb-2 flex items-center justify-between">
+
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    Client Message
+                  </p>
+
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+
+                  <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                    {
+                      selectedInquiry.message
+                    }
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* STATUS */}
+
+              <div className="mt-5">
+
+                <label
+                  htmlFor="inquiry-status"
+                  className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400"
+                >
+                  Inquiry Status
+                </label>
+
+                <div className="relative">
+
+                  <select
+                    id="inquiry-status"
+                    value={
+                      selectedInquiry.status
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      updateInquiryStatus(
+                        selectedInquiry.id,
+                        event.target
+                          .value
+                      )
+                    }
+                    disabled={
+                      updatingInquiryId ===
+                      selectedInquiry.id
+                    }
+                    className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+
+                    {INQUIRY_STATUSES.map(
+                      (status) => (
+                        <option
+                          key={
+                            status
+                          }
+                          value={
+                            status
+                          }
+                        >
+                          {status}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+                  {updatingInquiryId ===
+                  selectedInquiry.id ? (
+                    <Loader2
+                      size={17}
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-blue-950"
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={17}
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                  )}
+
+                </div>
+
+              </div>
+
+              {/* ACTIONS */}
+
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+
+                <a
+                  href={`mailto:${selectedInquiry.email}`}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-900"
+                >
+
+                  <Mail
+                    size={16}
+                  />
+
+                  Email Client
+
+                </a>
+
+                <a
+                  href={`tel:${selectedInquiry.phone}`}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+
+                  <Phone
+                    size={16}
+                  />
+
+                  Call Client
+
+                </a>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
     </main>
   );
 }
+

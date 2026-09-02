@@ -15,10 +15,6 @@ function cleanString(value: unknown): string {
   return value.trim();
 }
 
-/*
- * Escape HTML so client-submitted values cannot inject HTML
- * into the email.
- */
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -31,8 +27,10 @@ function escapeHtml(value: string): string {
 /* =========================================================
    GET INQUIRIES
 
-   - Only logged-in agents can access inquiries.
-   - Agents only see inquiries assigned to themselves.
+   Only logged-in agents can view inquiries.
+
+   Each Agent/Broker can only see inquiries assigned
+   to their own account.
 ========================================================= */
 
 export async function GET() {
@@ -114,9 +112,7 @@ export async function GET() {
 /* =========================================================
    POST INQUIRY
 
-   NORMAL CLIENTS DO NOT NEED TO LOG IN.
-
-   Client sends:
+   Public client submits:
 
    - name
    - email
@@ -125,25 +121,32 @@ export async function GET() {
    - propertyId
    - agentSlug
 
-   Client NEVER sends:
+   The browser does NOT send:
 
    - agentId
-   - agent.email
+   - agent email
 
-   The server uses agentSlug to find the registered
-   Agent in PostgreSQL.
+   The server finds the real Agent from PostgreSQL.
 
    Flow:
 
-   agentSlug
-        ↓
-   Database Agent
-        ↓
-   Agent.id + Agent.email
-        ↓
-   Save Inquiry
-        ↓
-   Send Resend email to Agent.email
+   Client
+      ↓
+   Send Inquiry
+      ↓
+   propertyId + agentSlug
+      ↓
+   Verify Agent
+      ↓
+   Verify Property
+      ↓
+   Verify Property belongs to Agent
+      ↓
+   Create Inquiry
+      ↓
+   Agent Dashboard
+      ↓
+   Send email notification
 ========================================================= */
 
 export async function POST(request: Request) {
@@ -192,19 +195,19 @@ export async function POST(request: Request) {
     const message = cleanString(data.message);
 
     /* =======================================================
-       AGENT SLUG
+       AGENT
     ======================================================= */
 
     const agentSlug = cleanString(data.agentSlug);
 
     /* =======================================================
-       PROPERTY ID
+       PROPERTY
     ======================================================= */
 
     const propertyId = Number(data.propertyId);
 
     /* =======================================================
-       VALIDATE CLIENT NAME
+       VALIDATE NAME
     ======================================================= */
 
     if (!name) {
@@ -239,7 +242,7 @@ export async function POST(request: Request) {
     }
 
     /* =======================================================
-       VALIDATE CLIENT EMAIL
+       VALIDATE EMAIL
     ======================================================= */
 
     if (!email) {
@@ -358,7 +361,7 @@ export async function POST(request: Request) {
         {
           success: false,
           message:
-            'No agent was specified for this inquiry.',
+            'No agent was specified for this property.',
         },
         { status: 400 }
       );
@@ -377,11 +380,12 @@ export async function POST(request: Request) {
     /* =======================================================
        FIND ACTIVE AGENT
 
-       We DO NOT trust an email from the client.
+       IMPORTANT:
 
-       We only accept agentSlug.
+       We do NOT trust an email or agentId from
+       the browser.
 
-       The server gets the actual email from PostgreSQL.
+       The database determines the real Agent.
     ======================================================= */
 
     const agent = await prisma.agent.findFirst({
@@ -440,7 +444,13 @@ export async function POST(request: Request) {
     }
 
     /* =======================================================
-       VERIFY PROPERTY
+       FIND PROPERTY
+
+       IMPORTANT:
+
+       agentId is included here so we can verify that
+       the selected property actually belongs to the
+       selected Agent/Broker.
     ======================================================= */
 
     const property = await prisma.property.findUnique({
@@ -454,6 +464,7 @@ export async function POST(request: Request) {
         price: true,
         location: true,
         image: true,
+        agentId: true,
       },
     });
 
@@ -468,17 +479,29 @@ export async function POST(request: Request) {
     }
 
     /* =======================================================
+       VERIFY PROPERTY OWNERSHIP / ASSIGNMENT
+
+       Admin assigns the property.
+
+       The client cannot use another agent's slug to
+       redirect an inquiry to a different agent.
+    ======================================================= */
+
+    if (property.agentId !== agent.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'This property is not assigned to the selected agent.',
+        },
+        { status: 403 }
+      );
+    }
+
+    /* =======================================================
        CREATE INQUIRY
 
-       agentId comes from the verified database record.
-
-       NOT from the browser.
-
-       This prevents the client from submitting:
-
-       agentId: 123
-
-       and redirecting the inquiry to another agent.
+       agentId comes ONLY from the verified database Agent.
     ======================================================= */
 
     const inquiry = await prisma.inquiry.create({
@@ -518,13 +541,6 @@ export async function POST(request: Request) {
 
     /* =======================================================
        RESEND CONFIGURATION
-
-       Resend is initialized here instead of globally.
-
-       This prevents build-time initialization problems such
-       as:
-
-       new Resend(undefined)
     ======================================================= */
 
     const resendApiKey = cleanString(
@@ -574,7 +590,7 @@ export async function POST(request: Request) {
     }
 
     /* =======================================================
-       ESCAPE VALUES FOR HTML EMAIL
+       ESCAPE HTML VALUES
     ======================================================= */
 
     const safeAgentName = escapeHtml(
@@ -599,25 +615,11 @@ export async function POST(request: Request) {
     );
 
     /* =======================================================
-       SEND EMAIL TO AGENT
+       SEND EMAIL
 
-       Recipient:
+       Email goes to the Agent's registered email.
 
-       agent.email
-
-       NOT:
-
-       client email
-
-       NOT:
-
-       agent email from browser
-
-       The recipient comes directly from the verified
-       database record.
-
-       replyTo is the client's email so the agent can
-       reply directly to the client.
+       Reply-To is the client's email.
     ======================================================= */
 
     try {
@@ -630,7 +632,8 @@ export async function POST(request: Request) {
 
         replyTo: email,
 
-        subject: `New Property Inquiry - ${property.title}`,
+        subject:
+          `New Property Inquiry - ${property.title}`,
 
         text: `
 NEW PROPERTY INQUIRY
@@ -736,7 +739,7 @@ Service with a Heart
             font-size:14px;
           "
         >
-          BREA 88 Realty
+          BREA 88 REALTY
         </p>
       </div>
 
@@ -746,62 +749,63 @@ Service with a Heart
 
         <p
           style="
-            margin:0 0 15px;
+            margin:0 0 20px;
             color:#334155;
-            font-size:16px;
-            line-height:1.6;
-          "
-        >
-          Hello
-          <strong>${safeAgentName}</strong>,
-        </p>
-
-        <p
-          style="
-            color:#475569;
             font-size:15px;
             line-height:1.6;
           "
         >
-          A client has submitted a new inquiry
-          about a property.
+          Hello ${safeAgentName},
+        </p>
+
+        <p
+          style="
+            margin:0 0 25px;
+            color:#334155;
+            font-size:15px;
+            line-height:1.6;
+          "
+        >
+          You have received a new property inquiry
+          from a client.
         </p>
 
         <!-- PROPERTY -->
 
         <div
           style="
-            margin-top:25px;
+            margin-bottom:25px;
             padding:20px;
             background:#f8fafc;
-            border:1px solid #e2e8f0;
             border-radius:12px;
+            border:1px solid #e2e8f0;
           "
         >
+
           <h2
             style="
               margin:0 0 15px;
               color:#0f172a;
-              font-size:16px;
+              font-size:18px;
             "
           >
-            Property Details
+            Property
           </h2>
 
           <p
             style="
-              margin:8px 0;
+              margin:6px 0;
               color:#475569;
               font-size:14px;
             "
           >
-            <strong>Property:</strong>
+            <strong>Title:</strong>
             ${safePropertyTitle}
           </p>
 
           <p
             style="
-              margin:8px 0;
+              margin:6px 0;
               color:#475569;
               font-size:14px;
             "
@@ -812,7 +816,7 @@ Service with a Heart
 
           <p
             style="
-              margin:8px 0;
+              margin:6px 0;
               color:#475569;
               font-size:14px;
             "
@@ -820,24 +824,26 @@ Service with a Heart
             <strong>Location:</strong>
             ${safePropertyLocation}
           </p>
+
         </div>
 
         <!-- CLIENT -->
 
         <div
           style="
-            margin-top:20px;
+            margin-bottom:25px;
             padding:20px;
-            background:#eff6ff;
-            border:1px solid #bfdbfe;
+            background:#ffffff;
             border-radius:12px;
+            border:1px solid #e2e8f0;
           "
         >
+
           <h2
             style="
               margin:0 0 15px;
-              color:#1e3a8a;
-              font-size:16px;
+              color:#0f172a;
+              font-size:18px;
             "
           >
             Client Information
@@ -845,8 +851,8 @@ Service with a Heart
 
           <p
             style="
-              margin:8px 0;
-              color:#334155;
+              margin:6px 0;
+              color:#475569;
               font-size:14px;
             "
           >
@@ -856,52 +862,48 @@ Service with a Heart
 
           <p
             style="
-              margin:8px 0;
-              color:#334155;
+              margin:6px 0;
+              color:#475569;
               font-size:14px;
             "
           >
             <strong>Email:</strong>
-
-            <a
-              href="mailto:${encodeURIComponent(email)}"
-              style="color:#1d4ed8;"
-            >
-              ${safeClientEmail}
-            </a>
+            ${safeClientEmail}
           </p>
 
           <p
             style="
-              margin:8px 0;
-              color:#334155;
+              margin:6px 0;
+              color:#475569;
               font-size:14px;
             "
           >
             <strong>Phone:</strong>
             ${safePhone}
           </p>
+
         </div>
 
         <!-- MESSAGE -->
 
         <div
           style="
-            margin-top:20px;
+            margin-bottom:25px;
             padding:20px;
             background:#f8fafc;
-            border:1px solid #e2e8f0;
             border-radius:12px;
+            border:1px solid #e2e8f0;
           "
         >
+
           <h2
             style="
               margin:0 0 15px;
               color:#0f172a;
-              font-size:16px;
+              font-size:18px;
             "
           >
-            Client Message
+            Message
           </h2>
 
           <p
@@ -910,109 +912,122 @@ Service with a Heart
               color:#475569;
               font-size:14px;
               line-height:1.7;
-              white-space:pre-line;
+              white-space:pre-wrap;
             "
           >
             ${safeMessage}
           </p>
+
         </div>
 
-        <!-- REPLY BUTTON -->
+        <!-- INQUIRY -->
 
         <div
           style="
-            margin-top:25px;
-            text-align:center;
+            margin-bottom:25px;
+            padding:20px;
+            background:#ffffff;
+            border-radius:12px;
+            border:1px solid #e2e8f0;
           "
         >
-          <a
-            href="mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
-              `Re: Property Inquiry - ${property.title}`
-            )}"
+
+          <h2
             style="
-              display:inline-block;
-              padding:13px 22px;
-              background:#1e3a8a;
-              color:#ffffff;
-              text-decoration:none;
-              border-radius:10px;
-              font-size:14px;
-              font-weight:bold;
+              margin:0 0 15px;
+              color:#0f172a;
+              font-size:18px;
             "
           >
-            Reply to Client
-          </a>
-        </div>
+            Inquiry Information
+          </h2>
 
-        <!-- FOOTER -->
-
-        <div
-          style="
-            margin-top:30px;
-            padding-top:20px;
-            border-top:1px solid #e2e8f0;
-          "
-        >
           <p
             style="
-              margin:0;
-              color:#94a3b8;
-              font-size:12px;
-              line-height:1.6;
+              margin:6px 0;
+              color:#475569;
+              font-size:14px;
             "
           >
-            Inquiry ID: ${inquiry.id}
-            <br />
+            <strong>Inquiry ID:</strong>
+            ${inquiry.id}
+          </p>
 
-            Status: ${escapeHtml(
-              cleanString(inquiry.status)
-            )}
+          <p
+            style="
+              margin:6px 0;
+              color:#475569;
+              font-size:14px;
+            "
+          >
+            <strong>Status:</strong>
+            ${escapeHtml(inquiry.status)}
+          </p>
 
-            <br />
-
-            Submitted:
+          <p
+            style="
+              margin:6px 0;
+              color:#475569;
+              font-size:14px;
+            "
+          >
+            <strong>Submitted:</strong>
             ${escapeHtml(
               inquiry.createdAt.toLocaleString()
             )}
           </p>
 
-          <p
-            style="
-              margin:15px 0 0;
-              color:#0f172a;
-              font-size:13px;
-              font-weight:bold;
-            "
-          >
-            BREA 88 REALTY
-          </p>
-
-          <p
-            style="
-              margin:3px 0 0;
-              color:#64748b;
-              font-size:12px;
-            "
-          >
-            Service with a Heart
-          </p>
         </div>
 
+        <p
+          style="
+            margin:0;
+            color:#64748b;
+            font-size:13px;
+            line-height:1.6;
+          "
+        >
+          You can reply directly to this email to
+          contact the client.
+        </p>
+
       </div>
+
+      <!-- FOOTER -->
+
+      <div
+        style="
+          padding:20px 30px;
+          background:#f8fafc;
+          border-top:1px solid #e2e8f0;
+        "
+      >
+
+        <p
+          style="
+            margin:0;
+            color:#64748b;
+            font-size:12px;
+            text-align:center;
+          "
+        >
+          BREA 88 REALTY
+          <br />
+          Service with a Heart
+        </p>
+
+      </div>
+
     </div>
   </div>
 </body>
 </html>
-        `.trim(),
+        `,
       });
-
-      /* =====================================================
-         CHECK RESEND RESULT
-      ===================================================== */
 
       if (resendResult.error) {
         console.error(
-          'Resend email error:',
+          'Resend inquiry email error:',
           resendResult.error
         );
 
@@ -1021,37 +1036,35 @@ Service with a Heart
             success: true,
             emailSent: false,
             message:
-              'Inquiry was saved, but the email could not be sent.',
+              'Inquiry was saved successfully, but the notification email could not be sent.',
             inquiry,
           },
           { status: 201 }
         );
       }
 
-      console.log(
-        `Inquiry email sent successfully to ${agentEmail}`
-      );
-
       return NextResponse.json(
         {
           success: true,
           emailSent: true,
           message:
-            'Inquiry submitted successfully and sent to the assigned agent.',
+            'Inquiry submitted successfully.',
           inquiry,
         },
         { status: 201 }
       );
     } catch (emailError) {
       console.error(
-        'Failed to send inquiry email:',
+        'Inquiry email sending failed:',
         emailError
       );
 
       /*
-       * The inquiry is already safely stored in PostgreSQL.
-       * Therefore, email failure does not cause the inquiry
-       * itself to be lost.
+       * IMPORTANT:
+       *
+       * The inquiry has already been saved.
+       *
+       * An email failure must NOT delete the inquiry.
        */
 
       return NextResponse.json(
@@ -1059,17 +1072,14 @@ Service with a Heart
           success: true,
           emailSent: false,
           message:
-            'Inquiry was saved successfully, but the email could not be sent.',
+            'Inquiry was saved successfully, but the notification email could not be sent.',
           inquiry,
         },
         { status: 201 }
       );
     }
   } catch (error) {
-    console.error(
-      'POST /api/inquiries error:',
-      error
-    );
+    console.error('POST /api/inquiries error:', error);
 
     return NextResponse.json(
       {
@@ -1087,34 +1097,36 @@ Service with a Heart
 }
 
 /* =========================================================
-   PATCH INQUIRY STATUS
+   PATCH INQUIRY
 
-   - Only logged-in agents can update inquiries.
-   - Agents can update only their own inquiries.
+   Agents/Brokers can only update inquiries assigned
+   to themselves.
+
+   Supported statuses:
+
+   New
+   Read
+   Contacted
+   Viewing Scheduled
+   Viewing Completed
+   Follow Up
+   Closed
+   Cancelled
 ========================================================= */
 
 export async function PATCH(request: Request) {
   try {
-    /* =======================================================
-       GET CURRENT AGENT
-    ======================================================= */
-
     const agent = await getAgentFromSession();
 
     if (!agent) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'Unauthorized. Please log in as an agent.',
+          message: 'Unauthorized. Please log in as an agent.',
         },
         { status: 401 }
       );
     }
-
-    /* =======================================================
-       READ BODY
-    ======================================================= */
 
     let body: unknown;
 
@@ -1138,7 +1150,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid request data.',
+          message: 'Invalid inquiry data.',
         },
         { status: 400 }
       );
@@ -1146,16 +1158,12 @@ export async function PATCH(request: Request) {
 
     const data = body as Record<string, unknown>;
 
-    const inquiryId = Number(data.id);
+    const id = Number(data.id);
     const status = cleanString(data.status);
 
-    /* =======================================================
-       VALIDATE INQUIRY ID
-    ======================================================= */
-
     if (
-      !Number.isInteger(inquiryId) ||
-      inquiryId <= 0
+      !Number.isInteger(id) ||
+      id <= 0
     ) {
       return NextResponse.json(
         {
@@ -1166,12 +1174,9 @@ export async function PATCH(request: Request) {
       );
     }
 
-    /* =======================================================
-       ALLOWED STATUSES
-    ======================================================= */
-
     const allowedStatuses = [
       'New',
+      'Read',
       'Contacted',
       'Viewing Scheduled',
       'Viewing Completed',
@@ -1185,7 +1190,6 @@ export async function PATCH(request: Request) {
         {
           success: false,
           message: 'Invalid inquiry status.',
-          allowedStatuses,
         },
         { status: 400 }
       );
@@ -1194,22 +1198,16 @@ export async function PATCH(request: Request) {
     /* =======================================================
        FIND INQUIRY
 
-       Both:
+       The agentId condition is CRITICAL.
 
-       id
-       +
-       agentId
-
-       are checked.
-
-       This prevents an agent from modifying another
-       agent's inquiry.
+       An Agent/Broker cannot update another Agent's
+       inquiry even if they know the inquiry ID.
     ======================================================= */
 
     const existingInquiry =
       await prisma.inquiry.findFirst({
         where: {
-          id: inquiryId,
+          id,
           agentId: agent.id,
         },
       });
@@ -1224,49 +1222,47 @@ export async function PATCH(request: Request) {
       );
     }
 
-    /* =======================================================
-       UPDATE STATUS
-    ======================================================= */
+    const inquiry = await prisma.inquiry.update({
+      where: {
+        id: existingInquiry.id,
+      },
 
-    const inquiry =
-      await prisma.inquiry.update({
-        where: {
-          id: existingInquiry.id,
-        },
+      data: {
+        status,
+      },
 
-        data: {
-          status,
-        },
-
-        include: {
-          property: {
-            select: {
-              id: true,
-              title: true,
-              price: true,
-              location: true,
-              image: true,
-            },
-          },
-
-          agent: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              role: true,
-              phone: true,
-              profileImage: true,
-            },
+      include: {
+        property: {
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            location: true,
+            image: true,
+            category: true,
+            propertyType: true,
+            houseType: true,
+            storey: true,
           },
         },
-      });
+
+        agent: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            role: true,
+            phone: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
 
     return NextResponse.json(
       {
         success: true,
-        message:
-          'Inquiry status updated successfully.',
+        message: 'Inquiry status updated successfully.',
         inquiry,
       },
       { status: 200 }
@@ -1291,4 +1287,3 @@ export async function PATCH(request: Request) {
     );
   }
 }
-
