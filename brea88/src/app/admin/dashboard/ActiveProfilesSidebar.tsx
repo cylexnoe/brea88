@@ -527,9 +527,8 @@ export default function ActiveProfilesSidebar() {
                     (agent) => {
 
                       const online =
-                        isOnline(
-                          agent.lastSeen
-                        );
+                        agent.isActive &&
+                        isOnline(agent.lastSeen);
 
                       const busy =
                         updatingId ===

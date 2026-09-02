@@ -1020,11 +1020,7 @@ export default function AdminAgentsPage() {
                               />
 
                               <span className="text-[11px] font-medium text-blue-100">
-                                {online
-                                  ? 'Online'
-                                  : agent.isActive
-                                    ? 'Active'
-                                    : 'Inactive'}
+                                {online ? 'Online' : 'Offline'}
                               </span>
 
                             </div>

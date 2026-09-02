@@ -13,9 +13,7 @@ import {
   X,
   ChevronRight,
   Loader2,
-  Mail,
   Phone,
-  BriefcaseBusiness,
   LayoutDashboard,
   MapPin,
   BedDouble,
@@ -24,6 +22,9 @@ import {
   ArrowRight,
   RefreshCw,
   AlertCircle,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
 } from 'lucide-react';
 
 type Agent = {
@@ -39,6 +40,7 @@ type Agent = {
   facebook: string | null;
   messenger: string | null;
   isActive: boolean;
+  lastSeen?: string | null;
 };
 
 type Property = {
@@ -61,10 +63,15 @@ export default function AgentDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [agent, setAgent] =
+    useState<Agent | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] =
+    useState<Property[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [propertiesLoading, setPropertiesLoading] =
     useState(true);
 
@@ -77,11 +84,12 @@ export default function AgentDashboardPage() {
   const [loggingOut, setLoggingOut] =
     useState(false);
 
-  /*
-  =========================================================
-  LOAD AGENT
-  =========================================================
-  */
+  const [heartbeatActive, setHeartbeatActive] =
+    useState(false);
+
+  // =========================================================
+  // LOAD CURRENT AGENT
+  // =========================================================
 
   useEffect(() => {
     let mounted = true;
@@ -102,7 +110,8 @@ export default function AgentDashboardPage() {
           return;
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
         if (
           !data?.success ||
@@ -134,11 +143,118 @@ export default function AgentDashboardPage() {
     };
   }, [router]);
 
-  /*
-  =========================================================
-  LOAD ASSIGNED PROPERTIES
-  =========================================================
-  */
+  // =========================================================
+  // AGENT HEARTBEAT
+  //
+  // Updates Agent.lastSeen every 60 seconds.
+  //
+  // Admin uses lastSeen to determine:
+  //
+  // Online  = lastSeen within 5 minutes
+  // Offline = lastSeen older than 5 minutes
+  //
+  // Agents do NOT manage properties here.
+  // =========================================================
+
+  useEffect(() => {
+    if (!agent) return;
+
+    let mounted = true;
+
+    const sendHeartbeat = async () => {
+      try {
+        const response = await fetch(
+          '/api/agent/heartbeat',
+          {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+          }
+        );
+
+        if (response.status === 401) {
+          router.replace('/agent/login');
+          return;
+        }
+
+        if (!response.ok) {
+          console.error(
+            'Heartbeat request failed:',
+            response.status
+          );
+
+          if (mounted) {
+            setHeartbeatActive(false);
+          }
+
+          return;
+        }
+
+        const data =
+          await response.json();
+
+        if (
+          data?.success &&
+          mounted
+        ) {
+          setHeartbeatActive(true);
+
+          /*
+           * Keep the local agent state synchronized
+           * with the server.
+           */
+          if (data.agent) {
+            setAgent((previous) => {
+              if (!previous) {
+                return previous;
+              }
+
+              return {
+                ...previous,
+                lastSeen:
+                  data.agent.lastSeen ??
+                  previous.lastSeen,
+              };
+            });
+          }
+        }
+      } catch (error) {
+        console.error(
+          'Agent heartbeat error:',
+          error
+        );
+
+        if (mounted) {
+          setHeartbeatActive(false);
+        }
+      }
+    };
+
+    /*
+     * Send immediately when dashboard opens.
+     */
+    sendHeartbeat();
+
+    /*
+     * Then send every 60 seconds.
+     */
+    const heartbeatInterval =
+      window.setInterval(
+        sendHeartbeat,
+        60 * 1000
+      );
+
+    return () => {
+      mounted = false;
+      window.clearInterval(
+        heartbeatInterval
+      );
+    };
+  }, [agent, router]);
+
+  // =========================================================
+  // LOAD ASSIGNED PROPERTIES
+  // =========================================================
 
   const loadProperties = async () => {
     setPropertiesLoading(true);
@@ -159,9 +275,13 @@ export default function AgentDashboardPage() {
         return;
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      if (!response.ok || !data?.success) {
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
         throw new Error(
           data?.message ||
             'Unable to load properties.'
@@ -190,16 +310,14 @@ export default function AgentDashboardPage() {
   };
 
   useEffect(() => {
-    if (agent) {
-      loadProperties();
-    }
+    if (!agent) return;
+
+    loadProperties();
   }, [agent]);
 
-  /*
-  =========================================================
-  LOGOUT
-  =========================================================
-  */
+  // =========================================================
+  // LOGOUT
+  // =========================================================
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -207,10 +325,13 @@ export default function AgentDashboardPage() {
     setLoggingOut(true);
 
     try {
-      await fetch('/api/agent/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await fetch(
+        '/api/agent/logout',
+        {
+          method: 'POST',
+          credentials: 'include',
+        }
+      );
     } catch (error) {
       console.error(
         'Agent logout error:',
@@ -222,11 +343,9 @@ export default function AgentDashboardPage() {
     }
   };
 
-  /*
-  =========================================================
-  NAVIGATION
-  =========================================================
-  */
+  // =========================================================
+  // NAVIGATION
+  // =========================================================
 
   const navigation = [
     {
@@ -251,21 +370,29 @@ export default function AgentDashboardPage() {
     },
   ];
 
-  /*
-  =========================================================
-  LOADING
-  =========================================================
-  */
+  // =========================================================
+  // VIEW PUBLIC PROFILE
+  // =========================================================
+
+  const handleViewPublicProfile = () => {
+    if (!agent?.slug) return;
+
+    router.push(
+      `/agent/${agent.slug}`
+    );
+  };
+
+  // =========================================================
+  // LOADING
+  // =========================================================
 
   if (loading || !agent) {
     return <ButterflyLoader />;
   }
 
-  /*
-  =========================================================
-  DASHBOARD
-  =========================================================
-  */
+  // =========================================================
+  // DASHBOARD
+  // =========================================================
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -285,19 +412,25 @@ export default function AgentDashboardPage() {
             <button
               type="button"
               onClick={() =>
-                router.push('/agent/dashboard')
+                router.push(
+                  '/agent/dashboard'
+                )
               }
               className="flex items-center gap-3"
             >
+
               <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-blue-950 shadow-sm">
+
                 <img
                   src="/img/LOGO.png"
                   alt="BREA 88 Realty"
                   className="h-full w-full object-cover"
                 />
+
               </div>
 
               <div className="hidden text-left sm:block">
+
                 <p className="text-sm font-black tracking-tight text-blue-950">
                   BREA 88 REALTY
                 </p>
@@ -305,38 +438,48 @@ export default function AgentDashboardPage() {
                 <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
                   Agent Portal
                 </p>
+
               </div>
+
             </button>
 
             {/* DESKTOP NAV */}
 
             <div className="hidden items-center gap-1 md:flex">
 
-              {navigation.map((item) => {
-                const Icon = item.icon;
+              {navigation.map(
+                (item) => {
+                  const Icon =
+                    item.icon;
 
-                const isActive =
-                  pathname === item.href;
+                  const isActive =
+                    pathname ===
+                    item.href;
 
-                return (
-                  <button
-                    key={item.href}
-                    type="button"
-                    onClick={() =>
-                      router.push(item.href)
-                    }
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                      isActive
-                        ? 'bg-blue-950 text-white shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-blue-950'
-                    }`}
-                  >
-                    <Icon size={17} />
+                  return (
+                    <button
+                      key={item.href}
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          item.href
+                        )
+                      }
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                        isActive
+                          ? 'bg-blue-950 text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-blue-950'
+                      }`}
+                    >
 
-                    {item.name}
-                  </button>
-                );
-              })}
+                      <Icon size={17} />
+
+                      {item.name}
+
+                    </button>
+                  );
+                }
+              )}
 
             </div>
 
@@ -347,7 +490,9 @@ export default function AgentDashboardPage() {
               <button
                 type="button"
                 onClick={() =>
-                  router.push('/profile')
+                  router.push(
+                    '/profile'
+                  )
                 }
                 className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-slate-100"
               >
@@ -356,8 +501,12 @@ export default function AgentDashboardPage() {
 
                   {agent.profileImage ? (
                     <img
-                      src={agent.profileImage}
-                      alt={agent.fullName}
+                      src={
+                        agent.profileImage
+                      }
+                      alt={
+                        agent.fullName
+                      }
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -385,8 +534,12 @@ export default function AgentDashboardPage() {
 
               <button
                 type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
+                onClick={
+                  handleLogout
+                }
+                disabled={
+                  loggingOut
+                }
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
 
@@ -396,7 +549,9 @@ export default function AgentDashboardPage() {
                     className="animate-spin"
                   />
                 ) : (
-                  <LogOut size={17} />
+                  <LogOut
+                    size={17}
+                  />
                 )}
 
                 <span className="hidden lg:inline">
@@ -413,7 +568,8 @@ export default function AgentDashboardPage() {
               type="button"
               onClick={() =>
                 setMobileMenuOpen(
-                  (previous) => !previous
+                  (previous) =>
+                    !previous
                 )
               }
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 md:hidden"
@@ -445,8 +601,12 @@ export default function AgentDashboardPage() {
 
                   {agent.profileImage ? (
                     <img
-                      src={agent.profileImage}
-                      alt={agent.fullName}
+                      src={
+                        agent.profileImage
+                      }
+                      alt={
+                        agent.fullName
+                      }
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -474,48 +634,63 @@ export default function AgentDashboardPage() {
 
               <div className="space-y-1">
 
-                {navigation.map((item) => {
-                  const Icon = item.icon;
+                {navigation.map(
+                  (item) => {
+                    const Icon =
+                      item.icon;
 
-                  const isActive =
-                    pathname === item.href;
+                    const isActive =
+                      pathname ===
+                      item.href;
 
-                  return (
-                    <button
-                      key={item.href}
-                      type="button"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        router.push(item.href);
-                      }}
-                      className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                        isActive
-                          ? 'bg-blue-950 text-white'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
+                    return (
+                      <button
+                        key={
+                          item.href
+                        }
+                        type="button"
+                        onClick={() => {
+                          setMobileMenuOpen(
+                            false
+                          );
 
-                      <Icon size={18} />
+                          router.push(
+                            item.href
+                          );
+                        }}
+                        className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                          isActive
+                            ? 'bg-blue-950 text-white'
+                            : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
 
-                      <span className="flex-1">
-                        {item.name}
-                      </span>
+                        <Icon size={18} />
 
-                      <ChevronRight
-                        size={17}
-                        className="opacity-50"
-                      />
+                        <span className="flex-1">
+                          {item.name}
+                        </span>
 
-                    </button>
-                  );
-                })}
+                        <ChevronRight
+                          size={17}
+                          className="opacity-50"
+                        />
+
+                      </button>
+                    );
+                  }
+                )}
 
               </div>
 
               <button
                 type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
+                onClick={
+                  handleLogout
+                }
+                disabled={
+                  loggingOut
+                }
                 className="mt-3 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
               >
 
@@ -525,7 +700,9 @@ export default function AgentDashboardPage() {
                     className="animate-spin"
                   />
                 ) : (
-                  <LogOut size={18} />
+                  <LogOut
+                    size={18}
+                  />
                 )}
 
                 Logout
@@ -540,36 +717,42 @@ export default function AgentDashboardPage() {
       </nav>
 
       {/* =====================================================
-          CONTENT
+          MAIN CONTENT
       ====================================================== */}
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-        {/* WELCOME */}
+        {/* ===================================================
+            WELCOME
+        ==================================================== */}
 
         <div className="rounded-3xl bg-blue-950 p-6 text-white shadow-xl sm:p-8">
 
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
-            <div>
+            <div className="min-w-0">
 
               <p className="text-sm font-medium text-blue-300">
                 Agent / Broker Portal
               </p>
 
-              <h1 className="mt-2 text-2xl font-black sm:text-3xl">
-                Welcome, {agent.fullName}
+              <h1 className="mt-2 break-words text-2xl font-black sm:text-3xl">
+                Welcome,{" "}
+                {agent.fullName}
               </h1>
 
               <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100">
-                View your assigned properties and
-                manage your professional information
-                from your agent portal.
+                View your assigned properties
+                and manage your professional
+                information from your agent
+                portal.
               </p>
 
             </div>
 
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+
+              {/* ACCOUNT STATUS */}
 
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
 
@@ -589,19 +772,47 @@ export default function AgentDashboardPage() {
 
               </div>
 
+              {/* HEARTBEAT STATUS */}
+
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+
+                <p className="text-xs text-blue-200">
+                  Presence
+                </p>
+
+                <div className="mt-1 flex items-center gap-2">
+
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      heartbeatActive
+                        ? 'bg-emerald-400'
+                        : 'bg-amber-400'
+                    }`}
+                  />
+
+                  <span className="text-sm font-bold">
+                    {heartbeatActive
+                      ? 'Online'
+                      : 'Connecting...'}
+                  </span>
+
+                </div>
+
+              </div>
+
             </div>
 
           </div>
 
         </div>
 
-        {/* =====================================================
+        {/* ===================================================
             STATISTICS
-        ====================================================== */}
+        ==================================================== */}
 
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
-          {/* TOTAL PROPERTIES */}
+          {/* ASSIGNED PROPERTIES */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
@@ -626,7 +837,9 @@ export default function AgentDashboardPage() {
               </div>
 
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-950">
-                <Building2 size={23} />
+                <Building2
+                  size={23}
+                />
               </div>
 
             </div>
@@ -639,13 +852,13 @@ export default function AgentDashboardPage() {
 
             <div className="flex items-center justify-between">
 
-              <div>
+              <div className="min-w-0">
 
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                   Profile
                 </p>
 
-                <p className="mt-2 text-lg font-black text-slate-900">
+                <p className="mt-2 truncate text-lg font-black text-slate-900">
                   {agent.role}
                 </p>
 
@@ -655,7 +868,7 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
                 <User size={23} />
               </div>
 
@@ -696,9 +909,9 @@ export default function AgentDashboardPage() {
 
         </div>
 
-        {/* =====================================================
+        {/* ===================================================
             ASSIGNED PROPERTIES
-        ====================================================== */}
+        ==================================================== */}
 
         <div className="mt-8">
 
@@ -715,16 +928,20 @@ export default function AgentDashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Properties assigned to you by the
-                BREA 88 Realty administrator.
+                Properties assigned to you by
+                the BREA 88 Realty administrator.
               </p>
 
             </div>
 
             <button
               type="button"
-              onClick={loadProperties}
-              disabled={propertiesLoading}
+              onClick={
+                loadProperties
+              }
+              disabled={
+                propertiesLoading
+              }
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-950 disabled:cursor-not-allowed disabled:opacity-50"
             >
 
@@ -767,11 +984,18 @@ export default function AgentDashboardPage() {
 
                   <button
                     type="button"
-                    onClick={loadProperties}
+                    onClick={
+                      loadProperties
+                    }
                     className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-700"
                   >
-                    <RefreshCw size={14} />
+
+                    <RefreshCw
+                      size={14}
+                    />
+
                     Try Again
+
                   </button>
 
                 </div>
@@ -787,26 +1011,28 @@ export default function AgentDashboardPage() {
             !propertiesError && (
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 
-                {[1, 2, 3].map((item) => (
-                  <div
-                    key={item}
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-                  >
+                {[1, 2, 3].map(
+                  (item) => (
+                    <div
+                      key={item}
+                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                    >
 
-                    <div className="h-52 animate-pulse bg-slate-200" />
+                      <div className="h-52 animate-pulse bg-slate-200" />
 
-                    <div className="space-y-3 p-5">
+                      <div className="space-y-3 p-5">
 
-                      <div className="h-5 animate-pulse rounded bg-slate-200" />
+                        <div className="h-5 animate-pulse rounded bg-slate-200" />
 
-                      <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-2/3 animate-pulse rounded bg-slate-200" />
 
-                      <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200" />
+                        <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200" />
+
+                      </div>
 
                     </div>
-
-                  </div>
-                ))}
+                  )
+                )}
 
               </div>
             )}
@@ -820,7 +1046,9 @@ export default function AgentDashboardPage() {
 
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
 
-                  <Building2 size={30} />
+                  <Building2
+                    size={30}
+                  />
 
                 </div>
 
@@ -829,10 +1057,11 @@ export default function AgentDashboardPage() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  You currently don't have any
-                  properties assigned to your account.
-                  Contact the BREA 88 Realty
-                  administrator if you need assistance.
+                  You currently don't have
+                  any properties assigned to
+                  your account. Contact the
+                  BREA 88 Realty administrator
+                  if you need assistance.
                 </p>
 
               </div>
@@ -845,381 +1074,357 @@ export default function AgentDashboardPage() {
             properties.length > 0 && (
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 
-                {properties.map((property) => {
+                {properties.map(
+                  (property) => {
+                    const coverImage =
+                      property.image ||
+                      property.images?.[0] ||
+                      '/img/placeholder-property.jpg';
 
-                  const coverImage =
-                    property.image ||
-                    property.images?.[0] ||
-                    '/img/placeholder-property.jpg';
+                    return (
+                      <article
+                        key={
+                          property.id
+                        }
+                        className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                      >
 
-                  return (
-                    <article
-                      key={property.id}
-                      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-                    >
+                        {/* IMAGE */}
 
-                      {/* IMAGE */}
+                        <div className="relative h-56 overflow-hidden bg-slate-100">
 
-                      <div className="relative h-56 overflow-hidden bg-slate-100">
-
-                        <img
-                          src={coverImage}
-                          alt={property.title}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-
-                        <div className="absolute left-3 top-3">
-
-                          <span className="rounded-lg bg-white/95 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-blue-950 shadow-sm backdrop-blur-sm">
-                            {property.tag}
-                          </span>
-
-                        </div>
-
-                        <div className="absolute bottom-3 left-3">
-
-                          <span className="rounded-lg bg-blue-950/95 px-3 py-1.5 text-sm font-black text-white shadow-sm">
-                            {property.price}
-                          </span>
-
-                        </div>
-
-                      </div>
-
-                      {/* DETAILS */}
-
-                      <div className="p-5">
-
-                        <h3 className="line-clamp-2 min-h-[3.5rem] text-lg font-black text-slate-900">
-                          {property.title}
-                        </h3>
-
-                        <div className="mt-2 flex items-start gap-2 text-sm text-slate-500">
-
-                          <MapPin
-                            size={16}
-                            className="mt-0.5 shrink-0 text-blue-900"
+                          <img
+                            src={
+                              coverImage
+                            }
+                            alt={
+                              property.title
+                            }
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                           />
 
-                          <span className="line-clamp-2">
-                            {property.location}
-                          </span>
+                          <div className="absolute left-3 top-3">
+
+                            <span className="rounded-lg bg-white/95 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-blue-950 shadow-sm backdrop-blur-sm">
+                              {
+                                property.tag
+                              }
+                            </span>
+
+                          </div>
+
+                          <div className="absolute bottom-3 left-3">
+
+                            <span className="rounded-lg bg-blue-950/95 px-3 py-1.5 text-sm font-black text-white shadow-sm">
+                              {
+                                property.price
+                              }
+                            </span>
+
+                          </div>
 
                         </div>
 
-                        {/* SPECS */}
+                        {/* DETAILS */}
 
-                        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-4">
+                        <div className="p-5">
 
-                          {property.beds !== null && (
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                          <h3 className="line-clamp-2 min-h-[3.5rem] text-lg font-black text-slate-900">
+                            {
+                              property.title
+                            }
+                          </h3>
 
-                              <BedDouble
-                                size={15}
-                                className="text-slate-400"
-                              />
+                          <div className="mt-2 flex items-start gap-2 text-sm text-slate-500">
 
-                              {property.beds} Beds
+                            <MapPin
+                              size={16}
+                              className="mt-0.5 shrink-0 text-blue-900"
+                            />
 
-                            </div>
-                          )}
+                            <span className="line-clamp-2">
+                              {
+                                property.location
+                              }
+                            </span>
 
-                          {property.baths !== null && (
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                          </div>
 
-                              <Bath
-                                size={15}
-                                className="text-slate-400"
-                              />
+                          {/* PROPERTY SPECS */}
 
-                              {property.baths} Baths
+                          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-4">
 
-                            </div>
-                          )}
+                            {property.beds !==
+                              null && (
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
 
-                          {property.sqft !== null && (
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                                <BedDouble
+                                  size={15}
+                                  className="text-slate-400"
+                                />
 
-                              <Maximize
-                                size={15}
-                                className="text-slate-400"
-                              />
+                                {
+                                  property.beds
+                                }{' '}
+                                Beds
 
-                              {property.sqft.toLocaleString()} sqft
+                              </div>
+                            )}
 
-                            </div>
-                          )}
+                            {property.baths !==
+                              null && (
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+
+                                <Bath
+                                  size={15}
+                                  className="text-slate-400"
+                                />
+
+                                {
+                                  property.baths
+                                }{' '}
+                                Baths
+
+                              </div>
+                            )}
+
+                            {property.sqft !==
+                              null && (
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+
+                                <Maximize
+                                  size={15}
+                                  className="text-slate-400"
+                                />
+
+                                {property.sqft.toLocaleString()}{' '}
+                                sqft
+
+                              </div>
+                            )}
+
+                          </div>
+
+                          {/* VIEW PROPERTY */}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              router.push(
+                                `/marketplace?property=${property.id}`
+                              )
+                            }
+                            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-900"
+                          >
+
+                            View Property
+
+                            <ArrowRight
+                              size={16}
+                              className="transition-transform group-hover:translate-x-1"
+                            />
+
+                          </button>
 
                         </div>
 
-                        {/* VIEW */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            router.push(
-                              `/marketplace?property=${property.id}`
-                            )
-                          }
-                          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-900"
-                        >
-
-                          View Property
-
-                          <ArrowRight
-                            size={16}
-                            className="transition-transform group-hover:translate-x-1"
-                          />
-
-                        </button>
-
-                      </div>
-
-                    </article>
-                  );
-                })}
+                      </article>
+                    );
+                  }
+                )}
 
               </div>
             )}
 
         </div>
 
-        {/* =====================================================
-            PROFESSIONAL PROFILE
-        ====================================================== */}
+        {/* ===================================================
+            AGENT PROFILE
+        ==================================================== */}
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-          {/* PROFILE */}
+          {/* PROFESSIONAL PROFILE */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
 
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+              {/* IMAGE */}
+
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
 
                 {agent.profileImage ? (
                   <img
-                    src={agent.profileImage}
-                    alt={agent.fullName}
+                    src={
+                      agent.profileImage
+                    }
+                    alt={
+                      agent.fullName
+                    }
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <BriefcaseBusiness
-                    size={23}
-                    className="text-slate-500"
+                  <User
+                    size={35}
+                    className="text-slate-400"
                   />
                 )}
 
               </div>
 
-              <div className="min-w-0">
+              {/* DETAILS */}
 
-                <h2 className="text-lg font-bold text-slate-900">
+              <div className="min-w-0 flex-1">
+
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-900">
                   Professional Profile
+                </p>
+
+                <h2 className="mt-1 break-words text-2xl font-black text-slate-900">
+                  {agent.fullName}
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  Your information registered with
-                  BREA 88 Realty.
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  {agent.role}
                 </p>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+                  <div className="flex min-w-0 items-center gap-2 text-sm text-slate-600">
+
+                    <Phone
+                      size={16}
+                      className="shrink-0 text-slate-400"
+                    />
+
+                    <span className="truncate">
+                      {agent.phone ||
+                        'Phone not provided'}
+                    </span>
+
+                  </div>
+
+                  <div className="flex min-w-0 items-center gap-2 text-sm text-slate-600">
+
+                    <User
+                      size={16}
+                      className="shrink-0 text-slate-400"
+                    />
+
+                    <span className="truncate">
+                      {agent.email}
+                    </span>
+
+                  </div>
+
+                </div>
+
+                {agent.bio && (
+                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-500">
+                    {agent.bio}
+                  </p>
+                )}
 
               </div>
 
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-5 sm:flex-row">
 
-              <div className="rounded-xl bg-slate-50 p-4">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    '/profile'
+                  )
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-900"
+              >
 
-                <div className="flex items-center gap-2 text-slate-400">
+                <User size={16} />
 
-                  <User size={16} />
+                Manage Profile
 
-                  <span className="text-xs font-bold uppercase tracking-wide">
-                    Name
-                  </span>
+              </button>
 
-                </div>
+              {agent.slug && (
+                <button
+                  type="button"
+                  onClick={
+                    handleViewPublicProfile
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
 
-                <p className="mt-2 truncate text-sm font-semibold text-slate-900">
-                  {agent.fullName}
-                </p>
+                  <ExternalLink
+                    size={16}
+                  />
 
-              </div>
+                  View Public Profile
 
-              <div className="rounded-xl bg-slate-50 p-4">
-
-                <div className="flex items-center gap-2 text-slate-400">
-
-                  <BriefcaseBusiness size={16} />
-
-                  <span className="text-xs font-bold uppercase tracking-wide">
-                    Role
-                  </span>
-
-                </div>
-
-                <p className="mt-2 text-sm font-semibold text-slate-900">
-                  {agent.role}
-                </p>
-
-              </div>
-
-              <div className="rounded-xl bg-slate-50 p-4">
-
-                <div className="flex items-center gap-2 text-slate-400">
-
-                  <Mail size={16} />
-
-                  <span className="text-xs font-bold uppercase tracking-wide">
-                    Email
-                  </span>
-
-                </div>
-
-                <p className="mt-2 truncate text-sm font-semibold text-slate-900">
-                  {agent.email}
-                </p>
-
-              </div>
-
-              <div className="rounded-xl bg-slate-50 p-4">
-
-                <div className="flex items-center gap-2 text-slate-400">
-
-                  <Phone size={16} />
-
-                  <span className="text-xs font-bold uppercase tracking-wide">
-                    Phone
-                  </span>
-
-                </div>
-
-                <p className="mt-2 truncate text-sm font-semibold text-slate-900">
-                  {agent.phone ||
-                    'Not provided'}
-                </p>
-
-              </div>
+                </button>
+              )}
 
             </div>
 
           </div>
 
-          {/* QUICK ACTIONS */}
+          {/* ONLINE STATUS */}
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
-            <h2 className="text-lg font-bold text-slate-900">
-              Quick Actions
-            </h2>
+            <div className="flex items-center gap-3">
 
-            <p className="mt-1 text-sm text-slate-500">
-              Manage your agent account.
-            </p>
-
-            <div className="mt-5 space-y-2">
-
-              <button
-                type="button"
-                onClick={() =>
-                  router.push('/marketplace')
-                }
-                className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                  heartbeatActive
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'bg-amber-50 text-amber-600'
+                }`}
               >
 
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-900">
+                {heartbeatActive ? (
+                  <CheckCircle2
+                    size={21}
+                  />
+                ) : (
+                  <Clock3
+                    size={21}
+                  />
+                )}
 
-                  <Building2 size={18} />
+              </div>
 
-                </div>
+              <div>
 
-                <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Presence
+                </p>
 
-                  <p className="text-sm font-bold text-slate-900">
-                    Browse Properties
-                  </p>
+                <p className="mt-1 text-lg font-black text-slate-900">
+                  {heartbeatActive
+                    ? 'Online'
+                    : 'Connecting...'}
+                </p>
 
-                  <p className="text-xs text-slate-500">
-                    View marketplace
-                  </p>
+              </div>
 
-                </div>
+            </div>
 
-                <ChevronRight
-                  size={17}
-                  className="text-slate-400"
-                />
+            <div className="mt-5 rounded-xl bg-slate-50 p-4">
 
-              </button>
+              <p className="text-sm leading-6 text-slate-500">
+                Your account automatically sends
+                a heartbeat while this dashboard
+                is open.
+              </p>
 
-              <button
-                type="button"
-                onClick={() =>
-                  router.push('/profile')
-                }
-                className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
-              >
-
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-
-                  <User size={18} />
-
-                </div>
-
-                <div className="flex-1">
-
-                  <p className="text-sm font-bold text-slate-900">
-                    My Profile
-                  </p>
-
-                  <p className="text-xs text-slate-500">
-                    View profile information
-                  </p>
-
-                </div>
-
-                <ChevronRight
-                  size={17}
-                  className="text-slate-400"
-                />
-
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="flex w-full items-center gap-3 rounded-xl border border-red-100 p-3 text-left transition hover:bg-red-50 disabled:opacity-50"
-              >
-
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">
-
-                  {loggingOut ? (
-                    <Loader2
-                      size={18}
-                      className="animate-spin"
-                    />
-                  ) : (
-                    <LogOut size={18} />
-                  )}
-
-                </div>
-
-                <div className="flex-1">
-
-                  <p className="text-sm font-bold text-red-600">
-                    Logout
-                  </p>
-
-                  <p className="text-xs text-slate-500">
-                    End your agent session
-                  </p>
-
-                </div>
-
-              </button>
+              <p className="mt-2 text-xs font-medium leading-5 text-slate-400">
+                The administrator will see you as
+                Offline after your heartbeat stops
+                for more than 5 minutes.
+              </p>
 
             </div>
 

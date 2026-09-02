@@ -300,22 +300,12 @@ function MarketplaceContent() {
 
             const matchesAgent = true;
 
-            const matchesCategory =
-              selectedCategory ===
-                'All' ||
-              property.category ===
-                selectedCategory ||
+            const matchesCategory = selectedCategory === 'All' || property.category === selectedCategory ||
               (
-                !property.category &&
-                selectedCategory ===
-                  property.tag
+                !property.category && selectedCategory === property.tag
               );
 
-            const matchesPropertyType =
-              selectedPropertyType ===
-                'All' ||
-              property.propertyType ===
-                selectedPropertyType;
+            const matchesPropertyType = selectedPropertyType === 'All' || property.propertyType === selectedPropertyType;
 
             const matchesHouseType =
               selectedHouseType ===
