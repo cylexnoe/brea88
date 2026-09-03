@@ -56,7 +56,7 @@ return ( <main className="min-h-screen bg-slate-950 text-white flex items-center
             </div>
 
             <p className="text-[8px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-blue-600 mb-1 sm:mb-2">
-              LookingFor Property
+              Looking For Property
             </p>
 
             <h2 className="text-base sm:text-2xl md:text-3xl font-black mb-2 sm:mb-3 leading-tight">
