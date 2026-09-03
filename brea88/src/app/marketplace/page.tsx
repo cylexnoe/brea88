@@ -1,11 +1,11 @@
 'use client';
-import { useRouter, useSearchParams } from 'next/navigation';
+
 import React, {
-  Suspense,
   useEffect,
   useMemo,
   useState,
 } from 'react';
+
 import {
   Search,
   MapPin,
@@ -76,7 +76,6 @@ interface Property {
    CLASSIFICATION OPTIONS
 ========================================================= */
 
-
 const PROPERTY_CATEGORIES = [
   'All',
   'House & Lot',
@@ -123,8 +122,30 @@ const STOREY_OPTIONS = [
    MARKETPLACE CONTENT
 ========================================================= */
 
-function MarketplaceContent() {
+export default function MarketplacePage() {
+  /* =======================================================
+     AGENT ROUTING CONTEXT
+     
+     The marketplace receives the permanent agent link:
+     
+       /marketplace?agent=agent-slug
+     
+     We intentionally do NOT use useSearchParams here.
+     ======================================================= */
 
+  const [agentSlug, setAgentSlug] =
+    useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const slug =
+      params.get('agent')?.trim() || '';
+
+    setAgentSlug(slug);
+  }, []);
 
   /* =======================================================
      PROPERTY STATE
@@ -225,7 +246,8 @@ function MarketplaceContent() {
           );
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
         setProperties(
           Array.isArray(data)
@@ -278,7 +300,6 @@ function MarketplaceContent() {
       let result =
         properties.filter(
           (property) => {
-
             const searchableText = [
               property.title,
               property.location,
@@ -298,14 +319,21 @@ function MarketplaceContent() {
                 query
               );
 
-            const matchesAgent = true;
-
-            const matchesCategory = selectedCategory === 'All' || property.category === selectedCategory ||
+            const matchesCategory =
+              selectedCategory === 'All' ||
+              property.category ===
+                selectedCategory ||
               (
-                !property.category && selectedCategory === property.tag
+                !property.category &&
+                selectedCategory ===
+                  property.tag
               );
 
-            const matchesPropertyType = selectedPropertyType === 'All' || property.propertyType === selectedPropertyType;
+            const matchesPropertyType =
+              selectedPropertyType ===
+                'All' ||
+              property.propertyType ===
+                selectedPropertyType;
 
             const matchesHouseType =
               selectedHouseType ===
@@ -361,17 +389,18 @@ function MarketplaceContent() {
         );
       }
 
-       return result;
-        }, [
-          properties,
-          searchQuery,
-          selectedCategory,
-          selectedPropertyType,
-          selectedHouseType,
-          selectedStorey,
-          maxPrice,
-          sortBy,
-        ]);
+      return result;
+    }, [
+      properties,
+      searchQuery,
+      selectedCategory,
+      selectedPropertyType,
+      selectedHouseType,
+      selectedStorey,
+      maxPrice,
+      sortBy,
+    ]);
+
   /* =======================================================
      RESET FILTERS
   ======================================================= */
@@ -552,10 +581,17 @@ function MarketplaceContent() {
      SUBMIT INQUIRY
      
      IMPORTANT:
-     NO agentId IS SENT HERE.
-
-     The API route will determine which
-     logged-in agent receives the inquiry.
+     
+     We do NOT send agentId from the browser.
+     
+     The permanent agent slug comes from:
+     
+       /marketplace?agent=agent-slug
+     
+     The API resolves that slug to the actual
+     Agent record and stores agentId server-side.
+     
+     propertyId comes from the selected property.
   ======================================================= */
 
   const submitInquiry = async (
@@ -572,21 +608,55 @@ function MarketplaceContent() {
     setSubmittingInquiry(true);
 
     try {
+      /*
+       * The Marketplace should normally be opened
+       * through an Agent Profile:
+       *
+       * /marketplace?agent=agent-slug
+       *
+       * We do not silently choose another agent
+       * from the property record because Admin does
+       * not assign/reassign properties.
+       */
+      if (!agentSlug) {
+        throw new Error(
+          'This marketplace session is not connected to an agent. Please open the marketplace through the agent profile link.'
+        );
+      }
+
       const response = await fetch(
         '/api/inquiries',
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type':
+              'application/json',
           },
           credentials: 'include',
           body: JSON.stringify({
-            name: inquiryName.trim(),
-            email: inquiryEmail.trim(),
-            phone: inquiryPhone.trim(),
-            message: inquiryMessage.trim(),
-            propertyId: selectedProperty.id,
-            agentSlug: agentSlug || selectedProperty.agent?.slug || '',
+            name:
+              inquiryName.trim(),
+
+            email:
+              inquiryEmail.trim(),
+
+            phone:
+              inquiryPhone.trim(),
+
+            message:
+              inquiryMessage.trim(),
+
+            /*
+             * Property selected by the client.
+             */
+            propertyId:
+              selectedProperty.id,
+
+            /*
+             * Permanent agent profile context.
+             */
+            agentSlug:
+              agentSlug,
           }),
         }
       );
@@ -597,6 +667,7 @@ function MarketplaceContent() {
       if (!response.ok) {
         throw new Error(
           data?.error ||
+          data?.message ||
           'Failed to submit inquiry.'
         );
       }
@@ -626,13 +697,21 @@ function MarketplaceContent() {
   /* =======================================================
      SCHEDULE VIEWING
      
-     This still uses email for now.
-     Later we can make viewing requests
-     use the same inquiry system.
+     Viewing currently uses email.
+     
+     This does NOT assign a property.
   ======================================================= */
 
   const scheduleViewing = () => {
     if (!selectedProperty) {
+      return;
+    }
+
+    const contactEmail =
+      selectedProperty.agent?.email;
+
+    if (!contactEmail) {
+      openInquiryForm();
       return;
     }
 
@@ -643,32 +722,19 @@ function MarketplaceContent() {
 
     const body =
       encodeURIComponent(
-        `Hello,\n\nI am interested in viewing the property "${selectedProperty.title}" located at ${selectedProperty.location}.\n\nI would like to schedule a property viewing.\n\nThank you.`
+        `Hello,
+
+I am interested in viewing the property "${selectedProperty.title}" located at ${selectedProperty.location}.
+
+I would like to schedule a property viewing.
+
+Thank you.`
       );
 
-    if (
-      selectedProperty.agent?.email
-    ) {
-      window.location.href =
-        `mailto:${selectedProperty.agent.email}?subject=${subject}&body=${body}`;
-
-      return;
-    }
-
-    /*
-     * If no property agent is assigned,
-     * open the inquiry form instead.
-     *
-     * This prevents the marketplace
-     * from depending on a property-level
-     * agent assignment.
-     */
-
-    openInquiryForm();
+    window.location.href =
+      `mailto:${contactEmail}?subject=${subject}&body=${body}`;
   };
-const router = useRouter();
-const searchParams = useSearchParams();
-const agentSlug = searchParams.get('agent') || '';
+
   /* =======================================================
      RETURN
   ======================================================= */
@@ -739,6 +805,16 @@ const agentSlug = searchParams.get('agent') || '';
               rental, and investment
               properties in prime locations.
             </p>
+
+            {/* AGENT CONTEXT */}
+
+            {agentSlug && (
+              <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-xs font-bold text-blue-300">
+                <User className="h-3.5 w-3.5" />
+
+                Agent Marketplace
+              </div>
+            )}
 
           </div>
 
@@ -1300,9 +1376,7 @@ const agentSlug = searchParams.get('agent') || '';
 
               </button>
 
-              {/* =================================================
-                  IMAGE GALLERY
-              ================================================== */}
+              {/* IMAGE GALLERY */}
 
               <div className="grid bg-slate-950 lg:grid-cols-[1fr_160px]">
 
@@ -1462,9 +1536,7 @@ const agentSlug = searchParams.get('agent') || '';
 
               </div>
 
-              {/* =================================================
-                  DETAILS
-              ================================================== */}
+              {/* DETAILS */}
 
               <div className="grid lg:grid-cols-[1fr_340px]">
 
@@ -1736,17 +1808,16 @@ const agentSlug = searchParams.get('agent') || '';
                       BREA 88 Realty.
                       Submit an inquiry
                       to connect with
-                      the agent currently
-                      handling your session.
+                      the agent associated
+                      with this marketplace
+                      session.
                     </p>
 
                   </div>
 
                 </div>
 
-                {/* =================================================
-                    AGENT / INQUIRY SIDEBAR
-                ================================================== */}
+                {/* AGENT / INQUIRY SIDEBAR */}
 
                 <aside className="border-t border-slate-200 bg-slate-50 p-5 sm:p-8 lg:border-l lg:border-t-0">
 
@@ -1754,9 +1825,7 @@ const agentSlug = searchParams.get('agent') || '';
                     Property Inquiry
                   </p>
 
-                  {/* =================================================
-                      SUCCESS MESSAGE
-                  ================================================== */}
+                  {/* SUCCESS */}
 
                   {inquirySuccess ? (
 
@@ -1776,8 +1845,9 @@ const agentSlug = searchParams.get('agent') || '';
                             Your inquiry has
                             been submitted
                             successfully.
-                            The appropriate
-                            agent will handle
+                            The agent connected
+                            to this marketplace
+                            session will handle
                             your inquiry.
                           </p>
 
@@ -1801,9 +1871,7 @@ const agentSlug = searchParams.get('agent') || '';
 
                   ) : showInquiryForm ? (
 
-                    /* =================================================
-                       INQUIRY FORM
-                    ================================================== */
+                    /* INQUIRY FORM */
 
                     <form
                       onSubmit={
@@ -1928,7 +1996,6 @@ const agentSlug = searchParams.get('agent') || '';
                             <Loader2 className="h-4 w-4 animate-spin" />
 
                             Sending...
-
                           </>
 
                         ) : (
@@ -1937,7 +2004,6 @@ const agentSlug = searchParams.get('agent') || '';
                             <Send className="h-4 w-4" />
 
                             Submit Inquiry
-
                           </>
 
                         )}
@@ -1961,9 +2027,7 @@ const agentSlug = searchParams.get('agent') || '';
 
                   ) : (
 
-                    /* =================================================
-                       DEFAULT SIDEBAR
-                    ================================================== */
+                    /* DEFAULT SIDEBAR */
 
                     <>
 
@@ -1984,10 +2048,10 @@ const agentSlug = searchParams.get('agent') || '';
                           and provide your
                           contact details.
                           Your inquiry will
-                          automatically be
-                          assigned to the
-                          appropriate logged-in
-                          agent.
+                          be sent to the
+                          agent connected
+                          to this marketplace
+                          session.
                         </p>
 
                         <button
@@ -2006,7 +2070,7 @@ const agentSlug = searchParams.get('agent') || '';
 
                       </div>
 
-                      {/* CURRENT PROPERTY AGENT */}
+                      {/* CURRENT PROPERTY CONTACT */}
 
                       {selectedProperty.agent && (
 
@@ -2161,34 +2225,3 @@ const agentSlug = searchParams.get('agent') || '';
     </div>
   );
 }
-
-/* =========================================================
-   PAGE
-========================================================= */
-
-export default function MarketplacePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-slate-50">
-
-          <div className="text-center">
-
-            <Loader2 className="mx-auto h-9 w-9 animate-spin text-blue-900" />
-
-            <p className="mt-4 text-sm font-semibold text-slate-500">
-              Loading marketplace...
-            </p>
-
-          </div>
-
-        </div>
-      }
-    >
-
-      <MarketplaceContent />
-
-    </Suspense>
-  );
-}
-
