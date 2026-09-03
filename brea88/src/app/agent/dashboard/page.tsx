@@ -311,7 +311,6 @@ export default function AgentDashboardPage() {
 
         if (mounted) {
           setAgent(data.agent);
-          setLoading(false);
         }
       } catch (error) {
         console.error(
@@ -319,7 +318,16 @@ export default function AgentDashboardPage() {
           error
         );
 
+        if (mounted) {
+          setLoading(false);
+        }
+
         router.replace('/agent/login');
+        return;
+      }
+
+      if (mounted) {
+        setLoading(false);
       }
     };
 
@@ -331,11 +339,133 @@ export default function AgentDashboardPage() {
   }, [router]);
 
   // =========================================================
+  // LOAD INQUIRIES
+  // =========================================================
+  //
+  // IMPORTANT:
+  // There is NO automatic inquiry polling.
+  //
+  // Inquiries load:
+  // 1. Once after the current agent is loaded.
+  // 2. When Refresh is clicked.
+  // 3. When Try Again is clicked.
+  //
+  // Heartbeat is completely separate.
+  // =========================================================
+
+  const loadInquiries = async (
+    showLoading = true
+  ) => {
+    if (showLoading) {
+      setInquiriesLoading(true);
+    }
+
+    setInquiriesError('');
+
+    try {
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+        }
+      );
+
+      if (response.status === 401) {
+        router.replace('/agent/login');
+        return;
+      }
+
+      let data: unknown = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          'The server returned an invalid response.'
+        );
+      }
+
+      if (!response.ok) {
+        const errorData =
+          typeof data === 'object' &&
+          data !== null
+            ? (data as Record<string, unknown>)
+            : {};
+
+        throw new Error(
+          typeof errorData.message === 'string'
+            ? errorData.message
+            : typeof errorData.error === 'string'
+              ? errorData.error
+              : 'Unable to load inquiry messages.'
+        );
+      }
+
+      const receivedInquiries =
+        Array.isArray(data)
+          ? data
+          : typeof data === 'object' &&
+              data !== null &&
+              Array.isArray(
+                (data as Record<string, unknown>)
+                  .inquiries
+              )
+            ? (
+                data as Record<string, unknown>
+              ).inquiries
+            : [];
+
+      setInquiries(
+        receivedInquiries as Inquiry[]
+      );
+
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error(
+        'Failed to load inquiries:',
+        error
+      );
+
+      setInquiriesError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to load inquiry messages.'
+      );
+    } finally {
+      // IMPORTANT:
+      // Always stop the loading state.
+      //
+      // This prevents the dashboard from being
+      // permanently stuck on "Loading inquiry messages..."
+      setInquiriesLoading(false);
+    }
+  };
+
+  // =========================================================
+  // INITIAL INQUIRY LOAD ONLY
+  // =========================================================
+  //
+  // IMPORTANT:
+  // Depend ONLY on agent.id.
+  //
+  // The heartbeat updates agent.lastSeen every 60 seconds.
+  // We do NOT want that update to trigger inquiry loading again.
+  // =========================================================
+
+  useEffect(() => {
+    if (!agent?.id) return;
+
+    loadInquiries(true);
+  }, [agent?.id]);
+
+  // =========================================================
   // AGENT HEARTBEAT
   // =========================================================
 
   useEffect(() => {
-    if (!agent) return;
+    if (!agent?.id) return;
 
     let mounted = true;
 
@@ -363,14 +493,22 @@ export default function AgentDashboardPage() {
           return;
         }
 
-        const data = await response.json();
+        let data: any = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
 
         if (data?.success && mounted) {
           setHeartbeatActive(true);
 
           if (data.agent) {
             setAgent((previous) => {
-              if (!previous) return previous;
+              if (!previous) {
+                return previous;
+              }
 
               return {
                 ...previous,
@@ -393,10 +531,10 @@ export default function AgentDashboardPage() {
       }
     };
 
-    // Send immediately when dashboard loads.
+    // Immediately mark the agent online.
     sendHeartbeat();
 
-    // Keep heartbeat for online/offline presence.
+    // Continue heartbeat every 60 seconds.
     const heartbeatInterval =
       window.setInterval(
         sendHeartbeat,
@@ -410,90 +548,7 @@ export default function AgentDashboardPage() {
         heartbeatInterval
       );
     };
-  }, [agent, router]);
-
-  // =========================================================
-  // LOAD INQUIRIES
-  // =========================================================
-  // IMPORTANT:
-  // Inquiry messages are NOT automatically polled.
-  // They only load:
-  // 1. When the dashboard first loads.
-  // 2. When the user presses Refresh.
-  // 3. When the user presses Try Again after an error.
-  // =========================================================
-
-  const loadInquiries = async (
-    showLoading = true
-  ) => {
-    if (showLoading) {
-      setInquiriesLoading(true);
-    }
-
-    setInquiriesError('');
-
-    try {
-      const response = await fetch(
-        '/api/inquiries',
-        {
-          method: 'GET',
-          credentials: 'include',
-          cache: 'no-store',
-        }
-      );
-
-      if (response.status === 401) {
-        router.replace('/agent/login');
-        return;
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            'Unable to load inquiry messages.'
-        );
-      }
-
-      const receivedInquiries =
-        Array.isArray(data)
-          ? data
-          : Array.isArray(data?.inquiries)
-            ? data.inquiries
-            : [];
-
-      setInquiries(receivedInquiries);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error(
-        'Failed to load inquiries:',
-        error
-      );
-
-      setInquiriesError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to load inquiry messages.'
-      );
-    } finally {
-      if (showLoading) {
-        setInquiriesLoading(false);
-      }
-    }
-  };
-
-  // =========================================================
-  // INITIAL INQUIRY LOAD ONLY
-  // NO AUTOMATIC POLLING
-  // =========================================================
-
-  useEffect(() => {
-    if (!agent) return;
-
-    loadInquiries(true);
-  }, [agent]);
+  }, [agent?.id, router]);
 
   // =========================================================
   // MARK INQUIRY AS READ
@@ -523,7 +578,13 @@ export default function AgentDashboardPage() {
         }
       );
 
-      const data = await response.json();
+      let data: any = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
         console.error(
@@ -619,7 +680,18 @@ export default function AgentDashboardPage() {
         }
       );
 
-      const data = await response.json();
+      let data: any = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (response.status === 401) {
+        router.replace('/agent/login');
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -703,7 +775,13 @@ export default function AgentDashboardPage() {
         }
       );
 
-      const data = await response.json();
+      let data: any = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       if (response.status === 401) {
         router.replace('/agent/login');
@@ -1487,7 +1565,8 @@ export default function AgentDashboardPage() {
                   onClick={() =>
                     loadInquiries(true)
                   }
-                  className="mt-3 text-sm font-semibold underline"
+                  disabled={inquiriesLoading}
+                  className="mt-3 text-sm font-semibold underline disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Try again
                 </button>
@@ -2467,3 +2546,4 @@ export default function AgentDashboardPage() {
     </div>
   );
 }
+
