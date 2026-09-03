@@ -29,7 +29,6 @@ import {
   Inbox,
   Check,
   Circle,
-  DollarSign,
   Eye,
   Image as ImageIcon,
 } from 'lucide-react';
@@ -1806,11 +1805,6 @@ export default function AgentDashboardPage() {
                                         </span>
 
                                         <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-                                          <DollarSign
-                                            size={
-                                              13
-                                            }
-                                          />
 
                                           ₱
                                           {
@@ -2187,12 +2181,6 @@ export default function AgentDashboardPage() {
                           </div>
 
                           <div className="flex items-start gap-2.5 text-sm text-slate-600">
-
-                            <DollarSign
-                              size={17}
-                              className="mt-0.5 shrink-0 text-slate-400"
-                            />
-
                             <div>
 
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
