@@ -1278,3 +1278,143 @@ export async function PATCH(request: Request) {
     );
   }
 }
+// =========================================================
+// DELETE INQUIRY
+// =========================================================
+//
+// Agents/Brokers can only delete inquiries that belong
+// to their own account.
+//
+// IMPORTANT:
+// The agentId check prevents one agent from deleting
+// another agent's inquiry.
+// =========================================================
+
+export async function DELETE(request: Request) {
+  try {
+    const agent = await getAgentFromSession();
+
+    if (!agent) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Unauthorized. Please log in as an agent.',
+        },
+        { status: 401 }
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid request body.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid inquiry data.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const data = body as Record<string, unknown>;
+
+    const id = Number(data.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid inquiry ID.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // =====================================================
+    // FIND THE INQUIRY
+    // =====================================================
+    //
+    // CRITICAL SECURITY CHECK:
+    //
+    // The inquiry must belong to the currently logged-in
+    // Agent/Broker.
+    //
+    // Agent A cannot delete Agent B's inquiry.
+    // =====================================================
+
+    const existingInquiry =
+      await prisma.inquiry.findFirst({
+        where: {
+          id,
+          agentId: agent.id,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!existingInquiry) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Inquiry not found.',
+        },
+        { status: 404 }
+      );
+    }
+
+    // =====================================================
+    // DELETE
+    // =====================================================
+
+    await prisma.inquiry.delete({
+      where: {
+        id: existingInquiry.id,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Inquiry deleted successfully.',
+        inquiryId: existingInquiry.id,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error(
+      'DELETE /api/inquiries error:',
+      error
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to delete inquiry.',
+        debug:
+          process.env.NODE_ENV !== 'production' &&
+          error instanceof Error
+            ? error.message
+            : undefined,
+      },
+      { status: 500 }
+    );
+  }
+}
