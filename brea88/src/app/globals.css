@@ -99,6 +99,17 @@ body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input:focus { bor
 body:has(main>section>div>div.overflow-hidden.rounded-3xl) { background:radial-gradient(circle at 50% -12%,rgba(201,169,110,.14),transparent 34%),radial-gradient(circle at 4% 42%,rgba(11,42,111,.14),transparent 30%),#050b16; }
 body:has(main>section>div>div.overflow-hidden.rounded-3xl) main { isolation:isolate; }
 
+/* Dashboard interaction refinement. */
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white > div { position:relative; }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white > div:first-child::before { content:""; position:absolute; left:0; top:18px; bottom:18px; width:2px; border-radius:999px; background:linear-gradient(180deg,var(--brea-gold),transparent); opacity:.55; }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white h3 { letter-spacing:-.018em; }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main button[class*="border-slate-200"] { box-shadow:0 5px 16px rgba(15,23,42,.035); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main button[class*="border-slate-200"]:hover { border-color:rgba(201,169,110,.34); box-shadow:0 10px 24px rgba(15,23,42,.07); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main header button { border-color:rgba(15,23,42,.1); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .bg-slate-50 { background:linear-gradient(145deg,#f8fafc,#f1f5f9); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-xl.border.border-slate-200.bg-slate-50 { box-shadow:inset 0 1px 0 rgba(255,255,255,.9); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main img { box-shadow:0 8px 22px rgba(15,23,42,.08); }
+
 @media (min-width:640px) { input,textarea,select { font-size:inherit; } }
 @media (max-width:1023px) { body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-top:.25rem; } }
 @media (max-width:639px) {
@@ -110,5 +121,7 @@ body:has(main>section>div>div.overflow-hidden.rounded-3xl) main { isolation:isol
   body:has(input[placeholder*="Search properties"]) main { padding-bottom:5rem; }
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside { width:min(86vw,320px); }
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-bottom:2rem; }
+  body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white:hover { transform:none; }
+  body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white > div:first-child::before { top:14px; bottom:14px; }
 }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
