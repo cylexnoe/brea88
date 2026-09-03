@@ -119,19 +119,24 @@ const STOREY_OPTIONS = [
 ];
 
 /* =========================================================
-   MARKETPLACE CONTENT
+   MARKETPLACE
 ========================================================= */
 
 export default function MarketplacePage() {
   /* =======================================================
      AGENT ROUTING CONTEXT
-     
-     The marketplace receives the permanent agent link:
-     
+
+     Marketplace links should normally be opened as:
+
        /marketplace?agent=agent-slug
-     
-     We intentionally do NOT use useSearchParams here.
-     ======================================================= */
+
+     Example:
+
+       /marketplace?agent=john-doe
+
+     We intentionally use window.location.search inside
+     useEffect instead of useSearchParams.
+  ======================================================= */
 
   const [agentSlug, setAgentSlug] =
     useState('');
@@ -579,19 +584,20 @@ export default function MarketplacePage() {
 
   /* =======================================================
      SUBMIT INQUIRY
-     
+
      IMPORTANT:
-     
-     We do NOT send agentId from the browser.
-     
-     The permanent agent slug comes from:
-     
+
+     The browser NEVER sends agentId.
+
+     The agent is determined only by:
+
        /marketplace?agent=agent-slug
-     
-     The API resolves that slug to the actual
-     Agent record and stores agentId server-side.
-     
-     propertyId comes from the selected property.
+
+     The API resolves agentSlug server-side
+     and stores the actual agentId.
+
+     propertyId identifies the property that
+     the client is asking about.
   ======================================================= */
 
   const submitInquiry = async (
@@ -605,25 +611,22 @@ export default function MarketplacePage() {
 
     setInquiryError('');
     setInquirySuccess(false);
+
+    /*
+     * The marketplace must have a permanent
+     * agent context.
+     */
+    if (!agentSlug) {
+      setInquiryError(
+        'This marketplace link is not connected to an agent. Please open the marketplace from an agent profile.'
+      );
+
+      return;
+    }
+
     setSubmittingInquiry(true);
 
     try {
-      /*
-       * The Marketplace should normally be opened
-       * through an Agent Profile:
-       *
-       * /marketplace?agent=agent-slug
-       *
-       * We do not silently choose another agent
-       * from the property record because Admin does
-       * not assign/reassign properties.
-       */
-      if (!agentSlug) {
-        throw new Error(
-          'This marketplace session is not connected to an agent. Please open the marketplace through the agent profile link.'
-        );
-      }
-
       const response = await fetch(
         '/api/inquiries',
         {
@@ -647,13 +650,16 @@ export default function MarketplacePage() {
               inquiryMessage.trim(),
 
             /*
-             * Property selected by the client.
+             * The property selected by the client.
              */
             propertyId:
               selectedProperty.id,
 
             /*
              * Permanent agent profile context.
+             *
+             * The API resolves this slug to
+             * the actual Agent record.
              */
             agentSlug:
               agentSlug,
@@ -696,10 +702,15 @@ export default function MarketplacePage() {
 
   /* =======================================================
      SCHEDULE VIEWING
-     
-     Viewing currently uses email.
-     
-     This does NOT assign a property.
+
+     Viewing requests use the SAME inquiry system.
+
+     This is important because the inquiry must
+     go to the agent connected to the permanent
+     marketplace link.
+
+     We do NOT use selectedProperty.agent.email
+     for routing.
   ======================================================= */
 
   const scheduleViewing = () => {
@@ -707,32 +718,23 @@ export default function MarketplacePage() {
       return;
     }
 
-    const contactEmail =
-      selectedProperty.agent?.email;
+    if (!agentSlug) {
+      setInquiryError(
+        'This marketplace link is not connected to an agent. Please open the marketplace from an agent profile.'
+      );
 
-    if (!contactEmail) {
-      openInquiryForm();
+      setShowInquiryForm(true);
+
       return;
     }
 
-    const subject =
-      encodeURIComponent(
-        `Property Viewing Request - ${selectedProperty.title}`
-      );
+    setInquiryMessage(
+      `Hello, I am interested in scheduling a viewing for "${selectedProperty.title}" located at ${selectedProperty.location}. Please let me know the available schedule.`
+    );
 
-    const body =
-      encodeURIComponent(
-        `Hello,
-
-I am interested in viewing the property "${selectedProperty.title}" located at ${selectedProperty.location}.
-
-I would like to schedule a property viewing.
-
-Thank you.`
-      );
-
-    window.location.href =
-      `mailto:${contactEmail}?subject=${subject}&body=${body}`;
+    setInquirySuccess(false);
+    setInquiryError('');
+    setShowInquiryForm(true);
   };
 
   /* =======================================================
@@ -763,7 +765,11 @@ Thank you.`
           <div className="flex items-center justify-between">
 
             <a
-              href="/home"
+              href={
+                agentSlug
+                  ? `/home?agent=${encodeURIComponent(agentSlug)}`
+                  : '/home'
+              }
               className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-300 backdrop-blur transition hover:bg-white/10 hover:text-white"
             >
 
@@ -810,9 +816,11 @@ Thank you.`
 
             {agentSlug && (
               <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-xs font-bold text-blue-300">
+
                 <User className="h-3.5 w-3.5" />
 
                 Agent Marketplace
+
               </div>
             )}
 
@@ -1807,10 +1815,11 @@ Thank you.`
                       available through
                       BREA 88 Realty.
                       Submit an inquiry
-                      to connect with
-                      the agent associated
-                      with this marketplace
-                      session.
+                      and it will be
+                      sent to the agent
+                      connected to this
+                      permanent marketplace
+                      link.
                     </p>
 
                   </div>
@@ -1847,7 +1856,7 @@ Thank you.`
                             successfully.
                             The agent connected
                             to this marketplace
-                            session will handle
+                            link will handle
                             your inquiry.
                           </p>
 
@@ -1993,17 +2002,21 @@ Thank you.`
                         {submittingInquiry ? (
 
                           <>
+
                             <Loader2 className="h-4 w-4 animate-spin" />
 
                             Sending...
+
                           </>
 
                         ) : (
 
                           <>
+
                             <Send className="h-4 w-4" />
 
                             Submit Inquiry
+
                           </>
 
                         )}
@@ -2050,8 +2063,8 @@ Thank you.`
                           Your inquiry will
                           be sent to the
                           agent connected
-                          to this marketplace
-                          session.
+                          to this permanent
+                          marketplace link.
                         </p>
 
                         <button
