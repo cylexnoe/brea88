@@ -38,100 +38,100 @@ return ( <main className="min-h-screen bg-slate-950 text-white flex items-center
     </div>
 
     {/* SELECTION CARDS */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:gap-6">
 
-      {/* CLIENT */}
-      <button
-        type="button"
-        onClick={() => router.push('/home')}
-        className="group relative text-left bg-white text-slate-900 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-white/10 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 overflow-hidden"
-      >
+        {/* CLIENT */}
+        <button
+          type="button"
+          onClick={() => router.push('/home')}
+          className="group relative text-left bg-white text-slate-900 rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-10 border border-white/10 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 overflow-hidden min-w-0"
+        >
 
-        <div className="absolute -right-16 -top-16 w-40 h-40 bg-blue-100 rounded-full opacity-50 group-hover:scale-125 transition-transform duration-500" />
+          <div className="absolute -right-10 -top-10 sm:-right-16 sm:-top-16 w-24 h-24 sm:w-40 sm:h-40 bg-blue-100 rounded-full opacity-50 group-hover:scale-125 transition-transform duration-500" />
 
-        <div className="relative">
+          <div className="relative">
 
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-900 text-white flex items-center justify-center mb-6 shadow-lg group-hover:scale-105 transition-transform">
-            <Users className="w-7 h-7 sm:w-8 sm:h-8" />
-          </div>
+            <div className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl sm:rounded-2xl bg-blue-900 text-white flex items-center justify-center mb-3 sm:mb-5 md:mb-6 shadow-lg group-hover:scale-105 transition-transform">
+              <Users className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            </div>
 
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-2">
-            For Property Hunters
-          </p>
+            <p className="text-[8px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-blue-600 mb-1 sm:mb-2">
+              For Property Hunters
+            </p>
 
-          <h2 className="text-2xl sm:text-3xl font-black mb-3">
-            I’m a Client
-          </h2>
+            <h2 className="text-base sm:text-2xl md:text-3xl font-black mb-2 sm:mb-3 leading-tight">
+              I’m a Client
+            </h2>
 
-          <p className="text-sm sm:text-base text-slate-500 leading-6 mb-7">
-            Browse properties, explore listings, view property photos,
-            and find the right property for your needs.
-          </p>
+            <p className="text-[10px] sm:text-sm md:text-base text-slate-500 leading-4 sm:leading-6 mb-4 sm:mb-7">
+              Browse properties, explore listings, view property photos,
+              and find the right property for your needs.
+            </p>
 
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1 sm:gap-3">
 
-            <span className="font-bold text-blue-900 text-sm sm:text-base">
-              Browse Properties
-            </span>
+              <span className="font-bold text-blue-900 text-[10px] sm:text-sm md:text-base leading-tight">
+                Browse Properties
+              </span>
 
-            <div className="w-10 h-10 rounded-full bg-blue-900 text-white flex items-center justify-center group-hover:translate-x-1 transition-transform">
-              <ArrowRight className="w-5 h-5" />
+              <div className="shrink-0 w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-blue-900 text-white flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </div>
+
             </div>
 
           </div>
 
-        </div>
-
-      </button>
+        </button>
 
 
-      {/* AGENT / BROKER */}
-      <button
-        type="button"
-        onClick={() => router.push('/agent/login')}
-        className="group relative text-left bg-blue-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-blue-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 overflow-hidden"
-      >
+        {/* AGENT / BROKER */}
+        <button
+          type="button"
+          onClick={() => router.push('/agent/login')}
+          className="group relative text-left bg-blue-900 text-white rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-10 border border-blue-800 shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 overflow-hidden min-w-0"
+        >
 
-        <div className="absolute -right-16 -top-16 w-40 h-40 bg-blue-800 rounded-full opacity-50 group-hover:scale-125 transition-transform duration-500" />
+          <div className="absolute -right-10 -top-10 sm:-right-16 sm:-top-16 w-24 h-24 sm:w-40 sm:h-40 bg-blue-800 rounded-full opacity-50 group-hover:scale-125 transition-transform duration-500" />
 
-        <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-blue-950 rounded-full opacity-50" />
+          <div className="absolute -bottom-12 -left-12 sm:-bottom-20 sm:-left-20 w-32 h-32 sm:w-48 sm:h-48 bg-blue-950 rounded-full opacity-50" />
 
-        <div className="relative">
+          <div className="relative">
 
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white text-blue-900 flex items-center justify-center mb-6 shadow-lg group-hover:scale-105 transition-transform">
-            <BriefcaseBusiness className="w-7 h-7 sm:w-8 sm:h-8" />
-          </div>
+            <div className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl sm:rounded-2xl bg-white text-blue-900 flex items-center justify-center mb-3 sm:mb-5 md:mb-6 shadow-lg group-hover:scale-105 transition-transform">
+              <BriefcaseBusiness className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+            </div>
 
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-2">
-            For Real Estate Professionals
-          </p>
+            <p className="text-[8px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-blue-200 mb-1 sm:mb-2">
+              For Real Estate Professionals
+            </p>
 
-          <h2 className="text-2xl sm:text-3xl font-black mb-3">
-            Agent / Broker
-          </h2>
+            <h2 className="text-base sm:text-2xl md:text-3xl font-black mb-2 sm:mb-3 leading-tight">
+              Agent / Broker
+            </h2>
 
-          <p className="text-sm sm:text-base text-blue-100 leading-6 mb-7">
-            Access your professional account, manage your profile,
-            and share your permanent profile link with clients.
-          </p>
+            <p className="text-[10px] sm:text-sm md:text-base text-blue-100 leading-4 sm:leading-6 mb-4 sm:mb-7">
+              Access your professional account, manage your profile,
+              and share your permanent profile link with clients.
+            </p>
 
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1 sm:gap-3">
 
-            <span className="font-bold text-white text-sm sm:text-base">
-              Agent Login
-            </span>
+              <span className="font-bold text-white text-[10px] sm:text-sm md:text-base leading-tight">
+                Agent Login
+              </span>
 
-            <div className="w-10 h-10 rounded-full bg-white text-blue-900 flex items-center justify-center group-hover:translate-x-1 transition-transform">
-              <ArrowRight className="w-5 h-5" />
+              <div className="shrink-0 w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-white text-blue-900 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </div>
+
             </div>
 
           </div>
 
-        </div>
+        </button>
 
-      </button>
-
-    </div>
+      </div>
 
     {/* BOTTOM BRAND */}
     <div className="flex items-center justify-center gap-2 mt-8 sm:mt-10 text-slate-500">

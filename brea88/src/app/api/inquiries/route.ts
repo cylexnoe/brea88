@@ -1,11 +1,64 @@
 import { NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/prisma';
 import { getAgentFromSession } from '@/lib/agent-auth';
 import { Resend } from 'resend';
+import twilio from 'twilio';
 
-/* =========================================================
-   HELPERS
-========================================================= */
+// =========================================================
+// PHONE NUMBER HELPER
+// =========================================================
+//
+// Converts common Philippine phone formats into E.164.
+//
+// Examples:
+//
+// 09171234567     -> +639171234567
+// 639171234567    -> +639171234567
+// +639171234567   -> +639171234567
+//
+// This is used ONLY for the Agent's registered phone number.
+// The client cannot choose the SMS recipient.
+// =========================================================
+
+function normalizePhoneNumber(value: string): string {
+  const phone = value.trim();
+
+  if (!phone) {
+    return '';
+  }
+
+  // Philippine mobile number
+  // 09171234567 -> +639171234567
+  if (/^09\d{9}$/.test(phone)) {
+    return `+63${phone.slice(1)}`;
+  }
+
+  // Philippine number without +
+  // 639171234567 -> +639171234567
+  if (/^63\d{10}$/.test(phone)) {
+    return `+${phone}`;
+  }
+
+  // Already international
+  // +639171234567
+  if (/^\+\d{10,15}$/.test(phone)) {
+    return phone;
+  }
+
+  // Remove spaces, hyphens and parentheses
+  const cleaned = phone.replace(/[\s\-()]/g, '');
+
+  if (/^\+\d{10,15}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  return '';
+}
+
+// =========================================================
+// GENERAL HELPERS
+// =========================================================
 
 function cleanString(value: unknown): string {
   if (typeof value !== 'string') {
@@ -24,14 +77,22 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#039;');
 }
 
-/* =========================================================
-   GET INQUIRIES
+// =========================================================
+// EMAIL VALIDATION
+// =========================================================
 
-   Only logged-in agents can view inquiries.
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-   Each Agent/Broker can only see inquiries assigned
-   to their own account.
-========================================================= */
+// =========================================================
+// GET INQUIRIES
+// =========================================================
+//
+// Only logged-in Agents/Brokers can view inquiries.
+//
+// Each Agent/Broker can only see inquiries whose agentId
+// matches their own account.
+//
+// =========================================================
 
 export async function GET() {
   try {
@@ -98,6 +159,7 @@ export async function GET() {
       {
         success: false,
         message: 'Failed to load inquiries.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -109,51 +171,63 @@ export async function GET() {
   }
 }
 
-/* =========================================================
-   POST INQUIRY
-
-   Public client submits:
-
-   - name
-   - email
-   - phone
-   - message
-   - propertyId
-   - agentSlug
-
-   The browser does NOT send:
-
-   - agentId
-   - agent email
-
-   The server finds the real Agent from PostgreSQL.
-
-   Flow:
-
-   Client
-      ↓
-   Send Inquiry
-      ↓
-   propertyId + agentSlug
-      ↓
-   Verify Agent
-      ↓
-   Verify Property
-      ↓
-   Verify Property belongs to Agent
-      ↓
-   Create Inquiry
-      ↓
-   Agent Dashboard
-      ↓
-   Send email notification
-========================================================= */
+// =========================================================
+// POST INQUIRY
+// =========================================================
+//
+// Public client submits:
+//
+// - name
+// - email
+// - phone
+// - message
+// - propertyId (optional)
+// - agentSlug
+//
+// IMPORTANT:
+//
+// The browser does NOT send:
+//
+// - agentId
+// - agent email
+// - agent phone
+//
+// The server resolves the Agent from the permanent
+// agentSlug.
+//
+// =========================================================
+//
+// FLOW:
+//
+// Client
+//   ↓
+// Permanent Agent Link
+//   ↓
+// agentSlug
+//   ↓
+// POST /api/inquiries
+//   ↓
+// Find active Agent
+//   ↓
+// Create Inquiry
+//   ↓
+// ┌───────────────┬────────────────┐
+// │               │                │
+// ▼               ▼                │
+// Agent Email   Agent SMS          │
+// agent.email   agent.phone        │
+//                                  │
+// └───────────────┴────────────────┘
+//
+// Email/SMS failures do NOT delete the inquiry.
+//
+// =========================================================
 
 export async function POST(request: Request) {
   try {
-    /* =======================================================
-       READ REQUEST BODY
-    ======================================================= */
+    // =======================================================
+    // READ REQUEST BODY
+    // =======================================================
 
     let body: unknown;
 
@@ -185,53 +259,53 @@ export async function POST(request: Request) {
 
     const data = body as Record<string, unknown>;
 
-    /* =======================================================
-       CLIENT INFORMATION
-    ======================================================= */
+    // =======================================================
+    // CLIENT INFORMATION
+    // =======================================================
 
     const name = cleanString(data.name);
     const email = cleanString(data.email).toLowerCase();
     const phone = cleanString(data.phone);
     const message = cleanString(data.message);
 
-    /* =======================================================
-       AGENT
-    ======================================================= */
+    // =======================================================
+    // AGENT
+    // =======================================================
 
     const agentSlug = cleanString(data.agentSlug);
 
-    /* =======================================================
-       PROPERTY
-    ======================================================= */
+    // =======================================================
+    // PROPERTY
+    // =======================================================
 
     let propertyId: number | null = null;
 
+    if (
+      data.propertyId !== undefined &&
+      data.propertyId !== null &&
+      String(data.propertyId).trim() !== ''
+    ) {
+      const parsedPropertyId = Number(data.propertyId);
+
       if (
-        data.propertyId !== undefined &&
-        data.propertyId !== null &&
-        String(data.propertyId).trim() !== ''
+        !Number.isInteger(parsedPropertyId) ||
+        parsedPropertyId <= 0
       ) {
-        const parsedPropertyId = Number(data.propertyId);
-
-        if (
-          !Number.isInteger(parsedPropertyId) ||
-          parsedPropertyId <= 0
-        ) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Invalid property ID.',
-            },
-            { status: 400 }
-          );
-        }
-
-        propertyId = parsedPropertyId;
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Invalid property ID.',
+          },
+          { status: 400 }
+        );
       }
 
-    /* =======================================================
-       VALIDATE NAME
-    ======================================================= */
+      propertyId = parsedPropertyId;
+    }
+
+    // =======================================================
+    // VALIDATE NAME
+    // =======================================================
 
     if (!name) {
       return NextResponse.json(
@@ -264,9 +338,9 @@ export async function POST(request: Request) {
       );
     }
 
-    /* =======================================================
-       VALIDATE EMAIL
-    ======================================================= */
+    // =======================================================
+    // VALIDATE EMAIL
+    // =======================================================
 
     if (!email) {
       return NextResponse.json(
@@ -277,8 +351,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailPattern.test(email)) {
       return NextResponse.json(
@@ -300,9 +372,9 @@ export async function POST(request: Request) {
       );
     }
 
-    /* =======================================================
-       VALIDATE PHONE
-    ======================================================= */
+    // =======================================================
+    // VALIDATE PHONE
+    // =======================================================
 
     if (!phone) {
       return NextResponse.json(
@@ -334,9 +406,9 @@ export async function POST(request: Request) {
       );
     }
 
-    /* =======================================================
-       VALIDATE MESSAGE
-    ======================================================= */
+    // =======================================================
+    // VALIDATE MESSAGE
+    // =======================================================
 
     if (!message) {
       return NextResponse.json(
@@ -358,17 +430,16 @@ export async function POST(request: Request) {
       );
     }
 
-
-    /* =======================================================
-       VALIDATE AGENT SLUG
-    ======================================================= */
+    // =======================================================
+    // VALIDATE AGENT SLUG
+    // =======================================================
 
     if (!agentSlug) {
       return NextResponse.json(
         {
           success: false,
           message:
-            'No agent was specified for this property.',
+            'No agent was specified for this inquiry.',
         },
         { status: 400 }
       );
@@ -384,16 +455,18 @@ export async function POST(request: Request) {
       );
     }
 
-    /* =======================================================
-       FIND ACTIVE AGENT
-
-       IMPORTANT:
-
-       We do NOT trust an email or agentId from
-       the browser.
-
-       The database determines the real Agent.
-    ======================================================= */
+    // =======================================================
+    // FIND ACTIVE AGENT
+    // =======================================================
+    //
+    // IMPORTANT SECURITY RULE:
+    //
+    // We do NOT trust agentId, email or phone from the
+    // browser.
+    //
+    // The permanent agentSlug determines the real Agent.
+    //
+    // =======================================================
 
     const agent = await prisma.agent.findFirst({
       where: {
@@ -422,9 +495,9 @@ export async function POST(request: Request) {
       );
     }
 
-    /* =======================================================
-       VERIFY AGENT EMAIL
-    ======================================================= */
+    // =======================================================
+    // VERIFY AGENT EMAIL
+    // =======================================================
 
     const agentEmail = cleanString(agent.email).toLowerCase();
 
@@ -450,48 +523,64 @@ export async function POST(request: Request) {
       );
     }
 
-    /* =======================================================
-       FIND PROPERTY
+    // =======================================================
+    // FIND PROPERTY
+    // =======================================================
+    //
+    // IMPORTANT:
+    //
+    // We ONLY verify that the property exists.
+    //
+    // We do NOT verify property.agentId.
+    //
+    // This follows your business rule:
+    //
+    // "Admin does not assign or reassign properties."
+    //
+    // The permanent Agent Profile link determines which
+    // Agent receives the inquiry.
+    //
+    // =======================================================
 
-       IMPORTANT:
+    let property: {
+      id: number;
+      title: string;
+      location: string;
+      price: string;
+    } | null = null;
 
-       agentId is included here so we can verify that
-       the selected property actually belongs to the
-       selected Agent/Broker.
-    ======================================================= */
+    if (propertyId !== null) {
+      property = await prisma.property.findUnique({
+        where: {
+          id: propertyId,
+        },
 
-    let property = null;
+        select: {
+          id: true,
+          title: true,
+          location: true,
+          price: true,
+        },
+      });
 
-      if (propertyId !== null) {
-        property = await prisma.property.findUnique({
-          where: {
-            id: propertyId,
+      if (!property) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Property not found.',
           },
-
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            price: true,
-          },
-        });
-
-        if (!property) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Property not found.',
-            },
-            { status: 404 }
-          );
-        }
+          { status: 404 }
+        );
       }
+    }
 
-    /* =======================================================
-       CREATE INQUIRY
-
-       agentId comes ONLY from the verified database Agent.
-    ======================================================= */
+    // =======================================================
+    // CREATE INQUIRY
+    // =======================================================
+    //
+    // agentId comes ONLY from the verified Agent record.
+    //
+    // =======================================================
 
     const inquiry = await prisma.inquiry.create({
       data: {
@@ -528,9 +617,119 @@ export async function POST(request: Request) {
       },
     });
 
-    /* =======================================================
-       RESEND CONFIGURATION
-    ======================================================= */
+    // =======================================================
+    // NOTIFICATION RESULTS
+    // =======================================================
+
+    let smsSent = false;
+    let emailSent = false;
+
+    // =======================================================
+    // TWILIO CONFIGURATION
+    // =======================================================
+
+    const twilioAccountSid = cleanString(
+      process.env.TWILIO_ACCOUNT_SID
+    );
+
+    const twilioAuthToken = cleanString(
+      process.env.TWILIO_AUTH_TOKEN
+    );
+
+    const twilioPhoneNumber = cleanString(
+      process.env.TWILIO_PHONE_NUMBER
+    );
+
+    // =======================================================
+    // AGENT PHONE
+    // =======================================================
+    //
+    // This comes from the Agent database record.
+    //
+    // Example:
+    //
+    // Agent.phone = 09171234567
+    //
+    // becomes:
+    //
+    // +639171234567
+    //
+    // =======================================================
+
+    const agentPhone = agent.phone
+      ? normalizePhoneNumber(agent.phone)
+      : '';
+
+    // =======================================================
+    // SEND SMS
+    // =======================================================
+    //
+    // SMS failure does NOT cancel the inquiry.
+    //
+    // =======================================================
+
+    if (
+      twilioAccountSid &&
+      twilioAuthToken &&
+      twilioPhoneNumber &&
+      agentPhone
+    ) {
+      try {
+        const twilioClient = twilio(
+          twilioAccountSid,
+          twilioAuthToken
+        );
+
+        const smsMessage = property
+          ? `BREA 88 REALTY: New inquiry from ${name} about "${property.title}". Contact: ${phone}. Inquiry #${inquiry.id}. Check your Agent Dashboard.`
+          : `BREA 88 REALTY: New client inquiry from ${name}. Contact: ${phone}. Inquiry #${inquiry.id}. Check your Agent Dashboard.`;
+
+        await twilioClient.messages.create({
+          body: smsMessage,
+          from: twilioPhoneNumber,
+          to: agentPhone,
+        });
+
+        smsSent = true;
+
+        console.log(
+          `Inquiry SMS sent successfully to Agent ${agent.id}`
+        );
+      } catch (smsError) {
+        console.error(
+          'Inquiry SMS sending failed:',
+          smsError
+        );
+      }
+    } else {
+      if (!twilioAccountSid) {
+        console.error(
+          'TWILIO_ACCOUNT_SID is not configured.'
+        );
+      }
+
+      if (!twilioAuthToken) {
+        console.error(
+          'TWILIO_AUTH_TOKEN is not configured.'
+        );
+      }
+
+      if (!twilioPhoneNumber) {
+        console.error(
+          'TWILIO_PHONE_NUMBER is not configured.'
+        );
+      }
+
+      if (!agentPhone) {
+        console.error(
+          `Agent ${agent.id} does not have a valid registered phone number.`
+        );
+      }
+    }
+
+    // =======================================================
+    // RESEND CONFIGURATION
+    // =======================================================
 
     const resendApiKey = cleanString(
       process.env.RESEND_API_KEY
@@ -540,144 +739,147 @@ export async function POST(request: Request) {
       process.env.RESEND_FROM_EMAIL
     );
 
-    /* =======================================================
-       EMAIL CONFIGURATION CHECK
-    ======================================================= */
-
-    if (!resendApiKey) {
-      console.error(
-        'RESEND_API_KEY is not configured.'
-      );
-
-      return NextResponse.json(
-        {
-          success: true,
-          emailSent: false,
-          message:
-            'Inquiry was saved successfully, but email configuration is missing.',
-          inquiry,
-        },
-        { status: 201 }
-      );
-    }
-
-    if (!fromEmail) {
-      console.error(
-        'RESEND_FROM_EMAIL is not configured.'
-      );
-
-      return NextResponse.json(
-        {
-          success: true,
-          emailSent: false,
-          message:
-            'Inquiry was saved successfully, but the email sender is not configured.',
-          inquiry,
-        },
-        { status: 201 }
-      );
-    }
-
-    /* =======================================================
-       ESCAPE HTML VALUES
-    ======================================================= */
+    // =======================================================
+    // ESCAPE HTML VALUES
+    // =======================================================
 
     const safeAgentName = escapeHtml(
       cleanString(agent.fullName)
     );
 
     const safeClientName = escapeHtml(name);
+
     const safeClientEmail = escapeHtml(email);
+
     const safePhone = escapeHtml(phone);
+
     const safeMessage = escapeHtml(message);
 
-   const safePropertyTitle = escapeHtml(
-      property ? cleanString(property.title) : 'No specific property'
+    const safePropertyTitle = escapeHtml(
+      property
+        ? cleanString(property.title)
+        : 'No specific property'
     );
 
     const safePropertyLocation = escapeHtml(
-      property ? cleanString(property.location) : 'Agent Profile Inquiry'
+      property
+        ? cleanString(property.location)
+        : 'Agent Profile Inquiry'
     );
 
     const safePropertyPrice = escapeHtml(
-      property ? cleanString(property.price) : 'N/A'
+      property
+        ? cleanString(property.price)
+        : 'N/A'
     );
 
-    /* =======================================================
-       SEND EMAIL
+    // =======================================================
+    // SEND EMAIL
+    // =======================================================
+    //
+    // Email goes to the Agent's registered email.
+    //
+    // Reply-To goes to the client's email.
+    //
+    // Email failure does NOT cancel the inquiry.
+    //
+    // =======================================================
 
-       Email goes to the Agent's registered email.
+    if (!resendApiKey) {
+      console.error(
+        'RESEND_API_KEY is not configured.'
+      );
+    } else if (!fromEmail) {
+      console.error(
+        'RESEND_FROM_EMAIL is not configured.'
+      );
+    } else {
+      try {
+        const resend = new Resend(resendApiKey);
 
-       Reply-To is the client's email.
-    ======================================================= */
+        const resendResult = await resend.emails.send({
+          from: fromEmail,
 
-    try {
-      const resend = new Resend(resendApiKey);
+          to: [agentEmail],
 
-      const resendResult = await resend.emails.send({
-        from: fromEmail,
+          replyTo: email,
 
-        to: [agentEmail],
+          subject: property
+            ? `New Property Inquiry - ${property.title}`
+            : `New Client Inquiry - ${agent.fullName}`,
 
-        replyTo: email,
+          // =================================================
+          // PLAIN TEXT EMAIL
+          // =================================================
 
-        subject:
-        property
-          ? `New Property Inquiry - ${property.title}`
-          : `New Client Inquiry - ${agent.fullName}`,
-
-        text: `
+          text: `
 NEW PROPERTY INQUIRY
-
 ====================
 
-A client has submitted a new property inquiry.
+A client has submitted a new inquiry.
 
 PROPERTY
-
 --------
 
-Title: ${property ? property.title : 'No specific property'}
-Price: ${property ? `₱${property.price}` : 'N/A'}
-Location: ${property ? property.location : 'Agent Profile Inquiry'}
+Title: ${
+            property
+              ? property.title
+              : 'No specific property'
+          }
+
+Price: ${
+            property
+              ? `₱${property.price}`
+              : 'N/A'
+          }
+
+Location: ${
+            property
+              ? property.location
+              : 'Agent Profile Inquiry'
+          }
 
 CLIENT
-
 ------
 
 Name: ${name}
+
 Email: ${email}
+
 Phone: ${phone}
 
 MESSAGE
-
 -------
 
 ${message}
 
 INQUIRY INFORMATION
-
 -------------------
 
 Inquiry ID: ${inquiry.id}
+
 Status: ${inquiry.status}
+
 Submitted: ${inquiry.createdAt.toLocaleString()}
 
 AGENT
-
 -----
 
 Name: ${agent.fullName}
+
 Email: ${agentEmail}
 
 You can reply directly to this email to contact the client.
 
 BREA 88 REALTY
-
 Service with a Heart
-        `.trim(),
+          `.trim(),
 
-        html: `
+          // =================================================
+          // HTML EMAIL
+          // =================================================
+
+          html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -693,7 +895,9 @@ Service with a Heart
     font-family:Arial,Helvetica,sans-serif;
   "
 >
+
   <div style="padding:30px 15px;">
+
     <div
       style="
         max-width:650px;
@@ -713,6 +917,7 @@ Service with a Heart
           padding:30px;
         "
       >
+
         <h1
           style="
             margin:0;
@@ -732,6 +937,7 @@ Service with a Heart
         >
           BREA 88 REALTY
         </p>
+
       </div>
 
       <!-- CONTENT -->
@@ -1010,72 +1216,85 @@ Service with a Heart
       </div>
 
     </div>
+
   </div>
+
 </body>
 </html>
-        `,
-      });
+          `,
+        });
 
-      if (resendResult.error) {
+        if (resendResult.error) {
+          console.error(
+            'Resend inquiry email error:',
+            resendResult.error
+          );
+        } else {
+          emailSent = true;
+
+          console.log(
+            `Inquiry email sent successfully to Agent ${agent.id}`
+          );
+        }
+      } catch (emailError) {
         console.error(
-          'Resend inquiry email error:',
-          resendResult.error
-        );
-
-        return NextResponse.json(
-          {
-            success: true,
-            emailSent: false,
-            message:
-              'Inquiry was saved successfully, but the notification email could not be sent.',
-            inquiry,
-          },
-          { status: 201 }
+          'Inquiry email sending failed:',
+          emailError
         );
       }
-
-      return NextResponse.json(
-        {
-          success: true,
-          emailSent: true,
-          message:
-            'Inquiry submitted successfully.',
-          inquiry,
-        },
-        { status: 201 }
-      );
-    } catch (emailError) {
-      console.error(
-        'Inquiry email sending failed:',
-        emailError
-      );
-
-      /*
-       * IMPORTANT:
-       *
-       * The inquiry has already been saved.
-       *
-       * An email failure must NOT delete the inquiry.
-       */
-
-      return NextResponse.json(
-        {
-          success: true,
-          emailSent: false,
-          message:
-            'Inquiry was saved successfully, but the notification email could not be sent.',
-          inquiry,
-        },
-        { status: 201 }
-      );
     }
+
+    // =======================================================
+    // FINAL RESPONSE
+    // =======================================================
+    //
+    // IMPORTANT:
+    //
+    // The inquiry was already saved.
+    //
+    // Email and SMS failures do NOT cause the inquiry
+    // to be deleted.
+    //
+    // =======================================================
+
+    let notificationMessage =
+      'Inquiry submitted successfully.';
+
+    if (emailSent && smsSent) {
+      notificationMessage =
+        'Inquiry submitted successfully. Email and SMS notifications were sent.';
+    } else if (emailSent && !smsSent) {
+      notificationMessage =
+        'Inquiry submitted successfully. Email notification was sent, but SMS notification could not be sent.';
+    } else if (!emailSent && smsSent) {
+      notificationMessage =
+        'Inquiry submitted successfully. SMS notification was sent, but email notification could not be sent.';
+    } else {
+      notificationMessage =
+        'Inquiry was saved successfully, but email and SMS notifications could not be sent.';
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        emailSent,
+        smsSent,
+        message: notificationMessage,
+        inquiry,
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('POST /api/inquiries error:', error);
+    console.error(
+      'POST /api/inquiries error:',
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to submit inquiry.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -1087,23 +1306,14 @@ Service with a Heart
   }
 }
 
-/* =========================================================
-   PATCH INQUIRY
-
-   Agents/Brokers can only update inquiries assigned
-   to themselves.
-
-   Supported statuses:
-
-   New
-   Read
-   Contacted
-   Viewing Scheduled
-   Viewing Completed
-   Follow Up
-   Closed
-   Cancelled
-========================================================= */
+// =========================================================
+// PATCH INQUIRY
+// =========================================================
+//
+// Agents/Brokers can only update inquiries belonging
+// to their own account.
+//
+// =========================================================
 
 export async function PATCH(request: Request) {
   try {
@@ -1113,11 +1323,16 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Unauthorized. Please log in as an agent.',
+          message:
+            'Unauthorized. Please log in as an agent.',
         },
         { status: 401 }
       );
     }
+
+    // =======================================================
+    // READ REQUEST BODY
+    // =======================================================
 
     let body: unknown;
 
@@ -1150,12 +1365,14 @@ export async function PATCH(request: Request) {
     const data = body as Record<string, unknown>;
 
     const id = Number(data.id);
+
     const status = cleanString(data.status);
 
-    if (
-      !Number.isInteger(id) ||
-      id <= 0
-    ) {
+    // =======================================================
+    // VALIDATE ID
+    // =======================================================
+
+    if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json(
         {
           success: false,
@@ -1164,6 +1381,10 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
+
+    // =======================================================
+    // ALLOWED STATUSES
+    // =======================================================
 
     const allowedStatuses = [
       'New',
@@ -1186,14 +1407,18 @@ export async function PATCH(request: Request) {
       );
     }
 
-    /* =======================================================
-       FIND INQUIRY
-
-       The agentId condition is CRITICAL.
-
-       An Agent/Broker cannot update another Agent's
-       inquiry even if they know the inquiry ID.
-    ======================================================= */
+    // =======================================================
+    // FIND INQUIRY
+    // =======================================================
+    //
+    // CRITICAL SECURITY CHECK:
+    //
+    // The inquiry must belong to the currently logged-in
+    // Agent/Broker.
+    //
+    // Agent A cannot update Agent B's inquiry.
+    //
+    // =======================================================
 
     const existingInquiry =
       await prisma.inquiry.findFirst({
@@ -1212,6 +1437,10 @@ export async function PATCH(request: Request) {
         { status: 404 }
       );
     }
+
+    // =======================================================
+    // UPDATE STATUS
+    // =======================================================
 
     const inquiry = await prisma.inquiry.update({
       where: {
@@ -1253,7 +1482,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        message: 'Inquiry status updated successfully.',
+        message:
+          'Inquiry status updated successfully.',
         inquiry,
       },
       { status: 200 }
@@ -1268,6 +1498,7 @@ export async function PATCH(request: Request) {
       {
         success: false,
         message: 'Failed to update inquiry.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
@@ -1278,16 +1509,14 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
 // =========================================================
 // DELETE INQUIRY
 // =========================================================
 //
-// Agents/Brokers can only delete inquiries that belong
+// Agents/Brokers can only delete inquiries belonging
 // to their own account.
 //
-// IMPORTANT:
-// The agentId check prevents one agent from deleting
-// another agent's inquiry.
 // =========================================================
 
 export async function DELETE(request: Request) {
@@ -1304,6 +1533,10 @@ export async function DELETE(request: Request) {
         { status: 401 }
       );
     }
+
+    // =======================================================
+    // READ REQUEST BODY
+    // =======================================================
 
     let body: unknown;
 
@@ -1337,6 +1570,10 @@ export async function DELETE(request: Request) {
 
     const id = Number(data.id);
 
+    // =======================================================
+    // VALIDATE ID
+    // =======================================================
+
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json(
         {
@@ -1347,17 +1584,15 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // =====================================================
-    // FIND THE INQUIRY
-    // =====================================================
+    // =======================================================
+    // FIND INQUIRY
+    // =======================================================
     //
     // CRITICAL SECURITY CHECK:
     //
-    // The inquiry must belong to the currently logged-in
-    // Agent/Broker.
-    //
     // Agent A cannot delete Agent B's inquiry.
-    // =====================================================
+    //
+    // =======================================================
 
     const existingInquiry =
       await prisma.inquiry.findFirst({
@@ -1365,6 +1600,7 @@ export async function DELETE(request: Request) {
           id,
           agentId: agent.id,
         },
+
         select: {
           id: true,
         },
@@ -1380,9 +1616,9 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // =====================================================
+    // =======================================================
     // DELETE
-    // =====================================================
+    // =======================================================
 
     await prisma.inquiry.delete({
       where: {
@@ -1408,6 +1644,7 @@ export async function DELETE(request: Request) {
       {
         success: false,
         message: 'Failed to delete inquiry.',
+
         debug:
           process.env.NODE_ENV !== 'production' &&
           error instanceof Error
