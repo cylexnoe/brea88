@@ -239,20 +239,28 @@ export default function AgentDashboardPage() {
   const [updatingInquiryId, setUpdatingInquiryId] =
     useState<number | null>(null);
 
+  const [deletingInquiryId, setDeletingInquiryId] =
+    useState<number | null>(null);
+
   const [lastUpdated, setLastUpdated] =
     useState<Date | null>(null);
 
   // =========================================================
+  // SELECTED INQUIRY
+  // =========================================================
+
+  const selectedInquiry = useMemo(
+    () =>
+      inquiries.find(
+        (inquiry) =>
+          inquiry.id === selectedInquiryId
+      ) ?? null,
+    [inquiries, selectedInquiryId]
+  );
+
+  // =========================================================
   // LOAD CURRENT AGENT
   // =========================================================
-const selectedInquiry = useMemo(
-  () =>
-    inquiries.find(
-      (inquiry) =>
-        inquiry.id === selectedInquiryId
-    ) ?? null,
-  [inquiries, selectedInquiryId]
-);
 
   useEffect(() => {
     let mounted = true;
@@ -430,29 +438,50 @@ const selectedInquiry = useMemo(
             ? data.inquiries
             : [];
 
-      setInquiries((previous) => {
-        if (
-          previous.length === receivedInquiries.length &&
-          previous.every((previousInquiry, index) => {
-            const nextInquiry =
-              receivedInquiries[index];
+      let inquiriesChanged = false;
 
-            return (
-              previousInquiry.id === nextInquiry.id &&
-              previousInquiry.status ===
-                nextInquiry.status &&
-              previousInquiry.updatedAt ===
-                nextInquiry.updatedAt
-            );
-          })
-        ) {
+      setInquiries((previous) => {
+        const unchanged =
+          previous.length ===
+            receivedInquiries.length &&
+          previous.every(
+            (previousInquiry, index) => {
+              const nextInquiry =
+                receivedInquiries[index];
+
+              return (
+                previousInquiry.id ===
+                  nextInquiry.id &&
+                previousInquiry.status ===
+                  nextInquiry.status &&
+                previousInquiry.updatedAt ===
+                  nextInquiry.updatedAt &&
+                previousInquiry.propertyId ===
+                  nextInquiry.propertyId
+              );
+            }
+          );
+
+        if (unchanged) {
           return previous;
         }
+
+        inquiriesChanged = true;
 
         return receivedInquiries;
       });
 
-      setLastUpdated(new Date());
+      /*
+       * Only update the visible timestamp when:
+       * - the data actually changed, or
+       * - the user manually refreshed.
+       *
+       * This prevents the dashboard from looking like it
+       * is constantly refreshing every 15 seconds.
+       */
+      if (inquiriesChanged || showLoading) {
+        setLastUpdated(new Date());
+      }
     } catch (error) {
       console.error(
         'Failed to load inquiries:',
@@ -470,6 +499,10 @@ const selectedInquiry = useMemo(
       }
     }
   };
+
+  // =========================================================
+  // AUTO REFRESH INQUIRIES
+  // =========================================================
 
   useEffect(() => {
     if (!agent) return;
@@ -580,79 +613,160 @@ const selectedInquiry = useMemo(
     }
   };
 
-    // =========================================================
+  // =========================================================
   // UPDATE INQUIRY STATUS
   // =========================================================
 
-      const updateInquiryStatus = async (
-        inquiryId: number,
-        status: string
-      ) => {
-        if (updatingInquiryId === inquiryId) {
-          return;
+  const updateInquiryStatus = async (
+    inquiryId: number,
+    status: string
+  ) => {
+    if (updatingInquiryId === inquiryId) {
+      return;
+    }
+
+    setUpdatingInquiryId(inquiryId);
+
+    try {
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            id: inquiryId,
+            status,
+          }),
         }
+      );
 
-        setUpdatingInquiryId(inquiryId);
+      const data = await response.json();
 
-        try {
-          const response = await fetch(
-            '/api/inquiries',
-            {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                id: inquiryId,
-                status,
-              }),
-            }
-          );
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            'Unable to update inquiry status.'
+        );
+      }
 
-          const data = await response.json();
+      const updatedInquiry =
+        data?.inquiry;
 
-          if (!response.ok) {
-            throw new Error(
-              data?.message ||
-                data?.error ||
-                'Unable to update inquiry status.'
-            );
-          }
+      setInquiries((previous) =>
+        previous.map((item) =>
+          item.id === inquiryId
+            ? {
+                ...item,
+                status:
+                  updatedInquiry?.status ??
+                  status,
+                updatedAt:
+                  updatedInquiry?.updatedAt ??
+                  new Date().toISOString(),
+              }
+            : item
+        )
+      );
 
-          const updatedInquiry = data?.inquiry;
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error(
+        'Update inquiry status error:',
+        error
+      );
 
-          setInquiries((previous) =>
-            previous.map((item) =>
-              item.id === inquiryId
-                ? {
-                    ...item,
-                    status:
-                      updatedInquiry?.status ??
-                      status,
-                    updatedAt:
-                      updatedInquiry?.updatedAt ??
-                      new Date().toISOString(),
-                  }
-                : item
-            )
-          );
-        } catch (error) {
-          console.error(
-            'Update inquiry status error:',
-            error
-          );
+      setInquiriesError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to update inquiry status.'
+      );
+    } finally {
+      setUpdatingInquiryId(null);
+    }
+  };
 
-          setInquiriesError(
-            error instanceof Error
-              ? error.message
-              : 'Unable to update inquiry status.'
-          );
-        } finally {
-          setUpdatingInquiryId(null);
+  // =========================================================
+  // DELETE INQUIRY
+  // =========================================================
+
+  const deleteInquiry = async (
+    inquiryId: number
+  ) => {
+    if (deletingInquiryId === inquiryId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this inquiry? This action cannot be undone.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingInquiryId(inquiryId);
+    setInquiriesError('');
+
+    try {
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            id: inquiryId,
+          }),
         }
-      };
+      );
 
+      const data = await response.json();
+
+      if (response.status === 401) {
+        router.replace('/agent/login');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            'Unable to delete inquiry.'
+        );
+      }
+
+      setInquiries((previous) =>
+        previous.filter(
+          (inquiry) =>
+            inquiry.id !== inquiryId
+        )
+      );
+
+      setSelectedInquiryId(null);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error(
+        'Delete inquiry error:',
+        error
+      );
+
+      setInquiriesError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to delete inquiry.'
+      );
+    } finally {
+      setDeletingInquiryId(null);
+    }
+  };
 
   // =========================================================
   // LOGOUT
@@ -1508,9 +1622,7 @@ const selectedInquiry = useMemo(
 
                           <div className="flex flex-col gap-4 lg:flex-row">
 
-                            {/* =================================
-                                PROPERTY IMAGE
-                            ================================= */}
+                            {/* PROPERTY IMAGE */}
 
                             <div className="relative shrink-0">
 
@@ -1557,9 +1669,7 @@ const selectedInquiry = useMemo(
 
                             </div>
 
-                            {/* =================================
-                                INQUIRY CONTENT
-                            ================================= */}
+                            {/* INQUIRY CONTENT */}
 
                             <div className="min-w-0 flex-1">
 
@@ -1626,9 +1736,7 @@ const selectedInquiry = useMemo(
 
                               </div>
 
-                              {/* =================================
-                                  PROPERTY INFORMATION
-                              ================================= */}
+                              {/* PROPERTY INFORMATION */}
 
                               {property ? (
                                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -1731,9 +1839,7 @@ const selectedInquiry = useMemo(
                                 </div>
                               )}
 
-                              {/* =================================
-                                  MESSAGE PREVIEW
-                              ================================= */}
+                              {/* MESSAGE PREVIEW */}
 
                               <div className="mt-3 flex items-start gap-2">
 
@@ -1752,9 +1858,7 @@ const selectedInquiry = useMemo(
 
                               </div>
 
-                              {/* =================================
-                                  CLIENT CONTACT
-                              ================================= */}
+                              {/* CLIENT CONTACT */}
 
                               <div className="mt-3 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-5">
 
@@ -1816,18 +1920,21 @@ const selectedInquiry = useMemo(
               event.target ===
               event.currentTarget
             ) {
-              setSelectedInquiryId(
-                null
-              );
+              if (
+                deletingInquiryId !==
+                selectedInquiry.id
+              ) {
+                setSelectedInquiryId(
+                  null
+                );
+              }
             }
           }}
         >
 
           <div className="max-h-[95vh] w-full max-w-3xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl">
 
-            {/* ===============================================
-                MODAL HEADER
-            =============================================== */}
+            {/* MODAL HEADER */}
 
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
 
@@ -1853,22 +1960,22 @@ const selectedInquiry = useMemo(
                     null
                   )
                 }
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                disabled={
+                  deletingInquiryId ===
+                  selectedInquiry.id
+                }
+                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X size={21} />
               </button>
 
             </div>
 
-            {/* ===============================================
-                MODAL BODY
-            =============================================== */}
+            {/* MODAL BODY */}
 
             <div className="max-h-[calc(95vh-73px)] overflow-y-auto p-5 sm:max-h-[calc(90vh-73px)] sm:p-6">
 
-              {/* =============================================
-                  CLIENT
-              ============================================= */}
+              {/* CLIENT */}
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
 
@@ -1968,9 +2075,7 @@ const selectedInquiry = useMemo(
 
               </div>
 
-              {/* =============================================
-                  PROPERTY CARD
-              ============================================= */}
+              {/* PROPERTY CARD */}
 
               <div className="mt-5">
 
@@ -2141,7 +2246,11 @@ const selectedInquiry = useMemo(
                               )}`
                             );
                           }}
-                          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                          disabled={
+                            deletingInquiryId ===
+                            selectedInquiry.id
+                          }
+                          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Eye
                             size={
@@ -2193,9 +2302,7 @@ const selectedInquiry = useMemo(
 
               </div>
 
-              {/* =============================================
-                  CLIENT MESSAGE
-              ============================================= */}
+              {/* CLIENT MESSAGE */}
 
               <div className="mt-5">
 
@@ -2224,9 +2331,7 @@ const selectedInquiry = useMemo(
 
               </div>
 
-              {/* =============================================
-                  INQUIRY DETAILS
-              ============================================= */}
+              {/* INQUIRY DETAILS */}
 
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
@@ -2260,9 +2365,7 @@ const selectedInquiry = useMemo(
 
               </div>
 
-              {/* =============================================
-                  STATUS
-              ============================================= */}
+              {/* STATUS */}
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
 
@@ -2297,7 +2400,9 @@ const selectedInquiry = useMemo(
                       }
                       disabled={
                         updatingInquiryId ===
-                        selectedInquiry.id
+                          selectedInquiry.id ||
+                        deletingInquiryId ===
+                          selectedInquiry.id
                       }
                       className="appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-sm font-semibold text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:opacity-60"
                     >
@@ -2342,11 +2447,13 @@ const selectedInquiry = useMemo(
 
               </div>
 
-              {/* =============================================
+              {/* =================================================
                   ACTIONS
-              ============================================= */}
+              ================================================= */}
 
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+
+                {/* EMAIL */}
 
                 <a
                   href={`mailto:${selectedInquiry.email}`}
@@ -2359,6 +2466,8 @@ const selectedInquiry = useMemo(
                   Email Client
                 </a>
 
+                {/* CALL */}
+
                 <a
                   href={`tel:${selectedInquiry.phone}`}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -2370,6 +2479,48 @@ const selectedInquiry = useMemo(
                   Call Client
                 </a>
 
+                {/* DELETE */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    deleteInquiry(
+                      selectedInquiry.id
+                    )
+                  }
+                  disabled={
+                    deletingInquiryId ===
+                      selectedInquiry.id ||
+                    updatingInquiryId ===
+                      selectedInquiry.id
+                  }
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+                >
+
+                  {deletingInquiryId ===
+                  selectedInquiry.id ? (
+                    <>
+                      <Loader2
+                        size={17}
+                        className="animate-spin"
+                      />
+
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <X
+                        size={17}
+                      />
+
+                      Delete
+                    </>
+                  )}
+
+                </button>
+
+                {/* CLOSE */}
+
                 <button
                   type="button"
                   onClick={() =>
@@ -2377,12 +2528,30 @@ const selectedInquiry = useMemo(
                       null
                     )
                   }
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  disabled={
+                    deletingInquiryId ===
+                    selectedInquiry.id
+                  }
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
                 >
                   Close
                 </button>
 
               </div>
+
+              {/* DELETE NOTICE */}
+
+              {deletingInquiryId ===
+                selectedInquiry.id && (
+                <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
+                  <Loader2
+                    size={14}
+                    className="animate-spin"
+                  />
+
+                  Deleting inquiry...
+                </div>
+              )}
 
             </div>
 
@@ -2394,3 +2563,4 @@ const selectedInquiry = useMemo(
     </div>
   );
 }
+
