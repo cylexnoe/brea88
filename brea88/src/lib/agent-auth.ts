@@ -335,13 +335,21 @@ export async function getAgentFromSession() {
 
   /*
   |--------------------------------------------------------------------------
-  | ACCOUNT MUST EXIST AND BE ACTIVE
+  | ACCOUNT MUST EXIST, BE ACTIVE, AND HAVE AN AGENT ROLE
   |--------------------------------------------------------------------------
+  |
+  | A signed session only proves that the session was created by the
+  | application. It must not bypass the current database role.
+  |
+  | This prevents an old Agent/Broker session from continuing to access
+  | Agent APIs after the account role has been changed to another role.
+  |
   */
 
   if (
     !agent ||
-    !agent.isActive
+    !agent.isActive ||
+    !['Agent', 'Broker'].includes(agent.role)
   ) {
     return null;
   }
@@ -416,4 +424,3 @@ export function clearAgentSessionCookie(
       .join('; ')
   );
 }
-
