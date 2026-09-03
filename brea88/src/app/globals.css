@@ -12,10 +12,7 @@
   --brea-border: rgba(15, 23, 42, 0.09);
 }
 
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 5rem;
-}
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
 
 body {
   margin: 0;
@@ -30,16 +27,11 @@ body {
 }
 
 * { box-sizing: border-box; }
-
-::selection {
-  background: rgba(201, 169, 110, 0.22);
-  color: var(--brea-navy);
-}
-
+::selection { background: rgba(201, 169, 110, 0.22); color: var(--brea-navy); }
 button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
-button, a { touch-action: manipulation; }
+button, a { touch-action: manipulation; transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease, opacity 220ms ease; }
+button:active, a:active { transform: translateY(1px); }
 img { max-width: 100%; }
-
 h1, h2, h3 { text-wrap: balance; }
 h1, h2 { letter-spacing: -0.025em; }
 
@@ -51,248 +43,58 @@ h1, h2 { letter-spacing: -0.025em; }
   -webkit-backdrop-filter: blur(14px);
   transition: transform 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
 }
-
-.brea-premium-card:hover {
-  border-color: rgba(201, 169, 110, 0.28);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.04);
-}
-
-.brea-gold-line {
-  background: linear-gradient(90deg, transparent, var(--brea-gold), transparent);
-}
-
+.brea-premium-card:hover { border-color: rgba(201, 169, 110, 0.28); box-shadow: 0 28px 70px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.04); }
+.brea-gold-line { background: linear-gradient(90deg, transparent, var(--brea-gold), transparent); }
 .brea-image-shine { position: relative; overflow: hidden; }
-.brea-image-shine::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,.16) 42%, transparent 58%);
-  transform: translateX(-120%);
-  transition: transform 700ms ease;
-}
+.brea-image-shine::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,.16) 42%, transparent 58%); transform: translateX(-120%); transition: transform 700ms ease; }
 .brea-image-shine:hover::after { transform: translateX(120%); }
 
 #hero, #profile, #ceo, #services, #contact { position: relative; }
-#profile::before, #ceo::before, #services::before, #contact::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: min(92%, 900px);
-  height: 1px;
-  transform: translateX(-50%);
-  background: linear-gradient(90deg, transparent, rgba(201,169,110,.32), transparent);
-  pointer-events: none;
-}
+#profile::before, #ceo::before, #services::before, #contact::before { content: ""; position: absolute; top: 0; left: 50%; width: min(92%, 900px); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(201,169,110,.32), transparent); pointer-events: none; }
 
-button, a {
-  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
-  transition-duration: 220ms;
-  transition-timing-function: ease;
-}
-button:active, a:active { transform: translateY(1px); }
-
-:focus-visible {
-  outline: 3px solid rgba(201,169,110,.45);
-  outline-offset: 3px;
-}
-
-input, textarea, select {
-  border-color: rgba(15,23,42,.12);
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
-  font-size: 16px;
-}
-input:focus, textarea:focus, select:focus {
-  border-color: rgba(11,42,111,.45);
-  box-shadow: 0 0 0 4px rgba(11,42,111,.07);
-  outline: none;
-}
-
+:focus-visible { outline: 3px solid rgba(201,169,110,.45); outline-offset: 3px; }
+input, textarea, select { border-color: rgba(15,23,42,.12); transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; font-size: 16px; }
+input:focus, textarea:focus, select:focus { border-color: rgba(11,42,111,.45); box-shadow: 0 0 0 4px rgba(11,42,111,.07); outline: none; }
 section[id] { scroll-margin-top: 5.5rem; }
 
-/* MARKETPLACE PREMIUM THEME */
-body:has(input[placeholder*="Search properties"]) .text-blue-400,
-body:has(input[placeholder*="Search properties"]) .text-blue-300 { color: var(--brea-gold-soft) !important; }
-body:has(input[placeholder*="Search properties"]) .border-blue-400\\/20 { border-color: rgba(201,169,110,.24) !important; }
-body:has(input[placeholder*="Search properties"]) .bg-blue-500\\/10 { background: rgba(201,169,110,.09) !important; }
-body:has(input[placeholder*="Search properties"]) .focus\\:border-blue-500:focus { border-color: rgba(201,169,110,.75) !important; }
+/* Marketplace premium theme. Avoid escaped slash class selectors because PostCSS parses them differently. */
+body:has(input[placeholder*="Search properties"]) [class~="text-blue-400"],
+body:has(input[placeholder*="Search properties"]) [class~="text-blue-300"] { color: var(--brea-gold-soft) !important; }
 body:has(input[placeholder*="Search properties"]) select:hover { border-color: rgba(201,169,110,.35); }
 body:has(input[placeholder*="Search properties"]) select:focus { border-color: rgba(201,169,110,.65); box-shadow: 0 0 0 4px rgba(201,169,110,.09); }
 
-/* AGENT / BROKER DASHBOARD — PREMIUM CRM UI */
+/* Agent / Broker dashboard premium CRM presentation. */
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) {
-  background:
-    radial-gradient(circle at 78% -10%, rgba(201,169,110,.09), transparent 28%),
-    radial-gradient(circle at 15% 20%, rgba(11,42,111,.045), transparent 30%),
-    #f6f7f9;
+  background: radial-gradient(circle at 78% -10%, rgba(201,169,110,.09), transparent 28%), radial-gradient(circle at 15% 20%, rgba(11,42,111,.045), transparent 30%), #f6f7f9;
 }
-
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside {
-  border-right-color: rgba(15,23,42,.08);
-  background: rgba(255,255,255,.94);
-  box-shadow: 18px 0 50px rgba(15,23,42,.035);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button {
-  border: 1px solid transparent;
-  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
-}
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button:hover {
-  border-color: rgba(201,169,110,.18);
-  transform: translateX(2px);
-}
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button[class*="bg-slate-950"] {
-  background: linear-gradient(135deg,#071936,#102b54);
-  box-shadow: 0 10px 24px rgba(7,25,54,.16);
-}
-
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) header {
-  border-bottom-color: rgba(15,23,42,.075);
-  background: rgba(255,255,255,.86);
-  box-shadow: 0 8px 30px rgba(15,23,42,.035);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside { border-right-color: rgba(15,23,42,.08); background: rgba(255,255,255,.94); box-shadow: 18px 0 50px rgba(15,23,42,.035); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button { border: 1px solid transparent; }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button:hover { border-color: rgba(201,169,110,.18); transform: translateX(2px); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button[class*="bg-slate-950"] { background: linear-gradient(135deg,#071936,#102b54); box-shadow: 0 10px 24px rgba(7,25,54,.16); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) header { border-bottom-color: rgba(15,23,42,.075); background: rgba(255,255,255,.86); box-shadow: 0 8px 30px rgba(15,23,42,.035); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { position: relative; }
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 4%;
-  width: 280px;
-  height: 180px;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(201,169,110,.08), transparent 70%);
-}
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main::before { content: ""; position: absolute; top: 0; right: 4%; width: 280px; height: 180px; pointer-events: none; background: radial-gradient(circle, rgba(201,169,110,.08), transparent 70%); }
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main > div:first-child h2 { color: var(--brea-navy); }
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main > div:first-child h2::after {
-  content: "";
-  display: block;
-  width: 48px;
-  height: 2px;
-  margin-top: 10px;
-  border-radius: 999px;
-  background: linear-gradient(90deg,var(--brea-gold),transparent);
-}
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main > div:first-child h2::after { content: ""; display: block; width: 48px; height: 2px; margin-top: 10px; border-radius: 999px; background: linear-gradient(90deg,var(--brea-gold),transparent); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white { border-color: rgba(15,23,42,.075); box-shadow: 0 14px 36px rgba(15,23,42,.055); transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease; }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white:hover { border-color: rgba(201,169,110,.24); box-shadow: 0 20px 48px rgba(15,23,42,.08); transform: translateY(-2px); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input { background: rgba(255,255,255,.94); border-color: rgba(15,23,42,.1); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input:focus { border-color: rgba(201,169,110,.65); box-shadow: 0 0 0 4px rgba(201,169,110,.1); }
 
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white {
-  border-color: rgba(15,23,42,.075);
-  box-shadow: 0 14px 36px rgba(15,23,42,.055);
-  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
-}
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white:hover {
-  border-color: rgba(201,169,110,.24);
-  box-shadow: 0 20px 48px rgba(15,23,42,.08);
-  transform: translateY(-2px);
-}
+/* Public Agent / Broker profile premium presentation. */
+body:has(main > section > div > div.overflow-hidden.rounded-3xl) { background: radial-gradient(circle at 50% -12%, rgba(201,169,110,.14), transparent 34%), radial-gradient(circle at 4% 42%, rgba(11,42,111,.14), transparent 30%), #050b16; }
+body:has(main > section > div > div.overflow-hidden.rounded-3xl) main { isolation: isolate; }
 
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input {
-  background: rgba(255,255,255,.94);
-  border-color: rgba(15,23,42,.1);
-}
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input:focus {
-  border-color: rgba(201,169,110,.65);
-  box-shadow: 0 0 0 4px rgba(201,169,110,.1);
-}
-
-/* PUBLIC AGENT / BROKER PROFILE — PREMIUM PRESENTATION */
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) {
-  background:
-    radial-gradient(circle at 50% -12%, rgba(201,169,110,.14), transparent 34%),
-    radial-gradient(circle at 4% 42%, rgba(11,42,111,.14), transparent 30%),
-    #050b16;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main {
-  isolation: isolate;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div {
-  max-width: 720px;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div:first-child > p:first-child {
-  color: var(--brea-gold-soft);
-  letter-spacing: .28em;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl {
-  border-color: rgba(201,169,110,.2);
-  background: linear-gradient(145deg, rgba(255,255,255,.085), rgba(255,255,255,.035));
-  box-shadow: 0 35px 90px rgba(0,0,0,.38), 0 0 0 1px rgba(255,255,255,.025) inset;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl img {
-  border-color: rgba(201,169,110,.5);
-  box-shadow: 0 0 0 8px rgba(201,169,110,.045), 0 22px 50px rgba(0,0,0,.35);
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl h1 {
-  color: #fff;
-  font-weight: 800;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl button,
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl a {
-  border-radius: 14px;
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl button:first-of-type {
-  background: linear-gradient(135deg, #c9a96e, #ead9b8);
-  color: #071936;
-  box-shadow: 0 14px 30px rgba(201,169,110,.16);
-}
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl button:first-of-type:hover {
-  filter: brightness(1.04);
-  box-shadow: 0 18px 38px rgba(201,169,110,.22);
-}
-
-body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl > div:first-child > div:nth-of-type(2) > div:last-child {
-  border-top-color: rgba(201,169,110,.16);
-}
-
-@media (min-width: 640px) {
-  input, textarea, select { font-size: inherit; }
-}
-
-@media (max-width: 1023px) {
-  body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-top: .25rem; }
-}
-
+@media (min-width: 640px) { input, textarea, select { font-size: inherit; } }
+@media (max-width: 1023px) { body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-top: .25rem; } }
 @media (max-width: 639px) {
   button, a { min-height: 40px; }
   #hero, #profile, #ceo, #services, #contact { scroll-margin-top: 4.75rem; }
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside { width: min(86vw,320px); }
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-bottom: 2rem; }
-
-  body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section {
-    align-items: flex-start;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-  body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div {
-    width: 100%;
-  }
-  body:has(main > section > div > div.overflow-hidden.rounded-3xl.border.border-white\\/10.bg-white\\/\\[0.06\\]) main section > div > div.overflow-hidden.rounded-3xl {
-    border-radius: 24px;
-  }
 }
-
-::-webkit-scrollbar { width: 9px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: rgba(15,42,90,.28); border-radius: 999px; border: 2px solid #f1f5f9; }
-::-webkit-scrollbar-thumb:hover { background: rgba(15,42,90,.45); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-    scroll-behavior: auto !important;
-  }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
