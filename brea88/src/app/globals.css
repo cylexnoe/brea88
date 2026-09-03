@@ -6,6 +6,10 @@
   --brea-ink: #0f172a;
   --brea-muted: #64748b;
   --brea-surface: #f8fafc;
+  --brea-navy: #071936;
+  --brea-gold: #c9a96e;
+  --brea-gold-soft: #ead9b8;
+  --brea-border: rgba(15, 23, 42, 0.09);
 }
 
 html {
@@ -15,7 +19,10 @@ html {
 
 body {
   margin: 0;
-  background: var(--brea-surface);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37, 99, 235, 0.055), transparent 30%),
+    radial-gradient(circle at 92% 8%, rgba(201, 169, 110, 0.045), transparent 28%),
+    var(--brea-surface);
   color: var(--brea-ink);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -27,8 +34,8 @@ body {
 }
 
 ::selection {
-  background: rgba(37, 99, 235, 0.18);
-  color: var(--brea-blue);
+  background: rgba(201, 169, 110, 0.22);
+  color: var(--brea-navy);
 }
 
 button,
@@ -48,9 +55,72 @@ img {
   max-width: 100%;
 }
 
+/* Premium typography without changing the site's existing copy. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+h1,
+h2 {
+  letter-spacing: -0.025em;
+}
+
+/* Reusable luxury-real-estate surfaces. */
+.brea-premium-card {
+  border: 1px solid var(--brea-border);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 20px 55px rgba(15, 23, 42, 0.07),
+    0 2px 8px rgba(15, 23, 42, 0.035);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.brea-premium-card:hover {
+  border-color: rgba(201, 169, 110, 0.28);
+  box-shadow:
+    0 28px 70px rgba(15, 23, 42, 0.1),
+    0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.brea-gold-line {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brea-gold),
+    transparent
+  );
+}
+
+.brea-image-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.brea-image-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 42%,
+    transparent 58%
+  );
+  transform: translateX(-120%);
+  transition: transform 700ms ease;
+}
+
+.brea-image-shine:hover::after {
+  transform: translateX(120%);
+}
+
 /* Better keyboard accessibility */
 :focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline: 3px solid rgba(201, 169, 110, 0.45);
   outline-offset: 3px;
 }
 
@@ -72,6 +142,25 @@ select {
   select {
     font-size: inherit;
   }
+}
+
+/* Premium scrollbar */
+::-webkit-scrollbar {
+  width: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 42, 90, 0.28);
+  border-radius: 999px;
+  border: 2px solid #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 42, 90, 0.45);
 }
 
 /* Respect reduced-motion preferences */
