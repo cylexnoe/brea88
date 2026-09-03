@@ -29,109 +29,52 @@ body {
   overflow-x: hidden;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 ::selection {
   background: rgba(201, 169, 110, 0.22);
   color: var(--brea-navy);
 }
 
-button,
-a,
-input,
-textarea,
-select {
-  -webkit-tap-highlight-color: transparent;
-}
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+button, a { touch-action: manipulation; }
+img { max-width: 100%; }
 
-button,
-a {
-  touch-action: manipulation;
-}
-
-img {
-  max-width: 100%;
-}
-
-h1,
-h2,
-h3 {
-  text-wrap: balance;
-}
-
-h1,
-h2 {
-  letter-spacing: -0.025em;
-}
+h1, h2, h3 { text-wrap: balance; }
+h1, h2 { letter-spacing: -0.025em; }
 
 .brea-premium-card {
   border: 1px solid var(--brea-border);
   background: rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 20px 55px rgba(15, 23, 42, 0.07),
-    0 2px 8px rgba(15, 23, 42, 0.035);
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(15, 23, 42, 0.035);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  transition:
-    transform 300ms ease,
-    border-color 300ms ease,
-    box-shadow 300ms ease;
+  transition: transform 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
 }
 
 .brea-premium-card:hover {
   border-color: rgba(201, 169, 110, 0.28);
-  box-shadow:
-    0 28px 70px rgba(15, 23, 42, 0.1),
-    0 4px 12px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .brea-gold-line {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--brea-gold),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, var(--brea-gold), transparent);
 }
 
-.brea-image-shine {
-  position: relative;
-  overflow: hidden;
-}
-
+.brea-image-shine { position: relative; overflow: hidden; }
 .brea-image-shine::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.16) 42%,
-    transparent 58%
-  );
+  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,.16) 42%, transparent 58%);
   transform: translateX(-120%);
   transition: transform 700ms ease;
 }
+.brea-image-shine:hover::after { transform: translateX(120%); }
 
-.brea-image-shine:hover::after {
-  transform: translateX(120%);
-}
-
-#hero,
-#profile,
-#ceo,
-#services,
-#contact {
-  position: relative;
-}
-
-#profile::before,
-#ceo::before,
-#services::before,
-#contact::before {
+#hero, #profile, #ceo, #services, #contact { position: relative; }
+#profile::before, #ceo::before, #services::before, #contact::before {
   content: "";
   position: absolute;
   top: 0;
@@ -139,150 +82,151 @@ h2 {
   width: min(92%, 900px);
   height: 1px;
   transform: translateX(-50%);
-  background: linear-gradient(90deg, transparent, rgba(201, 169, 110, 0.32), transparent);
+  background: linear-gradient(90deg, transparent, rgba(201,169,110,.32), transparent);
   pointer-events: none;
 }
 
-button,
-a {
+button, a {
   transition-property: color, background-color, border-color, box-shadow, transform, opacity;
   transition-duration: 220ms;
   transition-timing-function: ease;
 }
-
-button:active,
-a:active {
-  transform: translateY(1px);
-}
+button:active, a:active { transform: translateY(1px); }
 
 :focus-visible {
-  outline: 3px solid rgba(201, 169, 110, 0.45);
+  outline: 3px solid rgba(201,169,110,.45);
   outline-offset: 3px;
 }
 
-input,
-textarea,
-select {
-  border-color: rgba(15, 23, 42, 0.12);
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease;
+input, textarea, select {
+  border-color: rgba(15,23,42,.12);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  font-size: 16px;
 }
-
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: rgba(11, 42, 111, 0.45);
-  box-shadow: 0 0 0 4px rgba(11, 42, 111, 0.07);
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(11,42,111,.45);
+  box-shadow: 0 0 0 4px rgba(11,42,111,.07);
   outline: none;
 }
 
-section[id] {
-  scroll-margin-top: 5.5rem;
+section[id] { scroll-margin-top: 5.5rem; }
+
+/* MARKETPLACE PREMIUM THEME */
+body:has(input[placeholder*="Search properties"]) .text-blue-400,
+body:has(input[placeholder*="Search properties"]) .text-blue-300 { color: var(--brea-gold-soft) !important; }
+body:has(input[placeholder*="Search properties"]) .border-blue-400\\/20 { border-color: rgba(201,169,110,.24) !important; }
+body:has(input[placeholder*="Search properties"]) .bg-blue-500\\/10 { background: rgba(201,169,110,.09) !important; }
+body:has(input[placeholder*="Search properties"]) .focus\\:border-blue-500:focus { border-color: rgba(201,169,110,.75) !important; }
+body:has(input[placeholder*="Search properties"]) select:hover { border-color: rgba(201,169,110,.35); }
+body:has(input[placeholder*="Search properties"]) select:focus { border-color: rgba(201,169,110,.65); box-shadow: 0 0 0 4px rgba(201,169,110,.09); }
+
+/* AGENT / BROKER DASHBOARD — PREMIUM CRM UI */
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) {
+  background:
+    radial-gradient(circle at 78% -10%, rgba(201,169,110,.09), transparent 28%),
+    radial-gradient(circle at 15% 20%, rgba(11,42,111,.045), transparent 30%),
+    #f6f7f9;
 }
 
-input,
-textarea,
-select {
-  font-size: 16px;
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside {
+  border-right-color: rgba(15,23,42,.08);
+  background: rgba(255,255,255,.94);
+  box-shadow: 18px 0 50px rgba(15,23,42,.035);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-/* =========================================================
-   MARKETPLACE PREMIUM THEME
-   Scoped to the existing marketplace search field so the
-   Home page wording and styling remain untouched.
-========================================================= */
-
-body:has(input[placeholder*="Search properties"]) .text-blue-400 {
-  color: var(--brea-gold-soft) !important;
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button {
+  border: 1px solid transparent;
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button:hover {
+  border-color: rgba(201,169,110,.18);
+  transform: translateX(2px);
+}
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button[class*="bg-slate-950"] {
+  background: linear-gradient(135deg,#071936,#102b54);
+  box-shadow: 0 10px 24px rgba(7,25,54,.16);
 }
 
-body:has(input[placeholder*="Search properties"]) .text-blue-300 {
-  color: var(--brea-gold-soft) !important;
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) header {
+  border-bottom-color: rgba(15,23,42,.075);
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 8px 30px rgba(15,23,42,.035);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-body:has(input[placeholder*="Search properties"]) .border-blue-400\/20 {
-  border-color: rgba(201, 169, 110, 0.24) !important;
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main {
+  position: relative;
 }
-
-body:has(input[placeholder*="Search properties"]) .bg-blue-500\/10 {
-  background: rgba(201, 169, 110, 0.09) !important;
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 4%;
+  width: 280px;
+  height: 180px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(201,169,110,.08), transparent 70%);
 }
-
-body:has(input[placeholder*="Search properties"]) .focus\:border-blue-500:focus {
-  border-color: rgba(201, 169, 110, 0.75) !important;
-}
-
-body:has(input[placeholder*="Search properties"]) .focus\:ring-blue-500:focus {
-  --tw-ring-color: rgba(201, 169, 110, 0.2) !important;
-}
-
-body:has(input[placeholder*="Search properties"]) select:hover {
-  border-color: rgba(201, 169, 110, 0.35);
-}
-
-body:has(input[placeholder*="Search properties"]) select:focus {
-  border-color: rgba(201, 169, 110, 0.65);
-  box-shadow: 0 0 0 4px rgba(201, 169, 110, 0.09);
-}
-
-section[id] {
-  scroll-margin-top: 5.5rem;
-}
-
-@media (max-width: 639px) {
-  button,
-  a {
-    min-height: 40px;
-  }
-
-  #hero,
-  #profile,
-  #ceo,
-  #services,
-  #contact {
-    scroll-margin-top: 4.75rem;
-  }
-}
-
-::-webkit-scrollbar {
-  width: 9px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(15, 42, 90, 0.28);
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main > div:first-child h2 { color: var(--brea-navy); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main > div:first-child h2::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 2px;
+  margin-top: 10px;
   border-radius: 999px;
-  border: 2px solid #f1f5f9;
+  background: linear-gradient(90deg,var(--brea-gold),transparent);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 42, 90, 0.45);
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white {
+  border-color: rgba(15,23,42,.075);
+  box-shadow: 0 14px 36px rgba(15,23,42,.055);
+  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white:hover {
+  border-color: rgba(201,169,110,.24);
+  box-shadow: 0 20px 48px rgba(15,23,42,.08);
+  transform: translateY(-2px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input {
+  background: rgba(255,255,255,.94);
+  border-color: rgba(15,23,42,.1);
+}
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main input:focus {
+  border-color: rgba(201,169,110,.65);
+  box-shadow: 0 0 0 4px rgba(201,169,110,.1);
 }
 
 @media (min-width: 640px) {
-  input,
-  textarea,
-  select {
-    font-size: inherit;
+  input, textarea, select { font-size: inherit; }
+}
+
+@media (max-width: 1023px) {
+  body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-top: .25rem; }
+}
+
+@media (max-width: 639px) {
+  button, a { min-height: 40px; }
+  #hero, #profile, #ceo, #services, #contact { scroll-margin-top: 4.75rem; }
+  body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside { width: min(86vw,320px); }
+  body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-bottom: 2rem; }
+}
+
+::-webkit-scrollbar { width: 9px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: rgba(15,42,90,.28); border-radius: 999px; border: 2px solid #f1f5f9; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15,42,90,.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
   }
 }
