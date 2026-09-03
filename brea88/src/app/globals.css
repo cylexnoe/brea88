@@ -110,6 +110,25 @@ body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .bg-slate-50 { ba
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-xl.border.border-slate-200.bg-slate-50 { box-shadow:inset 0 1px 0 rgba(255,255,255,.9); }
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main img { box-shadow:0 8px 22px rgba(15,23,42,.08); }
 
+/* Admin dashboard premium presentation. */
+body:has(aside[class*="bg-slate-950"]) { background:radial-gradient(circle at 82% -8%,rgba(201,169,110,.1),transparent 27%),radial-gradient(circle at 18% 18%,rgba(11,42,111,.055),transparent 30%),#f6f7f9; }
+body:has(aside[class*="bg-slate-950"]) aside { background:linear-gradient(180deg,#040b16 0%,#071936 58%,#061225 100%); border-right-color:rgba(255,255,255,.08); box-shadow:18px 0 55px rgba(2,6,23,.16); }
+body:has(aside[class*="bg-slate-950"]) aside > div:first-child { border-bottom-color:rgba(255,255,255,.08); }
+body:has(aside[class*="bg-slate-950"]) aside nav button { border:1px solid transparent; }
+body:has(aside[class*="bg-slate-950"]) aside nav button:hover { border-color:rgba(201,169,110,.18); background:rgba(255,255,255,.055); transform:translateX(2px); }
+body:has(aside[class*="bg-slate-950"]) aside nav button[class*="bg-white"] { color:var(--brea-navy); box-shadow:0 10px 26px rgba(0,0,0,.18); }
+body:has(aside[class*="bg-slate-950"]) aside nav button[class*="bg-white"]::before { content:""; display:block; width:3px; height:18px; margin-right:1px; border-radius:999px; background:var(--brea-gold); }
+body:has(aside[class*="bg-slate-950"]) header { border-bottom-color:rgba(15,23,42,.08); background:rgba(255,255,255,.86); box-shadow:0 10px 35px rgba(15,23,42,.045); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+body:has(aside[class*="bg-slate-950"]) main { position:relative; }
+body:has(aside[class*="bg-slate-950"]) main::before { content:""; position:absolute; top:-30px; right:4%; width:360px; height:220px; pointer-events:none; background:radial-gradient(circle,rgba(201,169,110,.1),transparent 70%); }
+body:has(aside[class*="bg-slate-950"]) main h1 { color:var(--brea-navy); }
+body:has(aside[class*="bg-slate-950"]) main .rounded-2xl.border.border-slate-200.bg-white { border-color:rgba(15,23,42,.075); box-shadow:0 16px 40px rgba(15,23,42,.055),0 2px 8px rgba(15,23,42,.025); }
+body:has(aside[class*="bg-slate-950"]) main .rounded-2xl.border.border-slate-200.bg-white:hover { border-color:rgba(201,169,110,.26); box-shadow:0 22px 55px rgba(15,23,42,.09); }
+body:has(aside[class*="bg-slate-950"]) main button[class*="bg-slate-900"] { background:linear-gradient(135deg,#071936,#0b2a6f); box-shadow:0 10px 25px rgba(7,25,54,.16); }
+body:has(aside[class*="bg-slate-950"]) main button[class*="bg-slate-900"]:hover { box-shadow:0 15px 34px rgba(7,25,54,.22); transform:translateY(-1px); }
+body:has(aside[class*="bg-slate-950"]) main input:focus,body:has(aside[class*="bg-slate-950"]) main select:focus { border-color:rgba(201,169,110,.62); box-shadow:0 0 0 4px rgba(201,169,110,.1); }
+body:has(aside[class*="bg-slate-950"]) main img { box-shadow:0 10px 26px rgba(15,23,42,.08); }
+
 @media (min-width:640px) { input,textarea,select { font-size:inherit; } }
 @media (max-width:1023px) { body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-top:.25rem; } }
 @media (max-width:639px) {
@@ -123,5 +142,8 @@ body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main img { box-shadow:
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main { padding-bottom:2rem; }
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white:hover { transform:none; }
   body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) main .rounded-2xl.border.border-slate-200.bg-white > div:first-child::before { top:14px; bottom:14px; }
+  body:has(aside[class*="bg-slate-950"]) aside { width:min(86vw,320px); }
+  body:has(aside[class*="bg-slate-950"]) main { padding-bottom:2rem; }
+  body:has(aside[class*="bg-slate-950"]) main .rounded-2xl.border.border-slate-200.bg-white:hover { transform:none; }
 }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
