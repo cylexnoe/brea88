@@ -63,11 +63,6 @@ return ( <main className="min-h-screen bg-slate-950 text-white flex items-center
               I’m a Client
             </h2>
 
-            <p className="text-[10px] sm:text-sm md:text-base text-slate-500 leading-4 sm:leading-6 mb-4 sm:mb-7">
-              Browse properties, explore listings, view property photos,
-              and find the right property for your needs.
-            </p>
-
             <div className="flex items-center justify-between gap-1 sm:gap-3">
 
               <span className="font-bold text-blue-900 text-[10px] sm:text-sm md:text-base leading-tight">
@@ -109,11 +104,6 @@ return ( <main className="min-h-screen bg-slate-950 text-white flex items-center
             <h2 className="text-base sm:text-2xl md:text-3xl font-black mb-2 sm:mb-3 leading-tight">
               Agent / Broker
             </h2>
-
-            <p className="text-[10px] sm:text-sm md:text-base text-blue-100 leading-4 sm:leading-6 mb-4 sm:mb-7">
-              Access your professional account, manage your profile,
-              and share your permanent profile link with clients.
-            </p>
 
             <div className="flex items-center justify-between gap-1 sm:gap-3">
 
