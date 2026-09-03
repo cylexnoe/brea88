@@ -16,9 +16,7 @@ import {
   X,
   Building2,
   RotateCcw,
-  Phone,
   MessageCircle,
-  Mail,
   BedDouble,
   Bath,
   Maximize,
@@ -34,19 +32,24 @@ import {
 } from 'lucide-react';
 
 import PropertyCard from '../propertyCard';
+import AgentPicker from '../../components/AgentPicker';
+
+/* =========================================================
+   AGENT
+========================================================= */
 
 interface Agent {
   id: number;
   fullName: string;
-  email: string;
   role: string;
   slug: string;
-  phone?: string | null;
   profileImage?: string | null;
-  bio?: string | null;
-  facebook?: string | null;
-  messenger?: string | null;
+  lastSeen?: string | null;
 }
+
+/* =========================================================
+   PROPERTY
+========================================================= */
 
 interface Property {
   id: number;
@@ -68,6 +71,12 @@ interface Property {
   baths?: number | null;
   sqft?: number | null;
 
+  /*
+   * Legacy compatibility only.
+   *
+   * IMPORTANT:
+   * This is NOT used for inquiry routing.
+   */
   agent?: Agent | null;
   agentId?: number | null;
 }
@@ -126,20 +135,30 @@ export default function MarketplacePage() {
   /* =======================================================
      AGENT ROUTING CONTEXT
 
-     Marketplace links should normally be opened as:
+     Direct:
+       /marketplace
 
-       /marketplace?agent=agent-slug
-
-     Example:
-
+     Permanent agent link:
        /marketplace?agent=john-doe
 
-     We intentionally use window.location.search inside
-     useEffect instead of useSearchParams.
+     Browser sends agentSlug only.
+
+     The API resolves:
+       agentSlug -> Agent
   ======================================================= */
 
   const [agentSlug, setAgentSlug] =
     useState('');
+
+  const [selectedAgent, setSelectedAgent] =
+    useState<Agent | null>(null);
+
+  const [showAgentPicker, setShowAgentPicker] =
+    useState(false);
+
+  /* =======================================================
+     READ AGENT FROM URL
+  ======================================================= */
 
   useEffect(() => {
     const params = new URLSearchParams(
@@ -150,6 +169,10 @@ export default function MarketplacePage() {
       params.get('agent')?.trim() || '';
 
     setAgentSlug(slug);
+
+    if (slug) {
+      setShowAgentPicker(false);
+    }
   }, []);
 
   /* =======================================================
@@ -452,8 +475,20 @@ export default function MarketplacePage() {
     setSelectedImage(0);
 
     setShowInquiryForm(false);
+
+    setShowAgentPicker(false);
+
     setInquirySuccess(false);
+
     setInquiryError('');
+
+    /*
+     * Permanent URL agent context
+     * remains controlled by agentSlug.
+     */
+    if (agentSlug) {
+      setSelectedAgent(null);
+    }
 
     document.body.style.overflow =
       'hidden';
@@ -464,11 +499,17 @@ export default function MarketplacePage() {
   ======================================================= */
 
   const closeProperty = () => {
+    if (submittingInquiry) {
+      return;
+    }
+
     setSelectedProperty(null);
 
     setSelectedImage(0);
 
     setShowInquiryForm(false);
+
+    setShowAgentPicker(false);
 
     setInquirySuccess(false);
 
@@ -558,14 +599,109 @@ export default function MarketplacePage() {
   }, []);
 
   /* =======================================================
+     OPEN AGENT PICKER
+  ======================================================= */
+
+  const openAgentSelection = () => {
+    if (submittingInquiry) {
+      return;
+    }
+
+    /*
+     * Permanent agent link:
+     * agent already known.
+     */
+    if (agentSlug) {
+      setShowAgentPicker(false);
+      setShowInquiryForm(true);
+      setInquirySuccess(false);
+      setInquiryError('');
+
+      return;
+    }
+
+    /*
+     * Direct marketplace:
+     * client chooses an agent.
+     */
+    setShowAgentPicker(true);
+    setShowInquiryForm(false);
+    setInquirySuccess(false);
+    setInquiryError('');
+  };
+
+  /* =======================================================
+     HANDLE AGENT SELECTION
+  ======================================================= */
+
+  const handleAgentSelect = (
+    agent: Agent
+  ) => {
+    setSelectedAgent(agent);
+
+    /*
+     * Store slug as routing context.
+     *
+     * We DO NOT send agentId.
+     */
+    setAgentSlug(agent.slug);
+
+    setInquiryError('');
+
+    setShowAgentPicker(false);
+
+    setShowInquiryForm(true);
+
+    setInquirySuccess(false);
+  };
+
+  /* =======================================================
+     CONTINUE AFTER AGENT PICKER
+  ======================================================= */
+
+  const continueToInquiry = () => {
+    if (!selectedAgent) {
+      return;
+    }
+
+    setShowAgentPicker(false);
+
+    setShowInquiryForm(true);
+
+    setInquirySuccess(false);
+
+    setInquiryError('');
+  };
+
+  /* =======================================================
+     CLOSE AGENT PICKER
+  ======================================================= */
+
+  const closeAgentPicker = () => {
+    if (submittingInquiry) {
+      return;
+    }
+
+    setShowAgentPicker(false);
+
+    setInquiryError('');
+  };
+
+  /* =======================================================
      OPEN INQUIRY FORM
   ======================================================= */
 
   const openInquiryForm = () => {
-    setShowInquiryForm(true);
+    if (agentSlug) {
+      setShowAgentPicker(false);
+      setShowInquiryForm(true);
+      setInquirySuccess(false);
+      setInquiryError('');
 
-    setInquirySuccess(false);
-    setInquiryError('');
+      return;
+    }
+
+    openAgentSelection();
   };
 
   /* =======================================================
@@ -583,21 +719,16 @@ export default function MarketplacePage() {
   };
 
   /* =======================================================
+     EFFECTIVE AGENT SLUG
+  ======================================================= */
+
+  const effectiveAgentSlug =
+    selectedAgent?.slug ||
+    agentSlug ||
+    '';
+
+  /* =======================================================
      SUBMIT INQUIRY
-
-     IMPORTANT:
-
-     The browser NEVER sends agentId.
-
-     The agent is determined only by:
-
-       /marketplace?agent=agent-slug
-
-     The API resolves agentSlug server-side
-     and stores the actual agentId.
-
-     propertyId identifies the property that
-     the client is asking about.
   ======================================================= */
 
   const submitInquiry = async (
@@ -613,12 +744,15 @@ export default function MarketplacePage() {
     setInquirySuccess(false);
 
     /*
-     * The marketplace must have a permanent
-     * agent context.
+     * Direct marketplace requires
+     * an agent selection.
      */
-    if (!agentSlug) {
+    if (!effectiveAgentSlug) {
+      setShowInquiryForm(false);
+      setShowAgentPicker(true);
+
       setInquiryError(
-        'This marketplace link is not connected to an agent. Please open the marketplace from an agent profile.'
+        'Please choose an Agent or Broker before submitting your inquiry.'
       );
 
       return;
@@ -650,19 +784,21 @@ export default function MarketplacePage() {
               inquiryMessage.trim(),
 
             /*
-             * The property selected by the client.
+             * Property is only the
+             * property being requested.
+             *
+             * It is NOT assigned to
+             * the selected agent.
              */
             propertyId:
               selectedProperty.id,
 
             /*
-             * Permanent agent profile context.
-             *
-             * The API resolves this slug to
-             * the actual Agent record.
+             * Server resolves:
+             * slug -> Agent.id
              */
             agentSlug:
-              agentSlug,
+              effectiveAgentSlug,
           }),
         }
       );
@@ -702,15 +838,6 @@ export default function MarketplacePage() {
 
   /* =======================================================
      SCHEDULE VIEWING
-
-     Viewing requests use the SAME inquiry system.
-
-     This is important because the inquiry must
-     go to the agent connected to the permanent
-     marketplace link.
-
-     We do NOT use selectedProperty.agent.email
-     for routing.
   ======================================================= */
 
   const scheduleViewing = () => {
@@ -718,12 +845,14 @@ export default function MarketplacePage() {
       return;
     }
 
-    if (!agentSlug) {
-      setInquiryError(
-        'This marketplace link is not connected to an agent. Please open the marketplace from an agent profile.'
-      );
-
-      setShowInquiryForm(true);
+    /*
+     * Direct marketplace:
+     * choose an agent first.
+     */
+    if (!effectiveAgentSlug) {
+      setShowInquiryForm(false);
+      setInquiryError('');
+      setShowAgentPicker(true);
 
       return;
     }
@@ -733,7 +862,11 @@ export default function MarketplacePage() {
     );
 
     setInquirySuccess(false);
+
     setInquiryError('');
+
+    setShowAgentPicker(false);
+
     setShowInquiryForm(true);
   };
 
@@ -812,9 +945,8 @@ export default function MarketplacePage() {
               properties in prime locations.
             </p>
 
-            {/* AGENT CONTEXT */}
+            {agentSlug ? (
 
-            {agentSlug && (
               <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-xs font-bold text-blue-300">
 
                 <User className="h-3.5 w-3.5" />
@@ -822,6 +954,17 @@ export default function MarketplacePage() {
                 Agent Marketplace
 
               </div>
+
+            ) : (
+
+              <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-400">
+
+                <User className="h-3.5 w-3.5" />
+
+                Choose an Agent to Assist You
+
+              </div>
+
             )}
 
           </div>
@@ -871,6 +1014,7 @@ export default function MarketplacePage() {
           </div>
 
         </div>
+
       </header>
 
       {/* =====================================================
@@ -1293,8 +1437,24 @@ export default function MarketplacePage() {
 
                   <div className="pointer-events-none">
 
+                    {/*
+                     * IMPORTANT FIX:
+                     *
+                     * PropertyCard has its own Property
+                     * interface. TypeScript sees that as
+                     * a different Property type.
+                     *
+                     * We use the component's actual
+                     * property prop type here so the
+                     * Marketplace and PropertyCard do
+                     * not fight over duplicate interfaces.
+                     */}
                     <PropertyCard
-                      property={property}
+                      property={
+                        property as React.ComponentProps<
+                          typeof PropertyCard
+                        >['property']
+                      }
                     />
 
                   </div>
@@ -1384,7 +1544,9 @@ export default function MarketplacePage() {
 
               </button>
 
-              {/* IMAGE GALLERY */}
+              {/* =================================================
+                  IMAGE GALLERY
+              ================================================== */}
 
               <div className="grid bg-slate-950 lg:grid-cols-[1fr_160px]">
 
@@ -1413,7 +1575,7 @@ export default function MarketplacePage() {
 
                     {selectedImage +
                       1}{' '}
-                    /{' '}
+                    / {' '}
 
                     {
                       getPropertyImages(
@@ -1544,7 +1706,9 @@ export default function MarketplacePage() {
 
               </div>
 
-              {/* DETAILS */}
+              {/* =================================================
+                  DETAILS
+              ================================================== */}
 
               <div className="grid lg:grid-cols-[1fr_340px]">
 
@@ -1814,19 +1978,19 @@ export default function MarketplacePage() {
                       This property is
                       available through
                       BREA 88 Realty.
-                      Submit an inquiry
-                      and it will be
-                      sent to the agent
-                      connected to this
-                      permanent marketplace
-                      link.
+                      Choose an Agent
+                      or Broker to assist
+                      you, then submit
+                      your inquiry.
                     </p>
 
                   </div>
 
                 </div>
 
-                {/* AGENT / INQUIRY SIDEBAR */}
+                {/* =================================================
+                    AGENT / INQUIRY SIDEBAR
+                ================================================== */}
 
                 <aside className="border-t border-slate-200 bg-slate-50 p-5 sm:p-8 lg:border-l lg:border-t-0">
 
@@ -1834,9 +1998,53 @@ export default function MarketplacePage() {
                     Property Inquiry
                   </p>
 
-                  {/* SUCCESS */}
+                  {/* =================================================
+                      AGENT PICKER
+                  ================================================== */}
 
-                  {inquirySuccess ? (
+                  {showAgentPicker ? (
+
+                    <div className="mt-5">
+
+                      <AgentPicker
+                        selectedAgentSlug={
+                          effectiveAgentSlug
+                        }
+                        onSelect={
+                          handleAgentSelect
+                        }
+                        onContinue={
+                          continueToInquiry
+                        }
+                      />
+
+                      {inquiryError && (
+
+                        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold leading-5 text-red-700">
+
+                          {inquiryError}
+
+                        </div>
+
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={
+                          closeAgentPicker
+                        }
+                        className="mt-3 w-full rounded-xl px-4 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
+                      >
+                        Cancel
+                      </button>
+
+                    </div>
+
+                  ) : inquirySuccess ? (
+
+                    /* =================================================
+                        SUCCESS
+                    ================================================== */
 
                     <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
 
@@ -1851,13 +2059,34 @@ export default function MarketplacePage() {
                           </h3>
 
                           <p className="mt-2 text-sm leading-6 text-emerald-700">
+
                             Your inquiry has
                             been submitted
                             successfully.
-                            The agent connected
-                            to this marketplace
-                            link will handle
-                            your inquiry.
+
+                            {selectedAgent ? (
+                              <>
+                                {' '}
+                                Your selected
+                                agent is{' '}
+                                <strong>
+                                  {
+                                    selectedAgent.fullName
+                                  }
+                                </strong>.
+                              </>
+                            ) : agentSlug ? (
+                              <>
+                                {' '}
+                                Your inquiry
+                                has been sent
+                                to the agent
+                                connected to
+                                this marketplace
+                                link.
+                              </>
+                            ) : null}
+
                           </p>
 
                         </div>
@@ -1866,11 +2095,17 @@ export default function MarketplacePage() {
 
                       <button
                         type="button"
-                        onClick={() =>
+                        onClick={() => {
+
                           setInquirySuccess(
                             false
-                          )
-                        }
+                          );
+
+                          setShowInquiryForm(
+                            true
+                          );
+
+                        }}
                         className="mt-5 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
                       >
                         Send Another Inquiry
@@ -1880,7 +2115,9 @@ export default function MarketplacePage() {
 
                   ) : showInquiryForm ? (
 
-                    /* INQUIRY FORM */
+                    /* =================================================
+                        INQUIRY FORM
+                    ================================================== */
 
                     <form
                       onSubmit={
@@ -1888,6 +2125,96 @@ export default function MarketplacePage() {
                       }
                       className="mt-5 space-y-4"
                     >
+
+                      {/* SELECTED AGENT */}
+
+                      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+
+                        <div className="flex items-center gap-3">
+
+                          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white">
+
+                            {selectedAgent?.profileImage ? (
+
+                              <img
+                                src={
+                                  selectedAgent.profileImage
+                                }
+                                alt={
+                                  selectedAgent.fullName
+                                }
+                                className="h-full w-full object-cover"
+                              />
+
+                            ) : (
+
+                              <User className="h-5 w-5 text-blue-500" />
+
+                            )}
+
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+
+                            <p className="text-[10px] font-black uppercase tracking-widest text-blue-500">
+                              Your Agent
+                            </p>
+
+                            <p className="truncate text-sm font-black text-blue-950">
+
+                              {selectedAgent
+                                ? selectedAgent.fullName
+                                : agentSlug
+                                  ? 'Agent connected to this link'
+                                  : 'Selected Agent'}
+
+                            </p>
+
+                            {selectedAgent && (
+
+                              <p className="text-xs font-semibold text-blue-700">
+                                {
+                                  selectedAgent.role
+                                }
+                              </p>
+
+                            )}
+
+                          </div>
+
+                        </div>
+
+                        {!agentSlug && (
+
+                          <button
+                            type="button"
+                            onClick={() => {
+
+                              if (
+                                submittingInquiry
+                              ) {
+                                return;
+                              }
+
+                              setShowInquiryForm(
+                                false
+                              );
+
+                              setShowAgentPicker(
+                                true
+                              );
+
+                            }}
+                            className="mt-3 text-xs font-black text-blue-700 hover:text-blue-900"
+                          >
+                            Change Agent
+                          </button>
+
+                        )}
+
+                      </div>
+
+                      {/* FULL NAME */}
 
                       <div>
 
@@ -1912,6 +2239,8 @@ export default function MarketplacePage() {
 
                       </div>
 
+                      {/* EMAIL */}
+
                       <div>
 
                         <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
@@ -1935,6 +2264,8 @@ export default function MarketplacePage() {
 
                       </div>
 
+                      {/* PHONE */}
+
                       <div>
 
                         <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
@@ -1957,6 +2288,8 @@ export default function MarketplacePage() {
                         />
 
                       </div>
+
+                      {/* MESSAGE */}
 
                       <div>
 
@@ -2040,7 +2373,9 @@ export default function MarketplacePage() {
 
                   ) : (
 
-                    /* DEFAULT SIDEBAR */
+                    /* =================================================
+                        DEFAULT SIDEBAR
+                    ================================================== */
 
                     <>
 
@@ -2057,14 +2392,29 @@ export default function MarketplacePage() {
                         </h3>
 
                         <p className="mt-2 text-sm leading-6 text-slate-500">
-                          Send an inquiry
-                          and provide your
-                          contact details.
-                          Your inquiry will
-                          be sent to the
-                          agent connected
-                          to this permanent
-                          marketplace link.
+
+                          {agentSlug ? (
+                            <>
+                              Send an inquiry
+                              and your
+                              message will
+                              be sent directly
+                              to the agent
+                              connected to
+                              this marketplace
+                              link.
+                            </>
+                          ) : (
+                            <>
+                              Choose an Agent
+                              or Broker who
+                              will assist you,
+                              then send your
+                              inquiry directly
+                              to them.
+                            </>
+                          )}
+
                         </p>
 
                         <button
@@ -2083,141 +2433,136 @@ export default function MarketplacePage() {
 
                       </div>
 
-                      {/* CURRENT PROPERTY CONTACT */}
+                      {/* DIRECT MARKETPLACE AGENT INFO */}
 
-                      {selectedProperty.agent && (
+                      {!agentSlug &&
+                        selectedAgent && (
 
-                        <div className="mt-5 border-t border-slate-200 pt-5">
+                          <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+
+                            <p className="text-xs font-black uppercase tracking-widest text-blue-600">
+                              Selected Agent
+                            </p>
+
+                            <div className="mt-4 flex items-center gap-3">
+
+                              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white">
+
+                                {selectedAgent.profileImage ? (
+
+                                  <img
+                                    src={
+                                      selectedAgent.profileImage
+                                    }
+                                    alt={
+                                      selectedAgent.fullName
+                                    }
+                                    className="h-full w-full object-cover"
+                                  />
+
+                                ) : (
+
+                                  <User className="h-6 w-6 text-blue-500" />
+
+                                )}
+
+                              </div>
+
+                              <div className="min-w-0">
+
+                                <h3 className="truncate text-sm font-black text-blue-950">
+                                  {
+                                    selectedAgent.fullName
+                                  }
+                                </h3>
+
+                                <p className="text-xs font-semibold text-blue-700">
+                                  {
+                                    selectedAgent.role
+                                  }
+                                </p>
+
+                              </div>
+
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+
+                                setShowAgentPicker(
+                                  true
+                                );
+
+                                setShowInquiryForm(
+                                  false
+                                );
+
+                              }}
+                              className="mt-4 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-black text-blue-900 transition hover:bg-blue-100"
+                            >
+                              Change Agent
+                            </button>
+
+                          </div>
+
+                        )}
+
+                      {/* PERMANENT AGENT LINK */}
+
+                      {agentSlug && (
+
+                        <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
 
                           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-                            Property Contact
+                            Agent Assistance
                           </p>
 
                           <div className="mt-4 flex items-center gap-3">
 
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-50">
 
-                              {selectedProperty.agent.profileImage ? (
-
-                                <img
-                                  src={
-                                    selectedProperty.agent.profileImage
-                                  }
-                                  alt={
-                                    selectedProperty.agent.fullName
-                                  }
-                                  className="h-full w-full object-cover"
-                                />
-
-                              ) : (
-
-                                <User className="h-6 w-6 text-slate-400" />
-
-                              )}
+                              <User className="h-6 w-6 text-blue-700" />
 
                             </div>
 
                             <div className="min-w-0">
 
-                              <h3 className="truncate text-sm font-black">
-                                {
-                                  selectedProperty.agent.fullName
-                                }
+                              <h3 className="text-sm font-black text-slate-950">
+                                Agent Selected
                               </h3>
 
-                              <p className="text-xs font-semibold text-slate-500">
-                                {
-                                  selectedProperty.agent.role
-                                }
+                              <p className="mt-1 text-xs leading-5 text-slate-500">
+                                Your inquiry will
+                                be sent to the
+                                agent connected
+                                to this marketplace
+                                link.
                               </p>
 
                             </div>
 
                           </div>
 
-                          {selectedProperty.agent.phone && (
-
-                            <a
-                              href={`tel:${selectedProperty.agent.phone}`}
-                              className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
-                            >
-
-                              <Phone className="h-4 w-4 text-blue-700" />
-
-                              <span className="truncate">
-                                {
-                                  selectedProperty.agent.phone
-                                }
-                              </span>
-
-                            </a>
-
-                          )}
-
-                          {selectedProperty.agent.email && (
-
-                            <a
-                              href={`mailto:${selectedProperty.agent.email}`}
-                              className="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
-                            >
-
-                              <Mail className="h-4 w-4 text-blue-700" />
-
-                              <span className="truncate">
-                                {
-                                  selectedProperty.agent.email
-                                }
-                              </span>
-
-                            </a>
-
-                          )}
-
-                          {selectedProperty.agent.messenger && (
-
-                            <a
-                              href={
-                                selectedProperty.agent.messenger
-                              }
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-slate-800 transition hover:bg-slate-100"
-                            >
-
-                              <MessageCircle className="h-4 w-4" />
-
-                              Messenger
-
-                            </a>
-
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={
-                              scheduleViewing
-                            }
-                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.98]"
-                          >
-
-                            <CalendarDays className="h-4 w-4" />
-
-                            Schedule Viewing
-
-                          </button>
-
-                          <a
-                            href={`/agent/${selectedProperty.agent.slug}`}
-                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-blue-900 transition hover:bg-blue-50"
-                          >
-
-                            View Agent Profile
-
-                          </a>
-
                         </div>
 
                       )}
+
+                      {/* SCHEDULE VIEWING */}
+
+                      <button
+                        type="button"
+                        onClick={
+                          scheduleViewing
+                        }
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3.5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.98]"
+                      >
+
+                        <CalendarDays className="h-4 w-4" />
+
+                        Schedule Viewing
+
+                      </button>
 
                     </>
 
@@ -2238,3 +2583,4 @@ export default function MarketplacePage() {
     </div>
   );
 }
+

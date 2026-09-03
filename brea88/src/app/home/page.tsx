@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import { PROPERTIES } from '../data';
+import AgentPicker from '../../components/AgentPicker';
 
 export default function HomePage() {
   const [agent, setAgent] = useState<{
@@ -115,8 +116,30 @@ export default function HomePage() {
 
 const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+
 const [agentSlug, setAgentSlug] = useState('');
 
+const [selectedInquiryAgent, setSelectedInquiryAgent] =
+  useState<{
+    id: number;
+    fullName: string;
+    role: string;
+    slug: string;
+    profileImage?: string | null;
+    lastSeen?: string | null;
+  } | null>(null);
+
+const [showAgentPicker, setShowAgentPicker] =
+  useState(false);
+
+const [pendingInquiry, setPendingInquiry] =
+  useState<{
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+    agentSlug?: string;
+  } | null>(null);
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const slug = params.get('agent') || '';
@@ -153,51 +176,122 @@ const [filter, setFilter] = useState<string>('All');
 // HOME INQUIRY
 // =========================================================
 
-  const sendEmail = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
+  const submitInquiry = async (payload: {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  agentSlug?: string;
+}) => {
+  try {
+    const response = await fetch('/api/inquiries', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
 
-    if (!formRef.current) return;
+    const data = await response.json();
 
-    setIsSubmitting(true);
-    setSubmitStatus('idle');
-
-    try {
-      const formData = new FormData(formRef.current);
-
-      const response = await fetch('/api/inquiries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: String(formData.get('name') || '').trim(),
-          email: String(formData.get('email') || '').trim(),
-          phone: String(formData.get('contact_number') || '').trim(),
-          message: String(formData.get('message') || '').trim(),
-          agentSlug: agentSlug || undefined,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send inquiry');
-      }
-
-      setSubmitStatus('success');
-      formRef.current.reset();
-
-    } catch (error) {
-      console.error('Inquiry Error:', error);
-      setSubmitStatus('error');
-
-    } finally {
-      setIsSubmitting(false);
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Failed to send inquiry'
+      );
     }
-  };
+
+    setSubmitStatus('success');
+
+    if (formRef.current) {
+      formRef.current.reset();
+    }
+
+    setSelectedInquiryAgent(null);
+    setPendingInquiry(null);
+    setShowAgentPicker(false);
+
+  } catch (error) {
+    console.error('Inquiry Error:', error);
+    setSubmitStatus('error');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+const sendEmail = async (
+  e: React.FormEvent<HTMLFormElement>
+) => {
+  e.preventDefault();
+
+  if (!formRef.current || isSubmitting) {
+    return;
+  }
+
+  setIsSubmitting(true);
+  setSubmitStatus('idle');
+
+  const formData = new FormData(formRef.current);
+
+  const name = String(
+    formData.get('name') || ''
+  ).trim();
+
+  const email = String(
+    formData.get('email') || ''
+  ).trim();
+
+  const phone = String(
+    formData.get('contact_number') || ''
+  ).trim();
+
+  const message = String(
+    formData.get('message') || ''
+  ).trim();
+
+  const preferLocation = String(
+    formData.get('prefer_location') || ''
+  ).trim();
+
+  const fullMessage = preferLocation
+    ? `${message}\n\nPreferred Location: ${preferLocation}`
+    : message;
+
+  /*
+   * If this page was opened through a permanent
+   * agent link, use that agent automatically.
+   */
+  const resolvedAgentSlug =
+    agentSlug ||
+    selectedInquiryAgent?.slug ||
+    undefined;
+
+  /*
+   * Direct website:
+   * client must choose an agent first.
+   */
+  if (!resolvedAgentSlug) {
+    setPendingInquiry({
+      name,
+      email,
+      phone,
+      message: fullMessage,
+    });
+
+    setIsSubmitting(false);
+    setShowAgentPicker(true);
+
+    return;
+  }
+
+  await submitInquiry({
+    name,
+    email,
+    phone,
+    message: fullMessage,
+    agentSlug: resolvedAgentSlug,
+  });
+};
   // =========================================================
   // ADMIN LOGIN
   // =========================================================
@@ -1703,7 +1797,8 @@ const [filter, setFilter] = useState<string>('All');
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Fill out the form below and our team will get back to you.
+                   Fill out the form below. Before your inquiry is sent,
+                  you can choose the Agent or Broker you would like to assist you.
                 </p>
 
               </div>
@@ -1869,7 +1964,83 @@ const [filter, setFilter] = useState<string>('All');
 
         </div>
       </section>
+{/* =====================================================
+    DIRECT WEBSITE — AGENT SELECTION
+====================================================== */}
 
+        {showAgentPicker && !agentSlug && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+
+            <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+
+              {/* CLOSE */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAgentPicker(false);
+                  setPendingInquiry(null);
+                }}
+                className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close agent selection"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="p-5 sm:p-7 lg:p-8">
+
+                <div className="mb-6 pr-10">
+
+                  <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-900">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                    Agent Assistance
+                  </span>
+
+                  <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                    Choose an Agent to Assist You
+                  </h3>
+
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                    Select the Agent or Broker you would like to assist
+                    you with your property inquiry.
+                  </p>
+
+                </div>
+
+                <AgentPicker
+                  selectedAgentId={
+                    selectedInquiryAgent?.id ?? null
+                  }
+                  onSelect={async (selectedAgent) => {
+
+                    setSelectedInquiryAgent(selectedAgent);
+
+                    /*
+                    * If there is a pending inquiry,
+                    * submit it immediately after the client
+                    * chooses an agent.
+                    */
+                    if (pendingInquiry) {
+
+                      setShowAgentPicker(false);
+                      setIsSubmitting(true);
+                      setSubmitStatus('idle');
+
+                      await submitInquiry({
+                        ...pendingInquiry,
+                        agentSlug: selectedAgent.slug,
+                      });
+
+                      return;
+                    }
+
+                    setShowAgentPicker(false);
+                  }}
+                />
+
+              </div>
+            </div>
+          </div>
+        )}
       {/* =====================================================
           ADMIN LOGIN MODAL
       ====================================================== */}
