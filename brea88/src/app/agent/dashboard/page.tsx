@@ -233,8 +233,8 @@ export default function AgentDashboardPage() {
   const [searchQuery, setSearchQuery] =
     useState('');
 
-  const [selectedInquiry, setSelectedInquiry] =
-    useState<Inquiry | null>(null);
+  const [selectedInquiryId, setSelectedInquiryId] =
+    useState<number | null>(null);
 
   const [updatingInquiryId, setUpdatingInquiryId] =
     useState<number | null>(null);
@@ -245,6 +245,14 @@ export default function AgentDashboardPage() {
   // =========================================================
   // LOAD CURRENT AGENT
   // =========================================================
+const selectedInquiry = useMemo(
+  () =>
+    inquiries.find(
+      (inquiry) =>
+        inquiry.id === selectedInquiryId
+    ) ?? null,
+  [inquiries, selectedInquiryId]
+);
 
   useEffect(() => {
     let mounted = true;
@@ -422,7 +430,27 @@ export default function AgentDashboardPage() {
             ? data.inquiries
             : [];
 
-      setInquiries(receivedInquiries);
+      setInquiries((previous) => {
+        if (
+          previous.length === receivedInquiries.length &&
+          previous.every((previousInquiry, index) => {
+            const nextInquiry =
+              receivedInquiries[index];
+
+            return (
+              previousInquiry.id === nextInquiry.id &&
+              previousInquiry.status ===
+                nextInquiry.status &&
+              previousInquiry.updatedAt ===
+                nextInquiry.updatedAt
+            );
+          })
+        ) {
+          return previous;
+        }
+
+        return receivedInquiries;
+      });
 
       setLastUpdated(new Date());
     } catch (error) {
@@ -519,26 +547,6 @@ export default function AgentDashboardPage() {
         )
       );
 
-      if (
-        selectedInquiry?.id ===
-        inquiry.id
-      ) {
-        setSelectedInquiry(
-          (previous) =>
-            previous
-              ? {
-                  ...previous,
-                  status:
-                    updatedInquiry?.status ??
-                    'Read',
-                  updatedAt:
-                    updatedInquiry?.updatedAt ??
-                    previous.updatedAt,
-                }
-              : previous
-        );
-      }
-
       return {
         ...inquiry,
         status:
@@ -565,104 +573,86 @@ export default function AgentDashboardPage() {
   const handleOpenInquiry = async (
     inquiry: Inquiry
   ) => {
-    setSelectedInquiry(inquiry);
+    setSelectedInquiryId(inquiry.id);
 
     if (inquiry.status === 'New') {
       await markInquiryAsRead(inquiry);
     }
   };
 
-  // =========================================================
+    // =========================================================
   // UPDATE INQUIRY STATUS
   // =========================================================
 
-  const updateInquiryStatus = async (
-    inquiryId: number,
-    status: string
-  ) => {
-    if (
-      updatingInquiryId ===
-      inquiryId
-    ) {
-      return;
-    }
-
-    setUpdatingInquiryId(inquiryId);
-
-    try {
-      const response = await fetch(
-        '/api/inquiries',
-        {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify({
-            id: inquiryId,
-            status,
-          }),
+      const updateInquiryStatus = async (
+        inquiryId: number,
+        status: string
+      ) => {
+        if (updatingInquiryId === inquiryId) {
+          return;
         }
-      );
 
-      const data = await response.json();
+        setUpdatingInquiryId(inquiryId);
 
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            'Unable to update inquiry status.'
-        );
-      }
-
-      const updatedInquiry =
-        data?.inquiry;
-
-      setInquiries((previous) =>
-        previous.map((item) =>
-          item.id === inquiryId
-            ? {
-                ...item,
-                status:
-                  updatedInquiry?.status ??
-                  status,
-                updatedAt:
-                  updatedInquiry?.updatedAt ??
-                  new Date().toISOString(),
-              }
-            : item
-        )
-      );
-
-      setSelectedInquiry((previous) =>
-        previous?.id === inquiryId
-          ? {
-              ...previous,
-              status:
-                updatedInquiry?.status ??
+        try {
+          const response = await fetch(
+            '/api/inquiries',
+            {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: inquiryId,
                 status,
-              updatedAt:
-                updatedInquiry?.updatedAt ??
-                new Date().toISOString(),
+              }),
             }
-          : previous
-      );
-    } catch (error) {
-      console.error(
-        'Failed to update inquiry:',
-        error
-      );
+          );
 
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Unable to update inquiry status.'
-      );
-    } finally {
-      setUpdatingInquiryId(null);
-    }
-  };
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data?.message ||
+                data?.error ||
+                'Unable to update inquiry status.'
+            );
+          }
+
+          const updatedInquiry = data?.inquiry;
+
+          setInquiries((previous) =>
+            previous.map((item) =>
+              item.id === inquiryId
+                ? {
+                    ...item,
+                    status:
+                      updatedInquiry?.status ??
+                      status,
+                    updatedAt:
+                      updatedInquiry?.updatedAt ??
+                      new Date().toISOString(),
+                  }
+                : item
+            )
+          );
+        } catch (error) {
+          console.error(
+            'Update inquiry status error:',
+            error
+          );
+
+          setInquiriesError(
+            error instanceof Error
+              ? error.message
+              : 'Unable to update inquiry status.'
+          );
+        } finally {
+          setUpdatingInquiryId(null);
+        }
+      };
+
 
   // =========================================================
   // LOGOUT
@@ -1826,7 +1816,7 @@ export default function AgentDashboardPage() {
               event.target ===
               event.currentTarget
             ) {
-              setSelectedInquiry(
+              setSelectedInquiryId(
                 null
               );
             }
@@ -1859,7 +1849,7 @@ export default function AgentDashboardPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedInquiry(
+                  setSelectedInquiryId(
                     null
                   )
                 }
@@ -2141,7 +2131,7 @@ export default function AgentDashboardPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setSelectedInquiry(
+                            setSelectedInquiryId(
                               null
                             );
 
@@ -2383,7 +2373,7 @@ export default function AgentDashboardPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setSelectedInquiry(
+                    setSelectedInquiryId(
                       null
                     )
                   }

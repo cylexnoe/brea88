@@ -206,28 +206,28 @@ export async function POST(request: Request) {
 
     let propertyId: number | null = null;
 
-    if (
-      data.propertyId !== undefined &&
-      data.propertyId !== null &&
-      cleanString(data.propertyId) !== ''
-    ) {
-      const parsedPropertyId = Number(data.propertyId);
-
       if (
-        !Number.isInteger(parsedPropertyId) ||
-        parsedPropertyId <= 0
+        data.propertyId !== undefined &&
+        data.propertyId !== null &&
+        String(data.propertyId).trim() !== ''
       ) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Invalid property ID.',
-          },
-          { status: 400 }
-        );
-      }
+        const parsedPropertyId = Number(data.propertyId);
 
-      propertyId = parsedPropertyId;
-    }
+        if (
+          !Number.isInteger(parsedPropertyId) ||
+          parsedPropertyId <= 0
+        ) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: 'Invalid property ID.',
+            },
+            { status: 400 }
+          );
+        }
+
+        propertyId = parsedPropertyId;
+      }
 
     /* =======================================================
        VALIDATE NAME
