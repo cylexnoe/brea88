@@ -13,28 +13,30 @@ export async function GET(
   context: RouteContext
 ) {
   try {
-    const { slug } =
-      await context.params;
+    const { slug } = await context.params;
 
-    const agent =
-      await prisma.agent.findUnique({
-        where: {
-          slug,
-        },
-        include: {
-          properties: {
-            orderBy: {
-              createdAt: 'desc',
-            },
+    const agent = await prisma.agent.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        properties: {
+          orderBy: {
+            createdAt: 'desc',
           },
         },
-      });
+      },
+    });
 
-    if (!agent || !agent.isActive) {
+    if (
+      !agent ||
+      !agent.isActive ||
+      !['Agent', 'Broker'].includes(agent.role)
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Agent profile not found.',
+          message: 'Agent or Broker profile not found.',
         },
         { status: 404 }
       );
@@ -57,7 +59,6 @@ export async function GET(
       },
       properties: agent.properties,
     });
-
   } catch (error) {
     console.error(
       'Agent profile error:',
@@ -67,8 +68,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        message:
-          'Failed to load agent profile.',
+        message: 'Failed to load agent profile.',
       },
       { status: 500 }
     );
