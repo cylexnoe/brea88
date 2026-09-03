@@ -37,7 +37,7 @@ export default function LandingPage() {
         </header>
 
         <section className="grid grid-cols-2 gap-3 sm:gap-5 md:gap-6" aria-label="Platform access">
-          <button type="button" onClick={() => router.push('/home')} className="group relative min-w-0 overflow-hidden rounded-2xl border border-white/15 bg-white/[0.10] p-4 text-left shadow-2xl shadow-black/20 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-1 hover:border-[#c9a96e]/45 hover:bg-white/[0.14] hover:shadow-blue-950/30 active:scale-[.98] sm:rounded-3xl sm:p-7 md:p-10">
+          <button type="button" onClick={() => router.push('/home')} className="group relative min-w-0 overflow-hidden rounded-2xl border border-white/15 bg-white/[0.10] p-4 text-left shadow-2xl shadow-black/20 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-1 hover:border-blue-400/50 hover:bg-blue-950/40 hover:shadow-blue-900/40 active:scale-[.98] sm:rounded-3xl sm:p-7 md:p-10">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
             <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl transition-all duration-700 group-hover:scale-125 group-hover:bg-blue-400/30" />
             <div className="absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl transition-all duration-700 group-hover:scale-125" />
@@ -55,7 +55,7 @@ export default function LandingPage() {
             </div>
           </button>
 
-          <button type="button" onClick={() => router.push('/agent/login')} className="group relative min-w-0 overflow-hidden rounded-2xl border border-[#c9a96e]/20 bg-gradient-to-br from-[#0b2348]/90 via-[#071936]/85 to-[#040d20]/95 p-4 text-left shadow-2xl shadow-blue-950/30 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-1 hover:border-[#c9a96e]/50 hover:shadow-blue-900/40 active:scale-[.98] sm:rounded-3xl sm:p-7 md:p-10">
+          <button type="button" onClick={() => router.push('/agent/login')} className="group relative min-w-0 overflow-hidden rounded-2xl border border-[#c9a96e]/20 bg-gradient-to-br from-[#0b2348]/90 via-[#071936]/85 to-[#040d20]/95 p-4 text-left shadow-2xl shadow-blue-950/30 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-1 hover:border-blue-300/60 hover:bg-indigo-950/60 hover:shadow-blue-700/40 active:scale-[.98] sm:rounded-3xl sm:p-7 md:p-10">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ead9b8] to-transparent opacity-70" />
             <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-[#c9a96e]/15 blur-3xl transition-all duration-700 group-hover:scale-125" />
             <div className="absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-indigo-600/20 blur-3xl transition-all duration-700 group-hover:scale-125" />
