@@ -87,7 +87,9 @@ const INQUIRY_STATUSES = [
   'Cancelled',
 ];
 
-function isOnline(lastSeen: string | null | undefined): boolean {
+function isOnline(
+  lastSeen: string | null | undefined
+): boolean {
   if (!lastSeen) return false;
 
   const difference =
@@ -163,7 +165,12 @@ function getStatusClasses(status: string) {
 function getStatusIcon(status: string) {
   switch (status) {
     case 'New':
-      return <Circle size={10} fill="currentColor" />;
+      return (
+        <Circle
+          size={10}
+          fill="currentColor"
+        />
+      );
 
     case 'Read':
       return <Check size={13} />;
@@ -191,7 +198,9 @@ function getStatusIcon(status: string) {
   }
 }
 
-function getPropertyTypeText(property: InquiryProperty) {
+function getPropertyTypeText(
+  property: InquiryProperty
+) {
   const values = [
     property.category,
     property.propertyType,
@@ -208,9 +217,11 @@ export default function AgentDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [agent, setAgent] = useState<Agent | null>(null);
+  const [agent, setAgent] =
+    useState<Agent | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
@@ -233,14 +244,20 @@ export default function AgentDashboardPage() {
   const [searchQuery, setSearchQuery] =
     useState('');
 
-  const [selectedInquiryId, setSelectedInquiryId] =
-    useState<number | null>(null);
+  const [
+    selectedInquiryId,
+    setSelectedInquiryId,
+  ] = useState<number | null>(null);
 
-  const [updatingInquiryId, setUpdatingInquiryId] =
-    useState<number | null>(null);
+  const [
+    updatingInquiryId,
+    setUpdatingInquiryId,
+  ] = useState<number | null>(null);
 
-  const [deletingInquiryId, setDeletingInquiryId] =
-    useState<number | null>(null);
+  const [
+    deletingInquiryId,
+    setDeletingInquiryId,
+  ] = useState<number | null>(null);
 
   const [lastUpdated, setLastUpdated] =
     useState<Date | null>(null);
@@ -376,8 +393,10 @@ export default function AgentDashboardPage() {
       }
     };
 
+    // Send immediately when dashboard loads.
     sendHeartbeat();
 
+    // Keep heartbeat for online/offline presence.
     const heartbeatInterval =
       window.setInterval(
         sendHeartbeat,
@@ -395,6 +414,13 @@ export default function AgentDashboardPage() {
 
   // =========================================================
   // LOAD INQUIRIES
+  // =========================================================
+  // IMPORTANT:
+  // Inquiry messages are NOT automatically polled.
+  // They only load:
+  // 1. When the dashboard first loads.
+  // 2. When the user presses Refresh.
+  // 3. When the user presses Try Again after an error.
   // =========================================================
 
   const loadInquiries = async (
@@ -438,50 +464,8 @@ export default function AgentDashboardPage() {
             ? data.inquiries
             : [];
 
-      let inquiriesChanged = false;
-
-      setInquiries((previous) => {
-        const unchanged =
-          previous.length ===
-            receivedInquiries.length &&
-          previous.every(
-            (previousInquiry, index) => {
-              const nextInquiry =
-                receivedInquiries[index];
-
-              return (
-                previousInquiry.id ===
-                  nextInquiry.id &&
-                previousInquiry.status ===
-                  nextInquiry.status &&
-                previousInquiry.updatedAt ===
-                  nextInquiry.updatedAt &&
-                previousInquiry.propertyId ===
-                  nextInquiry.propertyId
-              );
-            }
-          );
-
-        if (unchanged) {
-          return previous;
-        }
-
-        inquiriesChanged = true;
-
-        return receivedInquiries;
-      });
-
-      /*
-       * Only update the visible timestamp when:
-       * - the data actually changed, or
-       * - the user manually refreshed.
-       *
-       * This prevents the dashboard from looking like it
-       * is constantly refreshing every 15 seconds.
-       */
-      if (inquiriesChanged || showLoading) {
-        setLastUpdated(new Date());
-      }
+      setInquiries(receivedInquiries);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error(
         'Failed to load inquiries:',
@@ -501,24 +485,14 @@ export default function AgentDashboardPage() {
   };
 
   // =========================================================
-  // AUTO REFRESH INQUIRIES
+  // INITIAL INQUIRY LOAD ONLY
+  // NO AUTOMATIC POLLING
   // =========================================================
 
   useEffect(() => {
     if (!agent) return;
 
     loadInquiries(true);
-
-    const inquiryInterval =
-      window.setInterval(() => {
-        loadInquiries(false);
-      }, 15 * 1000);
-
-    return () => {
-      window.clearInterval(
-        inquiryInterval
-      );
-    };
   }, [agent]);
 
   // =========================================================
@@ -626,6 +600,7 @@ export default function AgentDashboardPage() {
     }
 
     setUpdatingInquiryId(inquiryId);
+    setInquiriesError('');
 
     try {
       const response = await fetch(
@@ -917,7 +892,7 @@ export default function AgentDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <ButterflyLoader />
       </div>
     );
@@ -980,9 +955,7 @@ export default function AgentDashboardPage() {
           <div className="flex items-center gap-3">
 
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-white">
-              <Building2
-                size={22}
-              />
+              <Building2 size={22} />
             </div>
 
             <div>
@@ -1025,9 +998,7 @@ export default function AgentDashboardPage() {
                 />
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white">
-                  <User
-                    size={21}
-                  />
+                  <User size={21} />
                 </div>
               )}
 
@@ -1139,9 +1110,7 @@ export default function AgentDashboardPage() {
                     }
                   `}
                 >
-                  <Icon
-                    size={19}
-                  />
+                  <Icon size={19} />
 
                   <span>
                     {item.name}
@@ -1177,9 +1146,7 @@ export default function AgentDashboardPage() {
                 className="animate-spin"
               />
             ) : (
-              <LogOut
-                size={19}
-              />
+              <LogOut size={19} />
             )}
 
             <span>
@@ -1206,9 +1173,9 @@ export default function AgentDashboardPage() {
 
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
 
-          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
 
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
 
               <button
                 type="button"
@@ -1222,19 +1189,21 @@ export default function AgentDashboardPage() {
                 <Menu size={22} />
               </button>
 
-              <div>
+              <div className="min-w-0">
 
-                <p className="text-xs font-medium text-slate-500">
+                <p className="truncate text-xs font-medium text-slate-500">
                   Agent / Broker Dashboard
                 </p>
 
-                <h1 className="text-lg font-bold text-slate-950">
+                <h1 className="truncate text-lg font-bold text-slate-950">
                   Inquiry Messages
                 </h1>
 
               </div>
 
             </div>
+
+            {/* MANUAL REFRESH ONLY */}
 
             <button
               type="button"
@@ -1244,9 +1213,8 @@ export default function AgentDashboardPage() {
               disabled={
                 inquiriesLoading
               }
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-
               <RefreshCw
                 size={16}
                 className={
@@ -1259,7 +1227,6 @@ export default function AgentDashboardPage() {
               <span className="hidden sm:inline">
                 Refresh
               </span>
-
             </button>
 
           </div>
@@ -1332,9 +1299,7 @@ export default function AgentDashboardPage() {
                 </div>
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                  <Inbox
-                    size={21}
-                  />
+                  <Inbox size={21} />
                 </div>
 
               </div>
@@ -1388,9 +1353,7 @@ export default function AgentDashboardPage() {
                 </div>
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <User
-                    size={21}
-                  />
+                  <User size={21} />
                 </div>
 
               </div>
@@ -1460,22 +1423,18 @@ export default function AgentDashboardPage() {
                     )
                   }
                   placeholder="Search client, property, location, message..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-100"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-100"
                 />
 
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() =>
-                      setSearchQuery(
-                        ''
-                      )
+                      setSearchQuery('')
                     }
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                   >
-                    <X
-                      size={15}
-                    />
+                    <X size={15} />
                   </button>
                 )}
 
@@ -1526,9 +1485,7 @@ export default function AgentDashboardPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    loadInquiries(
-                      true
-                    )
+                    loadInquiries(true)
                   }
                   className="mt-3 text-sm font-semibold underline"
                 >
@@ -1565,13 +1522,9 @@ export default function AgentDashboardPage() {
 
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                   {searchQuery ? (
-                    <Search
-                      size={28}
-                    />
+                    <Search size={28} />
                   ) : (
-                    <Inbox
-                      size={28}
-                    />
+                    <Inbox size={28} />
                   )}
                 </div>
 
@@ -1658,9 +1611,7 @@ export default function AgentDashboardPage() {
                                 'New' && (
                                 <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-blue-600 px-2 py-1 text-[10px] font-bold text-white shadow">
                                   <Circle
-                                    size={
-                                      7
-                                    }
+                                    size={7}
                                     fill="currentColor"
                                   />
                                   NEW
@@ -1728,9 +1679,7 @@ export default function AgentDashboardPage() {
                                 </div>
 
                                 <ChevronRight
-                                  size={
-                                    20
-                                  }
+                                  size={20}
                                   className="hidden shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-slate-600 sm:block"
                                 />
 
@@ -1844,9 +1793,7 @@ export default function AgentDashboardPage() {
                               <div className="mt-3 flex items-start gap-2">
 
                                 <MessageSquare
-                                  size={
-                                    15
-                                  }
+                                  size={15}
                                   className="mt-0.5 shrink-0 text-slate-400"
                                 />
 
@@ -1863,11 +1810,7 @@ export default function AgentDashboardPage() {
                               <div className="mt-3 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-5">
 
                                 <span className="inline-flex items-center gap-1.5">
-                                  <Mail
-                                    size={
-                                      14
-                                    }
-                                  />
+                                  <Mail size={14} />
 
                                   {
                                     inquiry.email
@@ -1875,11 +1818,7 @@ export default function AgentDashboardPage() {
                                 </span>
 
                                 <span className="inline-flex items-center gap-1.5">
-                                  <Phone
-                                    size={
-                                      14
-                                    }
-                                  />
+                                  <Phone size={14} />
 
                                   {
                                     inquiry.phone
@@ -1982,9 +1921,7 @@ export default function AgentDashboardPage() {
                 <div className="flex items-start gap-3">
 
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white">
-                    <User
-                      size={20}
-                    />
+                    <User size={20} />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -2120,9 +2057,7 @@ export default function AgentDashboardPage() {
                         ) : (
                           <div className="flex h-full min-h-48 items-center justify-center bg-slate-100 text-slate-400">
                             <ImageIcon
-                              size={
-                                38
-                              }
+                              size={38}
                             />
                           </div>
                         )}
@@ -2150,9 +2085,7 @@ export default function AgentDashboardPage() {
                           <div className="flex items-start gap-2.5 text-sm text-slate-600">
 
                             <MapPin
-                              size={
-                                17
-                              }
+                              size={17}
                               className="mt-0.5 shrink-0 text-slate-400"
                             />
 
@@ -2177,9 +2110,7 @@ export default function AgentDashboardPage() {
                           <div className="flex items-start gap-2.5 text-sm text-slate-600">
 
                             <DollarSign
-                              size={
-                                17
-                              }
+                              size={17}
                               className="mt-0.5 shrink-0 text-slate-400"
                             />
 
@@ -2208,9 +2139,7 @@ export default function AgentDashboardPage() {
                             <div className="flex items-start gap-2.5 text-sm text-slate-600">
 
                               <Building2
-                                size={
-                                  17
-                                }
+                                size={17}
                                 className="mt-0.5 shrink-0 text-slate-400"
                               />
 
@@ -2252,18 +2181,12 @@ export default function AgentDashboardPage() {
                           }
                           className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <Eye
-                            size={
-                              16
-                            }
-                          />
+                          <Eye size={16} />
 
                           View Marketplace
 
                           <ExternalLink
-                            size={
-                              14
-                            }
+                            size={14}
                           />
                         </button>
 
@@ -2278,9 +2201,7 @@ export default function AgentDashboardPage() {
                     <div className="flex items-start gap-3">
 
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-500">
-                        <User
-                          size={20}
-                        />
+                        <User size={20} />
                       </div>
 
                       <div>
@@ -2394,8 +2315,7 @@ export default function AgentDashboardPage() {
                       ) =>
                         updateInquiryStatus(
                           selectedInquiry.id,
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       disabled={
@@ -2409,16 +2329,10 @@ export default function AgentDashboardPage() {
                       {INQUIRY_STATUSES.map(
                         (status) => (
                           <option
-                            key={
-                              status
-                            }
-                            value={
-                              status
-                            }
+                            key={status}
+                            value={status}
                           >
-                            {
-                              status
-                            }
+                            {status}
                           </option>
                         )
                       )}
@@ -2427,16 +2341,12 @@ export default function AgentDashboardPage() {
                     {updatingInquiryId ===
                     selectedInquiry.id ? (
                       <Loader2
-                        size={
-                          16
-                        }
+                        size={16}
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400"
                       />
                     ) : (
                       <ChevronDown
-                        size={
-                          16
-                        }
+                        size={16}
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                       />
                     )}
@@ -2459,9 +2369,7 @@ export default function AgentDashboardPage() {
                   href={`mailto:${selectedInquiry.email}`}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
-                  <Mail
-                    size={17}
-                  />
+                  <Mail size={17} />
 
                   Email Client
                 </a>
@@ -2472,9 +2380,7 @@ export default function AgentDashboardPage() {
                   href={`tel:${selectedInquiry.phone}`}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
-                  <Phone
-                    size={17}
-                  />
+                  <Phone size={17} />
 
                   Call Client
                 </a>
@@ -2509,9 +2415,7 @@ export default function AgentDashboardPage() {
                     </>
                   ) : (
                     <>
-                      <X
-                        size={17}
-                      />
+                      <X size={17} />
 
                       Delete
                     </>
@@ -2563,4 +2467,3 @@ export default function AgentDashboardPage() {
     </div>
   );
 }
-
