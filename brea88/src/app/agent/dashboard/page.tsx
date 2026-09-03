@@ -31,6 +31,7 @@ import {
   Circle,
   Eye,
   Image as ImageIcon,
+  PhilippinePeso,
 } from 'lucide-react';
 
 type Agent = {
@@ -1805,6 +1806,11 @@ export default function AgentDashboardPage() {
                                         </span>
 
                                         <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
+                                          <PhilippinePeso
+                                            size={
+                                              13
+                                            }
+                                          />
 
                                           ₱
                                           {
@@ -2181,6 +2187,12 @@ export default function AgentDashboardPage() {
                           </div>
 
                           <div className="flex items-start gap-2.5 text-sm text-slate-600">
+
+                            <PhilippinePeso
+                              size={17}
+                              className="mt-0.5 shrink-0 text-slate-400"
+                            />
+
                             <div>
 
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
