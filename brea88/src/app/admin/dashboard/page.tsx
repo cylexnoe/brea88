@@ -1,7 +1,12 @@
 ﻿'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import React, {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import {
   PlusCircle,
@@ -34,7 +39,6 @@ import {
   UserRound,
   Building,
   Warehouse,
-  ChevronRight,
 } from 'lucide-react';
 
 const MAX_IMAGES = 10;
@@ -76,23 +80,11 @@ const HOUSE_TYPES = [
   'Duplex',
 ];
 
-const STOREY_OPTIONS = [
-  '1',
-  '2',
-  '3 or more',
-];
+const STOREY_OPTIONS = ['1', '2', '3 or more'];
 
-type Status =
-  | 'idle'
-  | 'loading'
-  | 'success'
-  | 'error';
+type Status = 'idle' | 'loading' | 'success' | 'error';
 
-type Section =
-  | 'overview'
-  | 'properties'
-  | 'add'
-  | 'settings';
+type Section = 'overview' | 'properties' | 'add' | 'settings';
 
 interface ImageItem {
   id: string;
@@ -102,23 +94,23 @@ interface ImageItem {
 }
 
 interface Property {
-  id?: number;
-  _id?: string;
+  id?: number | string;
+  _id?: number | string;
   title: string;
-  tag: string;
-  price: string;
+  tag?: string | null;
+  price: string | number;
   location: string;
-  image: string;
-  images?: string[];
+  image?: string | null;
+  images?: string[] | null;
   category?: string | null;
   propertyType?: string | null;
   houseType?: string | null;
-  storey?: string | null;
+  storey?: string | number | null;
   beds?: number | null;
   baths?: number | null;
   sqft?: number | null;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 interface FormData {
@@ -151,16 +143,20 @@ const INITIAL_FORM: FormData = {
 
 function requiresHouseDetails(
   category: string,
-  propertyType: string
-) {
+  propertyType: string,
+): boolean {
   if (category === 'House & Lot') {
     return propertyType !== 'Lot Only Subdivision';
   }
 
-  return (
+  if (
     category === 'For Rent' &&
     propertyType === 'House For Rent'
-  );
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function SelectField({
@@ -176,21 +172,21 @@ function SelectField({
   name: string;
   value: string;
   onChange: (
-    e: React.ChangeEvent<HTMLSelectElement>
+    event: ChangeEvent<HTMLSelectElement>,
   ) => void;
   options: string[];
   required?: boolean;
   disabled?: boolean;
 }) {
   return (
-    <div>
+    <div className="space-y-2">
       <label
         htmlFor={name}
-        className="mb-2 block text-sm font-semibold text-slate-700"
+        className="text-sm font-semibold text-slate-700"
       >
         {label}
         {required && (
-          <span className="ml-1 text-red-500">*</span>
+          <span className="ml-1 text-blue-600">*</span>
         )}
       </label>
 
@@ -202,23 +198,21 @@ function SelectField({
           onChange={onChange}
           required={required}
           disabled={disabled}
-          className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         >
-          <option value="">
-            Select {label}
-          </option>
+          <option value="">Select {label}</option>
 
           {options.map((option) => (
-            <option
-              key={option}
-              value={option}
-            >
+            <option key={option} value={option}>
               {option}
             </option>
           ))}
         </select>
 
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <ChevronDown
+          size={17}
+          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+        />
       </div>
     </div>
   );
@@ -226,68 +220,83 @@ function SelectField({
 
 function StatCard({
   icon: Icon,
-  label,
   value,
+  label,
+  description,
+  accent = 'blue',
 }: {
   icon: React.ElementType;
+  value: string | number;
   label: string;
-  value: number;
+  description?: string;
+  accent?: 'blue' | 'gold' | 'green' | 'violet';
 }) {
+  const accentClasses = {
+    blue: 'bg-blue-50 text-blue-600 ring-blue-100',
+    gold: 'bg-amber-50 text-amber-600 ring-amber-100',
+    green: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
+    violet: 'bg-violet-50 text-violet-600 ring-violet-100',
+  };
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="rounded-xl bg-slate-100 p-3">
-          <Icon className="h-5 w-5 text-slate-700" />
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50">
+      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-50/40 blur-2xl transition group-hover:bg-blue-100/60" />
+
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+            {label}
+          </p>
+
+          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+            {value}
+          </p>
+
+          {description && (
+            <p className="mt-1 text-xs text-slate-500">
+              {description}
+            </p>
+          )}
         </div>
 
-        <span className="text-2xl font-black text-slate-900">
-          {value}
-        </span>
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${accentClasses[accent]}`}
+        >
+          <Icon size={20} />
+        </div>
       </div>
-
-      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
     </div>
   );
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboardPage() {
   const router = useRouter();
+
   const [activeAccounts, setActiveAccounts] = useState(0);
 
   const [formData, setFormData] =
     useState<FormData>(INITIAL_FORM);
 
-  const [images, setImages] =
-    useState<ImageItem[]>([]);
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [imageSource, setImageSource] = useState<'upload' | 'url'>(
+    'upload',
+  );
+  const [imageUrl, setImageUrl] = useState('');
 
-  const [imageSource, setImageSource] =
-    useState<'upload' | 'url'>('upload');
+  const [status, setStatus] = useState<Status>('idle');
 
-  const [imageUrl, setImageUrl] =
-    useState('');
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [editingId, setEditingId] = useState<
+    number | string | null
+  >(null);
 
-  const [status, setStatus] =
-    useState<Status>('idle');
-
-  const [properties, setProperties] =
-    useState<Property[]>([]);
-
-  const [editingId, setEditingId] =
-    useState<string | null>(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [searchTerm, setSearchTerm] =
-    useState('');
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [activeSection, setActiveSection] =
     useState<Section>('overview');
 
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const propertyTypeOptions = useMemo(() => {
     switch (formData.category) {
@@ -300,120 +309,119 @@ export default function AdminDashboard() {
       case 'For Rent':
         return RENT_TYPES;
 
+      case 'For Sale by Owner':
+        return [
+          'House & Lot',
+          'Lot Only',
+          'Condominium',
+          'Commercial Property',
+        ];
+
       default:
         return [];
     }
   }, [formData.category]);
 
-  const showHouseDetails =
-    requiresHouseDetails(
-      formData.category,
-      formData.propertyType
-    );
+  const showHouseDetails = requiresHouseDetails(
+    formData.category,
+    formData.propertyType,
+  );
 
-  /* =========================================================
-     FETCH PROPERTIES
-  ========================================================= */
-
-  const fetchProperties = async () => {
+  async function fetchProperties() {
     try {
-      setLoading(true);
-
-      const response = await fetch(
-        '/api/properties',
-        {
-          method: 'GET',
-          cache: 'no-store',
-          credentials: 'include',
-        }
-      );
+      const response = await fetch('/api/properties', {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'include',
+      });
 
       if (!response.ok) {
-        throw new Error(
-          'Failed to fetch properties.'
-        );
+        throw new Error('Failed to fetch properties');
       }
 
       const data = await response.json();
 
-      setProperties(
-        Array.isArray(data)
-          ? data
-          : Array.isArray(data?.properties)
-            ? data.properties
-            : []
-      );
+      const propertyList = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.properties)
+          ? data.properties
+          : [];
+
+      setProperties(propertyList);
     } catch (error) {
-      console.error(
-        'Failed to fetch properties:',
-        error
-      );
-
+      console.error('Fetch properties error:', error);
       setProperties([]);
-    } finally {
-      setLoading(false);
     }
-  };
-    const fetchActiveAccounts = async () => {
-      try {
-        const response = await fetch(
-          '/api/admin/agents',
-          {
-            method: 'GET',
-            cache: 'no-store',
-            credentials: 'include',
-          }
-        );
+  }
 
-        if (!response.ok) {
-          throw new Error(
-            'Failed to fetch agents.'
-          );
-        }
+  async function fetchActiveAccounts() {
+    try {
+      const response = await fetch('/api/admin/agents', {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'include',
+      });
 
-        const data = await response.json();
+      if (!response.ok) {
+        return;
+      }
 
-        const agents = Array.isArray(data?.agents)
+      const data = await response.json();
+
+      const accounts = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.agents)
           ? data.agents
           : [];
 
-        const activeCount = agents.filter(
-          (agent: { isActive?: boolean }) =>
-            agent.isActive === true
-        ).length;
+      const active = accounts.filter(
+        (agent: { isActive?: boolean }) =>
+          agent.isActive === true,
+      ).length;
 
-        setActiveAccounts(activeCount);
-      } catch (error) {
-        console.error(
-          'Failed to fetch active accounts:',
-          error
-        );
+      setActiveAccounts(active);
+    } catch (error) {
+      console.error('Fetch active accounts error:', error);
+    }
+  }
 
-        setActiveAccounts(0);
-      }
-    };
   useEffect(() => {
-  fetchProperties();
-  fetchActiveAccounts();
-}, []);
+    let mounted = true;
 
-  /* =========================================================
-     WELCOME
-  ========================================================= */
+    async function loadDashboard() {
+      setLoading(true);
+
+      await Promise.all([
+        fetchProperties(),
+        fetchActiveAccounts(),
+      ]);
+
+      if (mounted) {
+        setLoading(false);
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if ('speechSynthesis' in window) {
+      if (
+        typeof window !== 'undefined' &&
+        'speechSynthesis' in window
+      ) {
         window.speechSynthesis.cancel();
 
-        const message =
-          new SpeechSynthesisUtterance(
-            'Welcome to BREA 88 Realty Admin Dashboard.'
-          );
+        const message = new SpeechSynthesisUtterance(
+          'Welcome to BREA 88 Realty Admin Dashboard.',
+        );
 
-        message.rate = 0.9;
+        message.rate = 0.95;
         message.pitch = 1;
-        message.volume = 1;
 
         window.speechSynthesis.speak(message);
       }
@@ -422,26 +430,25 @@ export default function AdminDashboard() {
     return () => {
       window.clearTimeout(timer);
 
-      if ('speechSynthesis' in window) {
+      if (
+        typeof window !== 'undefined' &&
+        'speechSynthesis' in window
+      ) {
         window.speechSynthesis.cancel();
       }
     };
   }, []);
 
-  /* =========================================================
-     FORM CHANGE
-  ========================================================= */
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
+  function handleInputChange(
+    event:
+      | ChangeEvent<HTMLInputElement>
+      | ChangeEvent<HTMLSelectElement>,
+  ) {
+    const { name, value } = event.target;
 
     if (name === 'category') {
-      setFormData((previous) => ({
-        ...previous,
+      setFormData((current) => ({
+        ...current,
         category: value,
         propertyType: '',
         houseType: '',
@@ -452,54 +459,43 @@ export default function AdminDashboard() {
     }
 
     if (name === 'propertyType') {
-      setFormData((previous) => ({
-        ...previous,
+      const shouldShowHouseDetails = requiresHouseDetails(
+        formData.category,
+        value,
+      );
+
+      setFormData((current) => ({
+        ...current,
         propertyType: value,
-        houseType: requiresHouseDetails(
-          formData.category,
-          value
-        )
-          ? previous.houseType
+        houseType: shouldShowHouseDetails
+          ? current.houseType
           : '',
-        storey: requiresHouseDetails(
-          formData.category,
-          value
-        )
-          ? previous.storey
+        storey: shouldShowHouseDetails
+          ? current.storey
           : '',
       }));
 
       return;
     }
 
-    setFormData((previous) => ({
-      ...previous,
+    setFormData((current) => ({
+      ...current,
       [name]: value,
     }));
-  };
+  }
 
-  /* =========================================================
-     IMAGE UPLOAD
-  ========================================================= */
+  function handleImageUpload(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    const files = Array.from(event.target.files || []);
 
-  const handleImageUpload = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = Array.from(
-      e.target.files || []
-    );
+    if (!files.length) {
+      return;
+    }
 
-    if (!files.length) return;
-
-    if (
-      images.length + files.length >
-      MAX_IMAGES
-    ) {
-      alert(
-        `You can upload a maximum of ${MAX_IMAGES} pictures.`
-      );
-
-      e.target.value = '';
+    if (images.length + files.length > MAX_IMAGES) {
+      alert(`You can upload up to ${MAX_IMAGES} images.`);
+      event.target.value = '';
       return;
     }
 
@@ -510,178 +506,118 @@ export default function AdminDashboard() {
       'image/webp',
     ];
 
-    const validImages: ImageItem[] = [];
+    const newImages: ImageItem[] = [];
 
-    files.forEach((file) => {
+    for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
         alert(
-          `${file.name} is not supported. Use JPG, JPEG, PNG, or WEBP.`
+          `${file.name} is not a supported image type. Use JPG, JPEG, PNG, or WEBP.`,
         );
-
-        return;
+        continue;
       }
 
       if (file.size > MAX_FILE_SIZE) {
         alert(
-          `${file.name} is larger than 5MB.`
+          `${file.name} is larger than 5MB and cannot be uploaded.`,
         );
-
-        return;
+        continue;
       }
 
-      validImages.push({
+      newImages.push({
         id: `${Date.now()}-${Math.random()}`,
         url: URL.createObjectURL(file),
         file,
         source: 'upload',
       });
-    });
+    }
 
-    setImages((previous) => [
-      ...previous,
-      ...validImages,
-    ]);
+    setImages((current) => [...current, ...newImages]);
 
-    e.target.value = '';
-  };
+    event.target.value = '';
+  }
 
-  /* =========================================================
-     ADD IMAGE URL
-  ========================================================= */
+  function addImageUrl() {
+    const trimmedUrl = imageUrl.trim();
 
-  const addImageUrl = () => {
-    const url = imageUrl.trim();
-
-    if (!url) {
-      alert('Please enter an image URL.');
+    if (!trimmedUrl) {
       return;
     }
 
     if (images.length >= MAX_IMAGES) {
-      alert(
-        `You can only add ${MAX_IMAGES} pictures.`
-      );
-
+      alert(`You can add up to ${MAX_IMAGES} images.`);
       return;
     }
 
     try {
-      new URL(url);
+      new URL(trimmedUrl);
     } catch {
-      alert(
-        'Please enter a valid image URL.'
-      );
-
+      alert('Please enter a valid image URL.');
       return;
     }
 
-    setImages((previous) => [
-      ...previous,
+    setImages((current) => [
+      ...current,
       {
         id: `${Date.now()}-${Math.random()}`,
-        url,
+        url: trimmedUrl,
         source: 'url',
       },
     ]);
 
     setImageUrl('');
-  };
+  }
 
-  /* =========================================================
-     REMOVE IMAGE
-  ========================================================= */
+  function removeImage(id: string) {
+    setImages((current) => {
+      const image = current.find((item) => item.id === id);
 
-  const removeImage = (id: string) => {
-    setImages((previous) => {
-      const image = previous.find(
-        (item) => item.id === id
-      );
-
-      if (
-        image?.source === 'upload' &&
-        image.url.startsWith('blob:')
-      ) {
+      if (image?.source === 'upload') {
         URL.revokeObjectURL(image.url);
       }
 
-      return previous.filter(
-        (item) => item.id !== id
-      );
+      return current.filter((item) => item.id !== id);
     });
-  };
+  }
 
-  /* =========================================================
-     COVER IMAGE
-  ========================================================= */
-
-  const setCoverImage = (id: string) => {
-    setImages((previous) => {
-      const selected = previous.find(
-        (image) => image.id === id
-      );
+  function setCoverImage(id: string) {
+    setImages((current) => {
+      const selected = current.find((item) => item.id === id);
 
       if (!selected) {
-        return previous;
+        return current;
       }
 
       return [
         selected,
-        ...previous.filter(
-          (image) => image.id !== id
-        ),
+        ...current.filter((item) => item.id !== id),
       ];
     });
-  };
+  }
 
-  /* =========================================================
-     UPLOAD IMAGE TO BLOB
-  ========================================================= */
-
-  const uploadImageToBlob = async (
-    file: File
-  ): Promise<string> => {
+  async function uploadImageToBlob(file: File) {
     const body = new FormData();
-
     body.append('file', file);
 
-    const response = await fetch(
-      '/api/blob/upload',
-      {
-        method: 'POST',
-        body,
-        credentials: 'include',
-      }
-    );
+    const response = await fetch('/api/blob/upload', {
+      method: 'POST',
+      body,
+      credentials: 'include',
+    });
 
-    const data =
-      await response
-        .json()
-        .catch(() => null);
+    const data = await response.json();
 
-    if (
-      !response.ok ||
-      !data?.success ||
-      !data?.url
-    ) {
+    if (!response.ok || !data?.success || !data?.url) {
       throw new Error(
-        data?.message ||
-          'Failed to upload image.'
+        data?.message || 'Failed to upload image.',
       );
     }
 
-    return data.url;
-  };
+    return data.url as string;
+  }
 
-  /* =========================================================
-     RESET FORM
-  ========================================================= */
-
-  const resetForm = () => {
+  function resetForm() {
     images.forEach((image) => {
-      if (
-        image.source === 'upload' &&
-        image.url.startsWith('blob:')
-      ) {
+      if (image.source === 'upload') {
         URL.revokeObjectURL(image.url);
       }
     });
@@ -690,329 +626,244 @@ export default function AdminDashboard() {
     setImages([]);
     setImageUrl('');
     setImageSource('upload');
-    setEditingId(null);
     setStatus('idle');
-  };
+    setEditingId(null);
+  }
 
-  /* =========================================================
-     EDIT PROPERTY
-  ========================================================= */
+  function editProperty(property: Property) {
+    const id = property.id ?? property._id;
 
-  const handleEdit = (
-    property: Property
-  ) => {
-    const propertyId =
-      property.id !== undefined
-        ? String(property.id)
-        : property._id;
-
-    if (!propertyId) {
-      alert('Invalid property ID.');
+    if (id === undefined || id === null) {
       return;
     }
 
-    setEditingId(propertyId);
+    setEditingId(id);
 
     setFormData({
       title: property.title || '',
-      category:
-        property.category ||
-        'House & Lot',
-      propertyType:
-        property.propertyType || '',
-      houseType:
-        property.houseType || '',
+      category: property.category || 'House & Lot',
+      propertyType: property.propertyType || '',
+      houseType: property.houseType || '',
       storey:
-        property.storey || '',
-      tag:
-        property.tag ||
-        'Residential',
+        property.storey !== null &&
+        property.storey !== undefined
+          ? String(property.storey)
+          : '',
+      tag: property.tag || 'Residential',
       price:
-        property.price || '',
-      location:
-        property.location || '',
+        property.price !== null &&
+        property.price !== undefined
+          ? String(property.price)
+          : '',
+      location: property.location || '',
       beds:
-        property.beds != null
+        property.beds !== null &&
+        property.beds !== undefined
           ? String(property.beds)
           : '',
       baths:
-        property.baths != null
+        property.baths !== null &&
+        property.baths !== undefined
           ? String(property.baths)
           : '',
       sqft:
-        property.sqft != null
+        property.sqft !== null &&
+        property.sqft !== undefined
           ? String(property.sqft)
           : '',
     });
 
-    const propertyImages =
-      property.images?.length
+    const existingImages =
+      property.images && property.images.length
         ? property.images
         : property.image
           ? [property.image]
           : [];
 
     setImages(
-      propertyImages.map(
-        (url, index) => ({
-          id: `existing-${Date.now()}-${index}`,
-          url,
-          source: 'url',
-        })
-      )
+      existingImages.map((url, index) => ({
+        id: `existing-${index}-${Date.now()}`,
+        url,
+        source: 'url',
+      })),
     );
 
     setImageSource('url');
     setStatus('idle');
     setActiveSection('add');
     setSidebarOpen(false);
-  };
 
-  /* =========================================================
-     DELETE PROPERTY
-  ========================================================= */
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
 
-  const handleDelete = async (
-    id: string | number
-  ) => {
-    if (!id) {
-      alert('Invalid property ID.');
+  async function deleteProperty(
+    property: Property,
+  ) {
+    const id = property.id ?? property._id;
+
+    if (id === undefined || id === null) {
       return;
     }
 
     const confirmed = window.confirm(
-      'Are you sure you want to delete this property?'
+      `Are you sure you want to delete "${property.title}"?`,
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
       const response = await fetch(
-        `/api/properties?id=${encodeURIComponent(
-          String(id)
-        )}`,
+        `/api/properties?id=${encodeURIComponent(String(id))}`,
         {
           method: 'DELETE',
           credentials: 'include',
-        }
+        },
       );
 
-      const data =
-        await response
-          .json()
-          .catch(() => null);
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
         throw new Error(
-          data?.message ||
-            'Failed to delete property.'
+          data?.message || 'Failed to delete property.',
         );
       }
 
       await fetchProperties();
     } catch (error) {
-      console.error(
-        'Delete property error:',
-        error
-      );
-
+      console.error('Delete property error:', error);
       alert(
         error instanceof Error
           ? error.message
-          : 'Failed to delete property.'
+          : 'Failed to delete property.',
       );
     }
-  };
+  }
 
-  /* =========================================================
-     SUBMIT PROPERTY
-  ========================================================= */
-
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
-    e.preventDefault();
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
 
     if (!formData.title.trim()) {
-      alert(
-        'Property title is required.'
-      );
+      alert('Please enter the property title.');
       return;
     }
 
     if (!formData.price.trim()) {
-      alert(
-        'Property price is required.'
-      );
+      alert('Please enter the property price.');
       return;
     }
 
     if (!formData.location.trim()) {
-      alert(
-        'Property location is required.'
-      );
+      alert('Please enter the property location.');
       return;
     }
 
     if (!formData.category) {
-      alert(
-        'Property category is required.'
-      );
+      alert('Please select a property category.');
       return;
     }
 
-    if (
-      formData.category !==
-        'For Sale by Owner' &&
-      !formData.propertyType
-    ) {
-      alert(
-        'Property type is required.'
-      );
+    if (!formData.propertyType) {
+      alert('Please select a property type.');
       return;
     }
 
     if (
       showHouseDetails &&
-      (!formData.houseType ||
-        !formData.storey)
+      !formData.houseType.trim()
     ) {
-      alert(
-        'House Type and Storey are required.'
-      );
+      alert('Please select the house type.');
+      return;
+    }
+
+    if (
+      showHouseDetails &&
+      !formData.storey.trim()
+    ) {
+      alert('Please select the number of storeys.');
       return;
     }
 
     if (!images.length) {
-      alert(
-        'At least one property image is required.'
-      );
+      alert('Please add at least one property image.');
       return;
     }
 
     setStatus('loading');
 
     try {
-      const uploadedImages: string[] = [];
+      const uploadedImageUrls: string[] = [];
 
       for (const image of images) {
-        if (image.source === 'url') {
-          uploadedImages.push(image.url);
-          continue;
-        }
-
-        if (!image.file) {
-          throw new Error(
-            'Image file is missing.'
-          );
-        }
-
-        const permanentUrl =
-          await uploadImageToBlob(
-            image.file
+        if (image.source === 'upload' && image.file) {
+          const uploadedUrl = await uploadImageToBlob(
+            image.file,
           );
 
-        uploadedImages.push(
-          permanentUrl
-        );
+          uploadedImageUrls.push(uploadedUrl);
+        } else {
+          uploadedImageUrls.push(image.url);
+        }
       }
 
-      if (!uploadedImages.length) {
+      if (!uploadedImageUrls.length) {
         throw new Error(
-          'No valid property images were uploaded.'
+          'No valid property images were found.',
         );
       }
 
       const payload = {
-        ...(editingId
-          ? {
-              id: Number(editingId),
-            }
+        ...(editingId !== null
+          ? { id: editingId }
           : {}),
-
-        title:
-          formData.title.trim(),
-
-        category:
-          formData.category,
-
-        propertyType:
-          formData.propertyType ||
-          null,
-
-        houseType:
-          showHouseDetails
-            ? formData.houseType ||
-              null
-            : null,
-
-        storey:
-          showHouseDetails
-            ? formData.storey ||
-              null
-            : null,
-
-        tag:
-          formData.tag ||
-          'Residential',
-
-        price:
-          formData.price.trim(),
-
-        location:
-          formData.location.trim(),
-
-        beds:
-          formData.beds
-            ? Number(formData.beds)
-            : null,
-
-        baths:
-          formData.baths
-            ? Number(formData.baths)
-            : null,
-
-        sqft:
-          formData.sqft
-            ? Number(formData.sqft)
-            : null,
-
-        image:
-          uploadedImages[0],
-
-        images:
-          uploadedImages,
+        title: formData.title.trim(),
+        category: formData.category,
+        propertyType: formData.propertyType,
+        houseType: showHouseDetails
+          ? formData.houseType || null
+          : null,
+        storey: showHouseDetails
+          ? formData.storey || null
+          : null,
+        tag: formData.tag || 'Residential',
+        price: formData.price.trim(),
+        location: formData.location.trim(),
+        beds: formData.beds
+          ? Number(formData.beds)
+          : null,
+        baths: formData.baths
+          ? Number(formData.baths)
+          : null,
+        sqft: formData.sqft
+          ? Number(formData.sqft)
+          : null,
+        image: uploadedImageUrls[0],
+        images: uploadedImageUrls,
       };
 
-      const response = await fetch(
-        '/api/properties',
-        {
-          method: editingId
-            ? 'PUT'
-            : 'POST',
+      const response = await fetch('/api/properties', {
+        method: editingId !== null ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
 
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-
-          credentials: 'include',
-
-          body: JSON.stringify(
-            payload
-          ),
-        }
-      );
-
-      const data =
-        await response
-          .json()
-          .catch(() => null);
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
         throw new Error(
           data?.message ||
-            'Failed to save property.'
+            `Failed to ${
+              editingId !== null ? 'update' : 'create'
+            } property.`,
         );
       }
 
@@ -1022,996 +873,964 @@ export default function AdminDashboard() {
 
       window.setTimeout(() => {
         resetForm();
-        setActiveSection(
-          'properties'
-        );
+        setActiveSection('properties');
       }, 800);
     } catch (error) {
-      console.error(
-        'Save property error:',
-        error
-      );
-
+      console.error('Save property error:', error);
       setStatus('error');
 
       alert(
         error instanceof Error
           ? error.message
-          : 'Failed to save property.'
+          : 'Something went wrong while saving the property.',
       );
     }
-  };
+  }
 
-  /* =========================================================
-     LOGOUT
-  ========================================================= */
-
-  const handleLogout = async () => {
+  async function handleLogout() {
     try {
-      await fetch(
-        '/api/admin/logout',
-        {
-          method: 'POST',
-          credentials: 'include',
-        }
-      );
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
     } catch (error) {
-      console.error(
-        'Logout error:',
-        error
-      );
+      console.error('Logout error:', error);
     } finally {
       router.replace('/');
       router.refresh();
     }
-  };
-
-  /* =========================================================
-     FILTER
-  ========================================================= */
+  }
 
   const filteredProperties = useMemo(() => {
-    const term =
-      searchTerm
-        .toLowerCase()
-        .trim();
+    const term = searchTerm.trim().toLowerCase();
 
     if (!term) {
       return properties;
     }
 
-    return properties.filter(
-      (property) =>
-        property.title
-          ?.toLowerCase()
-          .includes(term) ||
-        property.location
-          ?.toLowerCase()
-          .includes(term) ||
-        property.tag
-          ?.toLowerCase()
-          .includes(term) ||
-        property.category
-          ?.toLowerCase()
-          .includes(term) ||
-        property.propertyType
-          ?.toLowerCase()
-          .includes(term) ||
-        property.price
-          ?.toLowerCase()
-          .includes(term)
-    );
-  }, [
-    properties,
-    searchTerm,
-  ]);
+    return properties.filter((property) => {
+      const values = [
+        property.title,
+        property.location,
+        property.tag,
+        property.category,
+        property.propertyType,
+        property.houseType,
+        property.price,
+      ];
 
-  /* =========================================================
-     STATS
-  ========================================================= */
+      return values.some((value) =>
+        String(value || '')
+          .toLowerCase()
+          .includes(term),
+      );
+    });
+  }, [properties, searchTerm]);
 
-  const houseLotCount =
-    properties.filter(
-      (p) =>
-        p.category ===
-        'House & Lot'
-    ).length;
+  const houseLotCount = properties.filter(
+    (property) => property.category === 'House & Lot',
+  ).length;
 
-  const condominiumCount =
-    properties.filter(
-      (p) =>
-        p.category ===
-        'Condominiums'
-    ).length;
+  const condominiumCount = properties.filter(
+    (property) => property.category === 'Condominiums',
+  ).length;
 
-  const forRentCount =
-    properties.filter(
-      (p) =>
-        p.category ===
-        'For Rent'
-    ).length;
+  const forRentCount = properties.filter(
+    (property) => property.category === 'For Rent',
+  ).length;
 
-  const ownerCount =
-    properties.filter(
-      (p) =>
-        p.category ===
-        'For Sale by Owner'
-    ).length;
+  const ownerCount = properties.filter(
+    (property) =>
+      property.category === 'For Sale by Owner',
+  ).length;
 
-  /* =========================================================
-     NAVIGATION
-  ========================================================= */
-
-  const navigate = (
-    section: Section
-  ) => {
+  function navigate(section: Section) {
     setActiveSection(section);
     setSidebarOpen(false);
 
     if (section !== 'properties') {
       setSearchTerm('');
     }
-  };
 
-  /* =========================================================
-     PRICE FORMAT
-  ========================================================= */
-
-  const formatPrice = (
-    price: string
-  ) => {
-    const number =
-      Number(
-        String(price).replace(
-          /[^0-9.]/g,
-          ''
-        )
-      );
-
-    if (Number.isNaN(number)) {
-      return price;
+    if (section === 'add' && editingId === null) {
+      setStatus('idle');
     }
 
-    return number.toLocaleString(
-      'en-US'
-    );
-  };
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
 
-  /* =========================================================
-     LOADING
-  ========================================================= */
+  function formatPrice(price: string | number) {
+    const numeric = String(price || '')
+      .replace(/[^0-9.]/g, '');
+
+    if (!numeric) {
+      return '₱0';
+    }
+
+    const amount = Number(numeric);
+
+    if (Number.isNaN(amount)) {
+      return `₱${price}`;
+    }
+
+    return `₱${amount.toLocaleString('en-US')}`;
+  }
+
+  function getPropertyImage(property: Property) {
+    if (property.images?.length) {
+      return property.images[0];
+    }
+
+    return property.image || '/img/background.png';
+  }
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950">
-        <div className="text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900">
-            <Loader2 className="h-7 w-7 animate-spin text-white" />
+      <div className="flex min-h-screen items-center justify-center bg-[#030b1c]">
+        <div className="relative flex flex-col items-center text-center">
+          <div className="absolute h-32 w-32 rounded-full bg-blue-600/20 blur-3xl" />
+
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-2xl">
+            <Loader2
+              size={27}
+              className="animate-spin text-blue-400"
+            />
           </div>
 
-          <p className="mt-5 text-sm font-bold text-white">
+          <p className="mt-6 text-sm font-semibold text-white">
             Loading dashboard...
           </p>
 
-          <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             BREA 88 REALTY
           </p>
         </div>
-      </main>
+      </div>
     );
   }
 
-  /* =========================================================
-     DASHBOARD
-  ========================================================= */
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
+      {/* Background accents */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-blue-400/10 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-96 w-96 rounded-full bg-indigo-400/5 blur-3xl" />
+      </div>
 
-      {/* MOBILE OVERLAY */}
-
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <button
-          type="button"
           aria-label="Close sidebar"
-          onClick={() =>
-            setSidebarOpen(false)
-          }
-          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden"
         />
       )}
 
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
+      {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-800 bg-slate-950 text-white transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-[#030b1c] text-white shadow-2xl shadow-slate-950/20 transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen
             ? 'translate-x-0'
             : '-translate-x-full'
         }`}
       >
-
-        {/* LOGO */}
-
-        <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
-
-          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white">
-
-            <img
-              src="/img/LOGO.png"
-              alt="BREA 88 Realty"
-              className="h-full w-full object-cover"
-            />
-
-          </div>
-
-          <div>
-            <p className="font-black">
-              BREA 88
-            </p>
-
-            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500">
-              Realty Admin
-            </p>
-          </div>
-
+        {/* Sidebar glow */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-600/20 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
         </div>
 
-        {/* NAVIGATION */}
+        <div className="relative flex h-full flex-col">
+          {/* Logo */}
+          <div className="border-b border-white/10 px-6 py-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-black/20">
+                <img
+                  src="/img/LOGO.png"
+                  alt="BREA 88 Realty"
+                  className="h-full w-full object-contain p-1.5"
+                />
+              </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+              <div>
+                <p className="text-[15px] font-bold tracking-wide">
+                  <span className="text-black">BREA</span>
+                  <span className="text-blue-400">88</span>
+                </p>
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate('overview')
-            }
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-              activeSection ===
-              'overview'
-                ? 'bg-white text-slate-900'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            Overview
-          </button>
+                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
+                  Realty Admin
+                </p>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate('properties')
-            }
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-              activeSection ===
-              'properties'
-                ? 'bg-white text-slate-900'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            <Building2 className="h-4 w-4" />
-            Properties
+            <div className="mt-5 h-px bg-gradient-to-r from-transparent via-[#c9a96e]/70 to-transparent" />
+          </div>
 
-            {properties.length > 0 && (
-              <span
-                className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-black ${
-                  activeSection ===
-                  'properties'
-                    ? 'bg-slate-100 text-slate-700'
-                    : 'bg-white/10 text-slate-400'
+          {/* Navigation */}
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              Workspace
+            </p>
+
+            <nav className="space-y-1.5">
+              <button
+                onClick={() => navigate('overview')}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection === 'overview'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                {properties.length}
-              </span>
-            )}
-          </button>
+                <LayoutDashboard
+                  size={18}
+                  className={
+                    activeSection === 'overview'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate('add')
-            }
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-              activeSection ===
-              'add'
-                ? 'bg-white text-slate-900'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            <PlusCircle className="h-4 w-4" />
-            Add Property
-          </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = '/admin/agents';
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white"
-            >
-              <UserRound className="h-4 w-4" />
-              Active Accounts
-            </button>
-          
-          <button
-            type="button"
-            onClick={() =>
-              navigate('settings')
-            }
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-              activeSection ===
-              'settings'
-                ? 'bg-white text-slate-900'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </button>
-
-        </nav>
-
-        {/* SIDEBAR FOOTER */}
-
-        <div className="border-t border-white/10 p-4">
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
-
-        </div>
-
-      </aside>
-
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <div className="lg:pl-72">
-
-        {/* HEADER */}
-
-        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-
-          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-
-            <div className="flex items-center gap-3">
+                <span className="flex-1">
+                  Overview
+                </span>
+              </button>
 
               <button
-                type="button"
-                onClick={() =>
-                  setSidebarOpen(true)
-                }
-                className="rounded-xl p-2 hover:bg-slate-100 lg:hidden"
-                aria-label="Open menu"
+                onClick={() => navigate('properties')}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection === 'properties'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                }`}
               >
-                <Menu className="h-5 w-5" />
+                <Building2
+                  size={18}
+                  className={
+                    activeSection === 'properties'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
+
+                <span className="flex-1">
+                  Properties
+                </span>
+
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] ${
+                    activeSection === 'properties'
+                      ? 'bg-white/15 text-white'
+                      : 'bg-white/5 text-slate-500'
+                  }`}
+                >
+                  {properties.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => navigate('add')}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection === 'add'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-600'
+                }`}
+              >
+                <PlusCircle
+                  size={18}
+                  className={
+                    activeSection === 'add'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
+
+                <span>Add Property</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSidebarOpen(false);
+                  window.location.href =
+                    '/admin/agents';
+                }}
+                className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
+              >
+                <UserRound
+                  size={18}
+                  className="text-slate-500 group-hover:text-blue-400"
+                />
+
+                <span className="flex-1">
+                  Active Accounts
+                </span>
+
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
+                  {activeAccounts}
+                </span>
+              </button>
+            </nav>
+
+            <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              System
+            </p>
+
+            <nav>
+              <button
+                onClick={() => navigate('settings')}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection === 'settings'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                }`}
+              >
+                <Settings
+                  size={18}
+                  className={
+                    activeSection === 'settings'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
+
+                <span>Settings</span>
+              </button>
+            </nav>
+          </div>
+
+          {/* User / Logout */}
+          <div className="border-t border-white/10 p-4">
+            <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.04] p-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600/15 text-blue-400">
+                <ShieldCheck size={18} />
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-black">
+                  Administrator
+                </p>
+
+                <p className="truncate text-[10px] text-slate-500">
+                  Secure session
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
+            >
+              <LogOut size={18} />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main className="min-h-screen lg:pl-[280px]">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+          <div className="flex h-[76px] items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden"
+              >
+                <Menu size={20} />
               </button>
 
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
                   Administration
                 </p>
 
-                <h1 className="text-sm font-black sm:text-base">
+                <h1 className="text-base font-bold text-slate-900 sm:text-lg">
                   BREA 88 Realty
                 </h1>
               </div>
-
             </div>
 
-            <div className="flex items-center gap-2">
-
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
-                type="button"
-                onClick={fetchProperties}
-                className="rounded-xl border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-50"
-                title="Refresh properties"
+                onClick={async () => {
+                  setLoading(true);
+
+                  await Promise.all([
+                    fetchProperties(),
+                    fetchActiveAccounts(),
+                  ]);
+
+                  setLoading(false);
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                title="Refresh"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw size={17} />
               </button>
 
-              <div className="hidden items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 sm:flex">
+              <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
 
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900">
-                  <UserRound className="h-3.5 w-3.5 text-white" />
-                </div>
-
-                <div>
-                  <p className="text-xs font-bold">
-                    Administrator
-                  </p>
-
-                  <p className="text-[9px] text-slate-400">
-                    Secure Session
-                  </p>
-                </div>
-
+                <span className="text-xs font-semibold text-slate-600">
+                  Secure Session
+                </span>
               </div>
-
             </div>
-
           </div>
-
         </header>
 
-        {/* =====================================================
-            CONTENT
-        ===================================================== */}
-
-        <main className="p-4 sm:p-6 lg:p-8">
-
-          {/* ===================================================
-              OVERVIEW
-          =================================================== */}
-
-          {activeSection ===
-            'overview' && (
-            <div className="mx-auto max-w-7xl space-y-6">
-
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-
+        {/* CONTENT */}
+        <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {/* OVERVIEW */}
+          {activeSection === 'overview' && (
+            <section className="space-y-7">
+              <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+                    <span className="h-px w-6 bg-[#c9a96e]" />
+                    Control Center
+                  </div>
 
-                  <p className="text-sm font-medium text-slate-400">
+                  <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                     Dashboard
+                  </h2>
+
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                    Manage your BREA 88 Realty property
+                    marketplace and monitor your platform
+                    activity from one place.
                   </p>
-
-                  <h1 className="mt-1 text-3xl font-black">
-                    Overview
-                  </h1>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    Manage your BREA 88 Realty property marketplace.
-                  </p>
-
                 </div>
 
                 <button
-                  type="button"
-                  onClick={() =>
-                    navigate('add')
-                  }
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                  onClick={() => navigate('add')}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
                 >
-                  <PlusCircle className="h-4 w-4" />
+                  <PlusCircle size={18} />
                   Add Property
                 </button>
-
               </div>
-
-              {/* STATS */}
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <StatCard
                   icon={UserRound}
-                  label="Active Accounts"
                   value={activeAccounts}
+                  label="Active Accounts"
+                  description="Agent & Broker accounts"
+                  accent="green"
+                />
+
+                <StatCard
+                  icon={Home}
+                  value={houseLotCount}
+                  label="House & Lot"
+                  description="Property listings"
+                  accent="blue"
                 />
 
                 <StatCard
                   icon={Building2}
-                  label="House & Lot"
-                  value={houseLotCount}
-                />
-
-                <StatCard
-                  icon={Building}
-                  label="Condominiums"
                   value={condominiumCount}
+                  label="Condominiums"
+                  description="Property listings"
+                  accent="violet"
                 />
 
                 <StatCard
                   icon={Warehouse}
-                  label="For Rent"
                   value={forRentCount}
+                  label="For Rent"
+                  description="Rental listings"
+                  accent="gold"
                 />
 
                 <StatCard
-                  icon={UserRound}
-                  label="Owner Listings"
+                  icon={Star}
                   value={ownerCount}
+                  label="Owner Listings"
+                  description="Direct owner listings"
+                  accent="blue"
                 />
-
               </div>
 
-              <div className="grid gap-6 lg:grid-cols-3">
-
-                {/* RECENT */}
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-
-                  <div className="flex items-center justify-between">
-
+              <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+                {/* Recent Properties */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-6">
                     <div>
-
-                      <h2 className="font-black">
+                      <h3 className="font-bold text-slate-900">
                         Recent Properties
-                      </h2>
+                      </h3>
 
-                      <p className="mt-1 text-xs text-slate-400">
-                        Latest listings in the marketplace.
+                      <p className="mt-1 text-xs text-slate-500">
+                        Latest listings added to the marketplace
                       </p>
-
                     </div>
 
                     <button
-                      type="button"
                       onClick={() =>
                         navigate('properties')
                       }
-                      className="text-xs font-bold text-slate-500 hover:text-slate-900"
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700"
                     >
                       View all
                     </button>
-
                   </div>
 
-                  <div className="mt-5 space-y-3">
-
-                    {properties
-                      .slice(0, 5)
-                      .map((property) => (
-
-                        <div
-                          key={
-                            property.id ??
-                            property._id
-                          }
-                          className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"
-                        >
-
-                          <div className="h-14 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-
-                            {property.image ? (
-                              <img
-                                src={
-                                  property.image
-                                }
-                                alt={
-                                  property.title
-                                }
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center">
-                                <ImageIcon className="h-5 w-5 text-slate-300" />
-                              </div>
-                            )}
-
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-
-                            <p className="truncate text-sm font-bold">
-                              {
-                                property.title
-                              }
-                            </p>
-
-                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                              <MapPin className="h-3 w-3" />
-                              {
-                                property.location
-                              }
-                            </p>
-
-                          </div>
-
-                          <p className="hidden text-sm font-black sm:block">
-                            ₱{' '}
-                            {formatPrice(
-                              property.price
-                            )}
-                          </p>
-
-                        </div>
-
-                      ))}
-
-                    {!properties.length && (
-                      <div className="py-10 text-center">
-
-                        <Building2 className="mx-auto h-8 w-8 text-slate-200" />
-
-                        <p className="mt-3 text-sm font-bold text-slate-400">
-                          No properties yet.
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate('add')
-                          }
-                          className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white"
-                        >
-                          Add your first property
-                        </button>
-
+                  {properties.length === 0 ? (
+                    <div className="px-6 py-16 text-center">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                        <Building2 size={24} />
                       </div>
-                    )}
 
-                  </div>
+                      <p className="mt-4 font-semibold text-slate-800">
+                        No properties yet
+                      </p>
 
-                </div>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Add your first property listing.
+                      </p>
 
-                {/* SYSTEM STATUS */}
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
-                    <Activity className="h-5 w-5 text-slate-700" />
-                  </div>
-
-                  <h2 className="mt-5 font-black">
-                    System Status
-                  </h2>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Your property management system is connected to the PostgreSQL database.
-                  </p>
-
-                  <div className="mt-6 space-y-3">
-
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-
-                      <span className="text-xs font-semibold text-slate-500">
-                        Database
-                      </span>
-
-                      <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        Online
-                      </span>
-
+                      <button
+                        onClick={() => navigate('add')}
+                        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"
+                      >
+                        <PlusCircle size={16} />
+                        Add Property
+                      </button>
                     </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {properties.slice(0, 5).map(
+                        (property) => (
+                          <div
+                            key={
+                              property.id ??
+                              property._id
+                            }
+                            className="flex items-center gap-4 px-5 py-4 transition hover:bg-slate-50 sm:px-6"
+                          >
+                            <img
+                              src={getPropertyImage(
+                                property,
+                              )}
+                              alt={property.title}
+                              className="h-16 w-20 rounded-xl object-cover"
+                            />
 
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-bold text-slate-900">
+                                {property.title}
+                              </p>
 
-                      <span className="text-xs font-semibold text-slate-500">
-                        Authentication
-                      </span>
-
-                      <span className="flex items-center gap-2 text-xs font-bold text-emerald-600">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        Active
-                      </span>
-
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-
-                      <span className="text-xs font-semibold text-slate-500">
-                        Properties
-                      </span>
-
-                      <span className="text-xs font-bold text-slate-700">
-                        {properties.length}
-                      </span>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-          {/* ===================================================
-              PROPERTIES
-          =================================================== */}
-
-          {activeSection ===
-            'properties' && (
-            <div className="mx-auto max-w-7xl space-y-6">
-
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-
-                <div>
-
-                  <p className="text-sm font-medium text-slate-400">
-                    Property Management
-                  </p>
-
-                  <h1 className="mt-1 text-3xl font-black">
-                    Properties
-                  </h1>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    Manage all marketplace property listings.
-                  </p>
-
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate('add')
-                  }
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white"
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Add Property
-                </button>
-
-              </div>
-
-              {/* SEARCH */}
-
-              <div className="relative">
-
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                <input
-                  value={searchTerm}
-                  onChange={(e) =>
-                    setSearchTerm(
-                      e.target.value
-                    )
-                  }
-                  placeholder="Search properties..."
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-
-              </div>
-
-              {!filteredProperties.length ? (
-
-                <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center">
-
-                  <Building2 className="mx-auto h-10 w-10 text-slate-200" />
-
-                  <h3 className="mt-4 font-black">
-                    No properties found
-                  </h3>
-
-                  <p className="mt-1 text-sm text-slate-400">
-                    Try another search or add a new property.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate('add')
-                    }
-                    className="mt-5 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white"
-                  >
-                    Add Property
-                  </button>
-
-                </div>
-
-              ) : (
-
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-
-                  {filteredProperties.map(
-                    (property) => {
-
-                      const propertyId =
-                        property.id ??
-                        property._id ??
-                        '';
-
-                      return (
-
-                        <div
-                          key={propertyId}
-                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
-                        >
-
-                          {/* IMAGE */}
-
-                          <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
-
-                            {property.image ? (
-
-                              <img
-                                src={
-                                  property.image
-                                }
-                                alt={
-                                  property.title
-                                }
-                                className="h-full w-full object-cover"
-                              />
-
-                            ) : (
-
-                              <div className="flex h-full items-center justify-center">
-                                <ImageIcon className="h-10 w-10 text-slate-300" />
+                              <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                                <MapPin size={12} />
+                                <span className="truncate">
+                                  {property.location}
+                                </span>
                               </div>
-
-                            )}
-
-                            {property.category && (
-                              <div className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[10px] font-bold text-slate-700 shadow-sm">
-                                {
-                                  property.category
-                                }
-                              </div>
-                            )}
-
-                          </div>
-
-                          {/* DETAILS */}
-
-                          <div className="p-5">
-
-                            <h3 className="line-clamp-1 font-black">
-                              {
-                                property.title
-                              }
-                            </h3>
-
-                            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-
-                              <MapPin className="h-3.5 w-3.5" />
-
-                              {
-                                property.location
-                              }
-
                             </div>
 
-                            {property.propertyType && (
-                              <span className="mt-3 inline-flex rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
-                                {
-                                  property.propertyType
-                                }
-                              </span>
-                            )}
-
-                            {property.houseType && (
-                              <p className="mt-2 text-xs text-slate-500">
-                                <b>House:</b>{' '}
-                                {
-                                  property.houseType
-                                }
-                              </p>
-                            )}
-
-                            {property.storey && (
-                              <p className="mt-1 text-xs text-slate-500">
-                                <b>Storey:</b>{' '}
-                                {
-                                  property.storey
-                                }
-                              </p>
-                            )}
-
-                            <div className="mt-4 flex items-center justify-between">
-
-                              <p className="text-lg font-black">
-                                ₱{' '}
+                            <div className="hidden text-right sm:block">
+                              <p className="text-sm font-bold text-blue-600">
                                 {formatPrice(
-                                  property.price
+                                  property.price,
                                 )}
                               </p>
 
-                              <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase text-slate-500">
-                                {
-                                  property.tag
-                                }
-                              </span>
-
+                              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                {property.category ||
+                                  'Property'}
+                              </p>
                             </div>
-
-                            <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleEdit(
-                                    property
-                                  )
-                                }
-                                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                                Edit
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDelete(
-                                    propertyId
-                                  )
-                                }
-                                className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 hover:bg-red-50"
-                                aria-label="Delete property"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-
-                            </div>
-
                           </div>
-
-                        </div>
-
-                      );
-                    }
+                        ),
+                      )}
+                    </div>
                   )}
-
                 </div>
 
-              )}
+                {/* System Status */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                      <Activity size={20} />
+                    </div>
 
-            </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900">
+                        System Status
+                      </h3>
+
+                      <p className="text-xs text-slate-500">
+                        Platform health overview
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Database
+                          size={17}
+                          className="text-slate-400"
+                        />
+
+                        <span className="text-sm font-semibold text-slate-700">
+                          Database
+                        </span>
+                      </div>
+
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                        <CheckCircle2 size={14} />
+                        Online
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <ShieldCheck
+                          size={17}
+                          className="text-slate-400"
+                        />
+
+                        <span className="text-sm font-semibold text-slate-700">
+                          Authentication
+                        </span>
+                      </div>
+
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                        <CheckCircle2 size={14} />
+                        Active
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Building2
+                          size={17}
+                          className="text-slate-400"
+                        />
+
+                        <span className="text-sm font-semibold text-slate-700">
+                          Properties
+                        </span>
+                      </div>
+
+                      <span className="text-xs font-bold text-slate-700">
+                        {properties.length} listings
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 rounded-xl border border-[#c9a96e]/20 bg-[#c9a96e]/5 p-4">
+                    <div className="flex gap-3">
+                      <div className="mt-0.5 text-[#a9874f]">
+                        <Star size={15} />
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">
+                          BREA 88 Realty
+                        </p>
+
+                        <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                          Service with a Heart.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
           )}
 
-          {/* ===================================================
-              ADD / EDIT PROPERTY
-          =================================================== */}
-
-          {activeSection ===
-            'add' && (
-            <div className="mx-auto max-w-5xl space-y-6">
-
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-
+          {/* PROPERTIES */}
+          {activeSection === 'properties' && (
+            <section className="space-y-6">
+              <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+                    <span className="h-px w-6 bg-[#c9a96e]" />
+                    Marketplace
+                  </div>
 
-                  <p className="text-sm font-medium text-slate-400">
-                    Property Management
-                  </p>
-
-                  <h1 className="mt-1 text-3xl font-black">
-                    {editingId
-                      ? 'Edit Property'
-                      : 'Add Property'}
-                  </h1>
+                  <h2 className="text-3xl font-bold tracking-tight text-slate-950">
+                    Properties
+                  </h2>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    Add detailed property information to the marketplace.
+                    Manage all property listings from the
+                    admin panel.
                   </p>
-
                 </div>
 
-                {editingId && (
+                <button
+                  onClick={() => navigate('add')}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
+                >
+                  <PlusCircle size={18} />
+                  Add Property
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="search"
+                    value={searchTerm}
+                    onChange={(event) =>
+                      setSearchTerm(event.target.value)
+                    }
+                    placeholder="Search properties by title, location, category, type..."
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                  />
+                </div>
+              </div>
+
+              {filteredProperties.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-20 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <Search size={25} />
+                  </div>
+
+                  <h3 className="mt-5 font-bold text-slate-900">
+                    No properties found
+                  </h3>
+
+                  <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                    {searchTerm
+                      ? 'Try changing your search keywords.'
+                      : 'Your property listings will appear here once you add them.'}
+                  </p>
+
+                  {!searchTerm && (
+                    <button
+                      onClick={() => navigate('add')}
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-bold text-white"
+                    >
+                      <PlusCircle size={16} />
+                      Add Property
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredProperties.map(
+                    (property) => {
+                      const propertyId =
+                        property.id ?? property._id;
+
+                      return (
+                        <article
+                          key={propertyId}
+                          className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60"
+                        >
+                          <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+                            <img
+                              src={getPropertyImage(
+                                property,
+                              )}
+                              alt={property.title}
+                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                            />
+
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent opacity-80" />
+
+                            <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                              <span className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-700 shadow-sm backdrop-blur">
+                                {property.category ||
+                                  'Property'}
+                              </span>
+                            </div>
+
+                            {property.tag && (
+                              <span className="absolute right-4 top-4 rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
+                                {property.tag}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="p-5">
+                            <h3 className="line-clamp-1 text-base font-bold text-slate-900">
+                              {property.title}
+                            </h3>
+
+                            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                              <MapPin size={14} />
+                              <span className="line-clamp-1">
+                                {property.location}
+                              </span>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {property.propertyType && (
+                                <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
+                                  {property.propertyType}
+                                </span>
+                              )}
+
+                              {property.houseType && (
+                                <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
+                                  {property.houseType}
+                                </span>
+                              )}
+
+                              {property.storey && (
+                                <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
+                                  {property.storey} storey
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-5 grid grid-cols-3 gap-2 border-y border-slate-100 py-4">
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                <BedDouble
+                                  size={14}
+                                  className="text-blue-500"
+                                />
+                                <span>
+                                  {property.beds ??
+                                    '—'}{' '}
+                                  Beds
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                <Bath
+                                  size={14}
+                                  className="text-blue-500"
+                                />
+                                <span>
+                                  {property.baths ??
+                                    '—'}{' '}
+                                  Baths
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                <Maximize
+                                  size={14}
+                                  className="text-blue-500"
+                                />
+                                <span>
+                                  {property.sqft
+                                    ? `${property.sqft.toLocaleString()}`
+                                    : '—'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex items-end justify-between gap-3">
+                              <div>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                  Listing Price
+                                </p>
+
+                                <p className="mt-1 text-lg font-bold text-blue-600">
+                                  {formatPrice(
+                                    property.price,
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() =>
+                                    editProperty(
+                                      property,
+                                    )
+                                  }
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                  title="Edit property"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    deleteProperty(
+                                      property,
+                                    )
+                                  }
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                  title="Delete property"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    },
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ADD / EDIT */}
+          {activeSection === 'add' && (
+            <section className="mx-auto max-w-5xl space-y-6">
+              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+                    <span className="h-px w-6 bg-[#c9a96e]" />
+                    Property Management
+                  </div>
+
+                  <h2 className="text-3xl font-bold tracking-tight text-slate-950">
+                    {editingId !== null
+                      ? 'Edit Property'
+                      : 'Add Property'}
+                  </h2>
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    {editingId !== null
+                      ? 'Update the property listing information below.'
+                      : 'Create a new property listing for the marketplace.'}
+                  </p>
+                </div>
+
+                {editingId !== null && (
                   <button
-                    type="button"
-                    onClick={resetForm}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600"
+                    onClick={() => {
+                      resetForm();
+                      navigate('properties');
+                    }}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
                   >
-                    <X className="h-4 w-4" />
+                    <X size={16} />
                     Cancel Edit
                   </button>
                 )}
-
               </div>
 
-              {/* STATUS */}
-
               {status === 'success' && (
-                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-
-                  <CheckCircle2 className="h-5 w-5" />
-
+                <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
+                  <CheckCircle2 size={19} />
                   Property saved successfully.
-
                 </div>
               )}
 
               {status === 'error' && (
-                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-
-                  <AlertCircle className="h-5 w-5" />
-
+                <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                  <AlertCircle size={19} />
                   Something went wrong while saving the property.
-
                 </div>
               )}
 
@@ -2019,850 +1838,703 @@ export default function AdminDashboard() {
                 onSubmit={handleSubmit}
                 className="space-y-6"
               >
-
-                {/* CLASSIFICATION */}
-
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-
+                {/* Classification */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
                   <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-
                     <div className="flex items-center gap-3">
-
-                      <div className="rounded-xl bg-slate-100 p-2.5">
-                        <Building2 className="h-5 w-5 text-slate-700" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                        <Building2 size={19} />
                       </div>
 
                       <div>
-
-                        <h2 className="font-black">
+                        <h3 className="font-bold text-slate-900">
                           Property Classification
-                        </h2>
+                        </h3>
 
-                        <p className="mt-1 text-xs text-slate-400">
-                          Select how this property should appear.
+                        <p className="mt-1 text-xs text-slate-500">
+                          Define the property category and
+                          classification.
                         </p>
-
                       </div>
-
                     </div>
-
                   </div>
 
-                  <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-2">
-
+                  <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
                     <SelectField
                       label="Category"
                       name="category"
-                      value={
-                        formData.category
-                      }
-                      onChange={
-                        handleInputChange
-                      }
-                      options={
-                        CATEGORY_OPTIONS
-                      }
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      options={CATEGORY_OPTIONS}
                       required
-                      disabled={
-                        status === 'loading'
-                      }
                     />
 
-                    {formData.category !==
-                    'For Sale by Owner' ? (
+                    <SelectField
+                      label="Property Type"
+                      name="propertyType"
+                      value={formData.propertyType}
+                      onChange={handleInputChange}
+                      options={propertyTypeOptions}
+                      required
+                    />
 
-                      <SelectField
-                        label="Property Type"
-                        name="propertyType"
-                        value={
-                          formData.propertyType
-                        }
-                        onChange={
-                          handleInputChange
-                        }
-                        options={
-                          propertyTypeOptions
-                        }
-                        required
-                        disabled={
-                          status === 'loading'
-                        }
-                      />
-
-                    ) : (
-
-                      <div>
-
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                          Property Type
-                        </label>
-
-                        <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500">
-                          For Sale by Owner
-                        </div>
-
-                      </div>
-
-                    )}
+                    <SelectField
+                      label="Listing Tag"
+                      name="tag"
+                      value={formData.tag}
+                      onChange={handleInputChange}
+                      options={[
+                        'Residential',
+                        'Commercial',
+                        'Investment',
+                        'All',
+                      ]}
+                      required
+                    />
 
                     {showHouseDetails && (
                       <>
-
                         <SelectField
                           label="House Type"
                           name="houseType"
-                          value={
-                            formData.houseType
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          options={
-                            HOUSE_TYPES
-                          }
+                          value={formData.houseType}
+                          onChange={handleInputChange}
+                          options={HOUSE_TYPES}
                           required
-                          disabled={
-                            status === 'loading'
-                          }
                         />
 
                         <SelectField
                           label="Storey"
                           name="storey"
-                          value={
-                            formData.storey
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          options={
-                            STOREY_OPTIONS
-                          }
+                          value={formData.storey}
+                          onChange={handleInputChange}
+                          options={STOREY_OPTIONS}
                           required
-                          disabled={
-                            status === 'loading'
-                          }
                         />
-
                       </>
                     )}
-
                   </div>
+                </div>
 
-                </section>
-
-                {/* BASIC INFORMATION */}
-
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-
+                {/* Information */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
                   <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-
                     <div className="flex items-center gap-3">
-
-                      <div className="rounded-xl bg-slate-100 p-2.5">
-                        <Home className="h-5 w-5 text-slate-700" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <Home size={19} />
                       </div>
 
                       <div>
-
-                        <h2 className="font-black">
+                        <h3 className="font-bold text-slate-900">
                           Property Information
-                        </h2>
+                        </h3>
 
-                        <p className="mt-1 text-xs text-slate-400">
-                          Basic information about the listing.
+                        <p className="mt-1 text-xs text-slate-500">
+                          Enter the basic details shown to buyers.
                         </p>
-
                       </div>
-
                     </div>
-
                   </div>
 
-                  <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-2">
-
-                    {/* TITLE */}
-
-                    <div className="md:col-span-2">
-
-                      <label
-                        htmlFor="title"
-                        className="mb-2 block text-sm font-semibold text-slate-700"
-                      >
-                        Property Title
-                        <span className="ml-1 text-red-500">
-                          *
-                        </span>
-                      </label>
-
-                      <input
-                        id="title"
-                        name="title"
-                        value={
-                          formData.title
-                        }
-                        onChange={
-                          handleInputChange
-                        }
-                        placeholder="e.g. Modern Family House in Cebu"
-                        required
-                        disabled={
-                          status === 'loading'
-                        }
-                        className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
-                      />
-
-                    </div>
-
-                    {/* PRICE */}
-
-                    <div>
-
-                      <label
-                        htmlFor="price"
-                        className="mb-2 block text-sm font-semibold text-slate-700"
-                      >
-                        Price
-                        <span className="ml-1 text-red-500">
-                          *
-                        </span>
-                      </label>
-
-                      <div className="relative">
-
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                          ₱
-                        </span>
+                  <div className="grid gap-5 p-5 sm:p-6">
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="title"
+                          className="text-sm font-semibold text-slate-700"
+                        >
+                          Property Title
+                          <span className="ml-1 text-blue-600">
+                            *
+                          </span>
+                        </label>
 
                         <input
-                          id="price"
-                          name="price"
-                          value={
-                            formData.price
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          placeholder="0"
-                          inputMode="decimal"
+                          id="title"
+                          name="title"
+                          value={formData.title}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Premium Residential Villa"
                           required
-                          disabled={
-                            status === 'loading'
-                          }
-                          className="h-11 w-full rounded-xl border border-slate-200 pl-9 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                         />
-
                       </div>
 
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="price"
+                          className="text-sm font-semibold text-slate-700"
+                        >
+                          Price
+                          <span className="ml-1 text-blue-600">
+                            *
+                          </span>
+                        </label>
+
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                            ₱
+                          </span>
+
+                          <input
+                            id="price"
+                            name="price"
+                            value={formData.price}
+                            onChange={handleInputChange}
+                            placeholder="12,500,000"
+                            required
+                            inputMode="decimal"
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* LOCATION */}
-
-                    <div>
-
+                    <div className="space-y-2">
                       <label
                         htmlFor="location"
-                        className="mb-2 block text-sm font-semibold text-slate-700"
+                        className="text-sm font-semibold text-slate-700"
                       >
                         Location
-                        <span className="ml-1 text-red-500">
+                        <span className="ml-1 text-blue-600">
                           *
                         </span>
                       </label>
 
                       <div className="relative">
-
-                        <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <MapPin
+                          size={17}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
 
                         <input
                           id="location"
                           name="location"
-                          value={
-                            formData.location
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          placeholder="e.g. Liloan, Cebu"
+                          value={formData.location}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Canduman, Mandaue City"
                           required
-                          disabled={
-                            status === 'loading'
-                          }
-                          className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-100"
+                          className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                         />
-
                       </div>
-
                     </div>
 
-                    {/* BEDROOMS */}
+                    <div className="grid gap-5 sm:grid-cols-3">
+                      {showHouseDetails && (
+                        <>
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="beds"
+                              className="text-sm font-semibold text-slate-700"
+                            >
+                              Bedrooms
+                            </label>
 
-                    {showHouseDetails && (
-                      <>
+                            <div className="relative">
+                              <BedDouble
+                                size={17}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                              />
 
-                        <div>
-
-                          <label
-                            htmlFor="beds"
-                            className="mb-2 block text-sm font-semibold text-slate-700"
-                          >
-                            Bedrooms
-                          </label>
-
-                          <div className="relative">
-
-                            <BedDouble className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                            <input
-                              id="beds"
-                              name="beds"
-                              type="number"
-                              min="0"
-                              value={
-                                formData.beds
-                              }
-                              onChange={
-                                handleInputChange
-                              }
-                              placeholder="0"
-                              disabled={
-                                status === 'loading'
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                            />
-
+                              <input
+                                id="beds"
+                                name="beds"
+                                type="number"
+                                min="0"
+                                value={formData.beds}
+                                onChange={handleInputChange}
+                                placeholder="4"
+                                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                              />
+                            </div>
                           </div>
 
-                        </div>
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="baths"
+                              className="text-sm font-semibold text-slate-700"
+                            >
+                              Bathrooms
+                            </label>
 
-                        {/* BATHROOMS */}
+                            <div className="relative">
+                              <Bath
+                                size={17}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                              />
 
-                        <div>
-
-                          <label
-                            htmlFor="baths"
-                            className="mb-2 block text-sm font-semibold text-slate-700"
-                          >
-                            Bathrooms
-                          </label>
-
-                          <div className="relative">
-
-                            <Bath className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                            <input
-                              id="baths"
-                              name="baths"
-                              type="number"
-                              min="0"
-                              value={
-                                formData.baths
-                              }
-                              onChange={
-                                handleInputChange
-                              }
-                              placeholder="0"
-                              disabled={
-                                status === 'loading'
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                            />
-
+                              <input
+                                id="baths"
+                                name="baths"
+                                type="number"
+                                min="0"
+                                value={formData.baths}
+                                onChange={handleInputChange}
+                                placeholder="3"
+                                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                              />
+                            </div>
                           </div>
+                        </>
+                      )}
 
-                        </div>
-
-                      </>
-                    )}
-
-                    {/* AREA */}
-
-                    <div>
-
-                      <label
-                        htmlFor="sqft"
-                        className="mb-2 block text-sm font-semibold text-slate-700"
+                      <div
+                        className={
+                          showHouseDetails
+                            ? ''
+                            : 'sm:col-span-3'
+                        }
                       >
-                        Floor Area / Lot Area
-                      </label>
+                        <label
+                          htmlFor="sqft"
+                          className="text-sm font-semibold text-slate-700"
+                        >
+                          Floor / Lot Area
+                        </label>
 
-                      <div className="relative">
+                        <div className="relative mt-2">
+                          <Maximize
+                            size={17}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          />
 
-                        <Maximize className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                        <input
-                          id="sqft"
-                          name="sqft"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={
-                            formData.sqft
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          placeholder="e.g. 120"
-                          disabled={
-                            status === 'loading'
-                          }
-                          className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                        />
-
+                          <input
+                            id="sqft"
+                            name="sqft"
+                            type="number"
+                            min="0"
+                            value={formData.sqft}
+                            onChange={handleInputChange}
+                            placeholder="250"
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                          />
+                        </div>
                       </div>
-
                     </div>
-
-                    {/* LEGACY TAG */}
-
-
                   </div>
+                </div>
 
-                </section>
+                {/* Images */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                  <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                          <ImageIcon size={19} />
+                        </div>
 
-                {/* IMAGES */}
+                        <div>
+                          <h3 className="font-bold text-slate-900">
+                            Property Photos
+                          </h3>
 
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-                  <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-6">
-
-                    <div className="flex items-center gap-3">
-
-                      <div className="rounded-xl bg-slate-100 p-2.5">
-                        <ImageIcon className="h-5 w-5" />
+                          <p className="mt-1 text-xs text-slate-500">
+                            Add up to {MAX_IMAGES} photos. The
+                            first image is the cover.
+                          </p>
+                        </div>
                       </div>
 
-                      <div>
-
-                        <h2 className="font-black">
-                          Property Photos
-                        </h2>
-
-                        <p className="mt-1 text-xs text-slate-400">
-                          Add up to {MAX_IMAGES} photos.
-                        </p>
-
+                      <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">
+                        {images.length}/{MAX_IMAGES}
                       </div>
-
                     </div>
-
-                    <span className="text-xs font-bold text-slate-400">
-                      {images.length}/{MAX_IMAGES}
-                    </span>
-
                   </div>
 
                   <div className="p-5 sm:p-6">
-
-                    {/* SOURCE SELECTOR */}
-
-                    <div className="mb-5 flex rounded-xl bg-slate-100 p-1">
-
+                    {/* Image source tabs */}
+                    <div className="mb-5 inline-flex rounded-xl bg-slate-100 p-1">
                       <button
                         type="button"
                         onClick={() =>
-                          setImageSource(
-                            'upload'
-                          )
+                          setImageSource('upload')
                         }
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold ${
-                          imageSource ===
-                          'upload'
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500'
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
+                          imageSource === 'upload'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
                         }`}
                       >
-                        <Upload className="h-4 w-4" />
+                        <Upload size={15} />
                         Upload
                       </button>
 
                       <button
                         type="button"
                         onClick={() =>
-                          setImageSource(
-                            'url'
-                          )
+                          setImageSource('url')
                         }
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold ${
-                          imageSource ===
-                          'url'
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500'
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
+                          imageSource === 'url'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
                         }`}
                       >
-                        <LinkIcon className="h-4 w-4" />
+                        <LinkIcon size={15} />
                         Image URL
                       </button>
-
                     </div>
 
-                    {/* UPLOAD */}
-
-                    {imageSource ===
-                    'upload' ? (
-
-                      <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center hover:border-slate-400 hover:bg-white">
-
-                        <div className="rounded-xl bg-white p-3 shadow-sm">
-
-                          <Upload className="h-6 w-6 text-slate-500" />
-
+                    {imageSource === 'upload' ? (
+                      <label
+                        className={`group flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 px-6 text-center transition hover:border-blue-300 hover:bg-blue-50/40 ${
+                          images.length >= MAX_IMAGES
+                            ? 'pointer-events-none opacity-50'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm transition group-hover:scale-105">
+                          <Upload size={23} />
                         </div>
 
-                        <p className="mt-4 text-sm font-bold">
-                          Click to upload photos
+                        <p className="mt-4 text-sm font-bold text-slate-700">
+                          Click to upload property photos
                         </p>
 
                         <p className="mt-1 text-xs text-slate-400">
-                          JPG, PNG, WEBP up to 5MB each
+                          PNG, JPG, JPEG or WEBP • Max 5MB
+                          each
                         </p>
 
                         <input
                           type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
                           multiple
-                          onChange={
-                            handleImageUpload
-                          }
+                          onChange={handleImageUpload}
                           className="hidden"
                           disabled={
-                            status === 'loading' ||
-                            images.length >=
-                              MAX_IMAGES
+                            images.length >= MAX_IMAGES
                           }
                         />
-
                       </label>
-
                     ) : (
-
-                      <div className="flex flex-col gap-2 sm:flex-row">
-
+                      <div className="flex flex-col gap-3 sm:flex-row">
                         <div className="relative flex-1">
-
-                          <LinkIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <LinkIcon
+                            size={17}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          />
 
                           <input
                             type="url"
-                            value={
-                              imageUrl
-                            }
-                            onChange={(e) =>
+                            value={imageUrl}
+                            onChange={(event) =>
                               setImageUrl(
-                                e.target.value
+                                event.target.value,
                               )
                             }
-                            placeholder="https://example.com/image.jpg"
-                            className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault();
+                                addImageUrl();
+                              }
+                            }}
+                            placeholder="https://example.com/property-image.jpg"
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                           />
-
                         </div>
 
                         <button
                           type="button"
-                          onClick={
-                            addImageUrl
+                          onClick={addImageUrl}
+                          disabled={
+                            images.length >= MAX_IMAGES
                           }
-                          className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white"
+                          className="h-12 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Add
+                          Add Image
                         </button>
-
                       </div>
-
                     )}
 
-                    {/* IMAGE GRID */}
-
                     {images.length > 0 && (
+                      <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
+                            Selected Images
+                          </p>
 
-                      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                          <p className="text-[11px] text-slate-400">
+                            First image = cover
+                          </p>
+                        </div>
 
-                        {images.map(
-                          (
-                            image,
-                            index
-                          ) => (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                          {images.map(
+                            (image, index) => (
+                              <div
+                                key={image.id}
+                                className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                              >
+                                <img
+                                  src={image.url}
+                                  alt={`Property image ${index + 1}`}
+                                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                />
 
-                            <div
-                              key={
-                                image.id
-                              }
-                              className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
-                            >
+                                {index === 0 && (
+                                  <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-[#c9a96e] px-2 py-1 text-[9px] font-bold text-white shadow-sm">
+                                    <Star size={10} />
+                                    Cover
+                                  </div>
+                                )}
 
-                              <img
-                                src={
-                                  image.url
-                                }
-                                alt={`Property photo ${index + 1}`}
-                                className="h-full w-full object-cover"
-                              />
+                                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-2 pt-8 opacity-0 transition group-hover:opacity-100">
+                                  {index !== 0 ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setCoverImage(
+                                          image.id,
+                                        )
+                                      }
+                                      className="rounded-lg bg-white/95 px-2 py-1.5 text-[9px] font-bold text-slate-700"
+                                    >
+                                      Set Cover
+                                    </button>
+                                  ) : (
+                                    <span />
+                                  )}
 
-                              {/* COVER */}
-
-                              {index === 0 && (
-                                <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-slate-900 px-2 py-1 text-[9px] font-bold text-white">
-
-                                  <Star className="h-3 w-3 fill-current" />
-
-                                  COVER
-
-                                </div>
-                              )}
-
-                              {/* ACTIONS */}
-
-                              <div className="absolute inset-x-2 bottom-2 flex gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
-
-                                {index !== 0 && (
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      setCoverImage(
-                                        image.id
+                                      removeImage(
+                                        image.id,
                                       )
                                     }
-                                    className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-white text-[9px] font-bold shadow"
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500 text-white"
                                   >
-                                    <Star className="h-3 w-3" />
-                                    Cover
+                                    <X size={13} />
                                   </button>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    removeImage(
-                                      image.id
-                                    )
-                                  }
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white"
-                                  aria-label="Remove image"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-
+                                </div>
                               </div>
-
-                            </div>
-
-                          )
-                        )}
-
+                            ),
+                          )}
+                        </div>
                       </div>
-
                     )}
-
                   </div>
+                </div>
 
-                </section>
-
-                {/* SUBMIT */}
-
-                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-
+                {/* Actions */}
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={resetForm}
-                    disabled={
-                      status === 'loading'
-                    }
-                    className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                    disabled={status === 'loading'}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                   >
-                    Clear
+                    Clear Form
                   </button>
 
                   <button
                     type="submit"
-                    disabled={
-                      status ===
-                        'loading' ||
-                      !formData.title.trim() ||
-                      !formData.location.trim() ||
-                      !formData.price.trim() ||
-                      !images.length
-                    }
-                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-900 px-8 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={status === 'loading'}
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-
-                    {status ===
-                    'loading' ? (
-
+                    {status === 'loading' ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving Property...
+                        <Loader2
+                          size={17}
+                          className="animate-spin"
+                        />
+                        Saving...
                       </>
-
+                    ) : editingId !== null ? (
+                      <>
+                        <CheckCircle2 size={17} />
+                        Update Property
+                      </>
                     ) : (
-
                       <>
-                        <CheckCircle2 className="h-4 w-4" />
-
-                        {editingId
-                          ? 'Update Property'
-                          : 'Publish Property'}
+                        <PlusCircle size={17} />
+                        Publish Property
                       </>
-
                     )}
-
                   </button>
-
                 </div>
-
               </form>
-
-            </div>
+            </section>
           )}
 
-          {/* ===================================================
-              SETTINGS
-          =================================================== */}
-
-          {activeSection ===
-            'settings' && (
-            <div className="mx-auto max-w-4xl space-y-6">
-
+          {/* SETTINGS */}
+          {activeSection === 'settings' && (
+            <section className="mx-auto max-w-5xl space-y-6">
               <div>
-
-                <p className="text-sm font-medium text-slate-400">
+                <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+                  <span className="h-px w-6 bg-[#c9a96e]" />
                   System
-                </p>
+                </div>
 
-                <h1 className="mt-1 text-3xl font-black">
+                <h2 className="text-3xl font-bold tracking-tight text-slate-950">
                   Settings
-                </h1>
+                </h2>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Administrator system information.
+                  Review your BREA 88 Realty administration
+                  environment.
                 </p>
-
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Database size={20} />
+                  </div>
 
-                {/* DATABASE */}
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                  <Database className="h-6 w-6 text-slate-600" />
-
-                  <h3 className="mt-4 font-black">
+                  <h3 className="mt-5 font-bold text-slate-900">
                     Database
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    PostgreSQL database is connected and synchronized with the current Prisma schema.
+                    Property data is connected to the BREA 88
+                    Realty database through the platform API.
                   </p>
 
-                  <div className="mt-5 flex items-center gap-2 text-xs font-bold text-emerald-600">
-
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-
+                  <div className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
+                    <CheckCircle2 size={15} />
                     Database Online
-
                   </div>
-
                 </div>
 
-                {/* SECURITY */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <ShieldCheck size={20} />
+                  </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                  <ShieldCheck className="h-6 w-6 text-slate-600" />
-
-                  <h3 className="mt-4 font-black">
+                  <h3 className="mt-5 font-bold text-slate-900">
                     Security
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Administrator authentication is required for property management operations.
+                    Property management functions are restricted
+                    to authenticated administrators.
                   </p>
 
-                  <div className="mt-5 flex items-center gap-2 text-xs font-bold text-emerald-600">
-
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-
+                  <div className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
+                    <CheckCircle2 size={15} />
                     Authentication Active
-
                   </div>
-
                 </div>
-
               </div>
 
-              {/* PROPERTY SUMMARY */}
+              <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-6 py-5">
+                  <h3 className="font-bold text-slate-900">
+                    Property Summary
+                  </h3>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="mt-1 text-xs text-slate-500">
+                    Current marketplace inventory.
+                  </p>
+                </div>
 
-                <div className="flex items-center gap-3">
+                <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                  <div className="flex items-center justify-between p-5">
+                    <div className="flex items-center gap-3">
+                      <Home
+                        size={18}
+                        className="text-blue-500"
+                      />
 
-                  <Building2 className="h-5 w-5 text-slate-600" />
+                      <span className="text-sm font-semibold text-slate-700">
+                        House & Lot
+                      </span>
+                    </div>
 
+                    <span className="font-bold text-slate-900">
+                      {houseLotCount}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-5">
+                    <div className="flex items-center gap-3">
+                      <Building2
+                        size={18}
+                        className="text-violet-500"
+                      />
+
+                      <span className="text-sm font-semibold text-slate-700">
+                        Condominiums
+                      </span>
+                    </div>
+
+                    <span className="font-bold text-slate-900">
+                      {condominiumCount}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-5">
+                    <div className="flex items-center gap-3">
+                      <Warehouse
+                        size={18}
+                        className="text-amber-500"
+                      />
+
+                      <span className="text-sm font-semibold text-slate-700">
+                        For Rent
+                      </span>
+                    </div>
+
+                    <span className="font-bold text-slate-900">
+                      {forRentCount}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-5">
+                    <div className="flex items-center gap-3">
+                      <Star
+                        size={18}
+                        className="text-[#c9a96e]"
+                      />
+
+                      <span className="text-sm font-semibold text-slate-700">
+                        Owner Listings
+                      </span>
+                    </div>
+
+                    <span className="font-bold text-slate-900">
+                      {ownerCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl bg-[#030b1c] p-6 text-white shadow-xl shadow-slate-900/10 sm:p-8">
+                <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                   <div>
+                    <div className="flex items-center gap-2 text-[#c9a96e]">
+                      <span className="h-px w-6 bg-[#c9a96e]" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
+                        BREA 88 REALTY
+                      </span>
+                    </div>
 
-                    <h3 className="font-black">
-                      Property Summary
+                    <h3 className="mt-3 text-xl font-bold">
+                      Service with a Heart.
                     </h3>
 
-                    <p className="mt-1 text-xs text-slate-400">
-                      Current marketplace inventory.
+                    <p className="mt-2 max-w-lg text-sm leading-6 text-slate-400">
+                      Your administration workspace is designed
+                      to keep your property marketplace organized,
+                      secure, and easy to manage.
                     </p>
-
                   </div>
 
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white shadow-xl">
+                    <img
+                      src="/img/LOGO.png"
+                      alt="BREA 88 Realty"
+                      className="h-full w-full object-contain p-3"
+                    />
+                  </div>
                 </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-4">
-
-                  <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-2xl font-black">
-                      {houseLotCount}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">
-                      House & Lot
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-2xl font-black">
-                      {condominiumCount}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">
-                      Condominiums
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-2xl font-black">
-                      {forRentCount}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">
-                      For Rent
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-2xl font-black">
-                      {ownerCount}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">
-                      Owner Listings
-                    </p>
-                  </div>
-
-                </div>
-
               </div>
-
-            </div>
+            </section>
           )}
-
-        </main>
-
-      </div>
-
+        </div>
+      </main>
     </div>
   );
 }
-

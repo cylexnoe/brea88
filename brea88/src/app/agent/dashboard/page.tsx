@@ -32,6 +32,7 @@ import {
   Eye,
   Image as ImageIcon,
   PhilippinePeso,
+  Sparkles,
 } from 'lucide-react';
 
 type Agent = {
@@ -134,31 +135,31 @@ function formatDateTime(dateString: string) {
 function getStatusClasses(status: string) {
   switch (status) {
     case 'New':
-      return 'bg-blue-100 text-blue-700 border-blue-200';
+      return 'border-blue-200 bg-blue-50 text-blue-700';
 
     case 'Read':
-      return 'bg-slate-100 text-slate-600 border-slate-200';
+      return 'border-slate-200 bg-slate-50 text-slate-600';
 
     case 'Contacted':
-      return 'bg-purple-100 text-purple-700 border-purple-200';
+      return 'border-purple-200 bg-purple-50 text-purple-700';
 
     case 'Viewing Scheduled':
-      return 'bg-amber-100 text-amber-700 border-amber-200';
+      return 'border-amber-200 bg-amber-50 text-amber-700';
 
     case 'Viewing Completed':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
 
     case 'Follow Up':
-      return 'bg-orange-100 text-orange-700 border-orange-200';
+      return 'border-orange-200 bg-orange-50 text-orange-700';
 
     case 'Closed':
-      return 'bg-slate-200 text-slate-700 border-slate-300';
+      return 'border-slate-300 bg-slate-100 text-slate-700';
 
     case 'Cancelled':
-      return 'bg-red-100 text-red-700 border-red-200';
+      return 'border-red-200 bg-red-50 text-red-700';
 
     default:
-      return 'bg-slate-100 text-slate-600 border-slate-200';
+      return 'border-slate-200 bg-slate-50 text-slate-600';
   }
 }
 
@@ -167,7 +168,7 @@ function getStatusIcon(status: string) {
     case 'New':
       return (
         <Circle
-          size={10}
+          size={9}
           fill="currentColor"
         />
       );
@@ -194,7 +195,7 @@ function getStatusIcon(status: string) {
       return <X size={13} />;
 
     default:
-      return <Circle size={10} />;
+      return <Circle size={9} />;
   }
 }
 
@@ -262,10 +263,6 @@ export default function AgentDashboardPage() {
   const [lastUpdated, setLastUpdated] =
     useState<Date | null>(null);
 
-  // =========================================================
-  // SELECTED INQUIRY
-  // =========================================================
-
   const selectedInquiry = useMemo(
     () =>
       inquiries.find(
@@ -275,9 +272,11 @@ export default function AgentDashboardPage() {
     [inquiries, selectedInquiryId]
   );
 
-  // =========================================================
-  // LOAD CURRENT AGENT
-  // =========================================================
+  /*
+   * =========================================================
+   * LOAD CURRENT AGENT
+   * =========================================================
+   */
 
   useEffect(() => {
     let mounted = true;
@@ -338,20 +337,11 @@ export default function AgentDashboardPage() {
     };
   }, [router]);
 
-  // =========================================================
-  // LOAD INQUIRIES
-  // =========================================================
-  //
-  // IMPORTANT:
-  // There is NO automatic inquiry polling.
-  //
-  // Inquiries load:
-  // 1. Once after the current agent is loaded.
-  // 2. When Refresh is clicked.
-  // 3. When Try Again is clicked.
-  //
-  // Heartbeat is completely separate.
-  // =========================================================
+  /*
+   * =========================================================
+   * LOAD INQUIRIES
+   * =========================================================
+   */
 
   const loadInquiries = async (
     showLoading = true
@@ -434,25 +424,15 @@ export default function AgentDashboardPage() {
           : 'Unable to load inquiry messages.'
       );
     } finally {
-      // IMPORTANT:
-      // Always stop the loading state.
-      //
-      // This prevents the dashboard from being
-      // permanently stuck on "Loading inquiry messages..."
       setInquiriesLoading(false);
     }
   };
 
-  // =========================================================
-  // INITIAL INQUIRY LOAD ONLY
-  // =========================================================
-  //
-  // IMPORTANT:
-  // Depend ONLY on agent.id.
-  //
-  // The heartbeat updates agent.lastSeen every 60 seconds.
-  // We do NOT want that update to trigger inquiry loading again.
-  // =========================================================
+  /*
+   * =========================================================
+   * INITIAL INQUIRY LOAD
+   * =========================================================
+   */
 
   useEffect(() => {
     if (!agent?.id) return;
@@ -460,9 +440,11 @@ export default function AgentDashboardPage() {
     loadInquiries(true);
   }, [agent?.id]);
 
-  // =========================================================
-  // AGENT HEARTBEAT
-  // =========================================================
+  /*
+   * =========================================================
+   * HEARTBEAT
+   * =========================================================
+   */
 
   useEffect(() => {
     if (!agent?.id) return;
@@ -531,10 +513,8 @@ export default function AgentDashboardPage() {
       }
     };
 
-    // Immediately mark the agent online.
     sendHeartbeat();
 
-    // Continue heartbeat every 60 seconds.
     const heartbeatInterval =
       window.setInterval(
         sendHeartbeat,
@@ -550,9 +530,11 @@ export default function AgentDashboardPage() {
     };
   }, [agent?.id, router]);
 
-  // =========================================================
-  // MARK INQUIRY AS READ
-  // =========================================================
+  /*
+   * =========================================================
+   * MARK INQUIRY AS READ
+   * =========================================================
+   */
 
   const markInquiryAsRead = async (
     inquiry: Inquiry
@@ -634,9 +616,11 @@ export default function AgentDashboardPage() {
     }
   };
 
-  // =========================================================
-  // OPEN INQUIRY
-  // =========================================================
+  /*
+   * =========================================================
+   * OPEN INQUIRY
+   * =========================================================
+   */
 
   const handleOpenInquiry = async (
     inquiry: Inquiry
@@ -648,9 +632,11 @@ export default function AgentDashboardPage() {
     }
   };
 
-  // =========================================================
-  // UPDATE INQUIRY STATUS
-  // =========================================================
+  /*
+   * =========================================================
+   * UPDATE STATUS
+   * =========================================================
+   */
 
   const updateInquiryStatus = async (
     inquiryId: number,
@@ -737,9 +723,11 @@ export default function AgentDashboardPage() {
     }
   };
 
-  // =========================================================
-  // DELETE INQUIRY
-  // =========================================================
+  /*
+   * =========================================================
+   * DELETE INQUIRY
+   * =========================================================
+   */
 
   const deleteInquiry = async (
     inquiryId: number
@@ -821,9 +809,11 @@ export default function AgentDashboardPage() {
     }
   };
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
+  /*
+   * =========================================================
+   * LOGOUT
+   * =========================================================
+   */
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -849,9 +839,11 @@ export default function AgentDashboardPage() {
     }
   };
 
-  // =========================================================
-  // NAVIGATION
-  // =========================================================
+  /*
+   * =========================================================
+   * NAVIGATION
+   * =========================================================
+   */
 
   const navigation = [
     {
@@ -873,9 +865,11 @@ export default function AgentDashboardPage() {
     },
   ];
 
-  // =========================================================
-  // FILTER INQUIRIES
-  // =========================================================
+  /*
+   * =========================================================
+   * FILTER
+   * =========================================================
+   */
 
   const filteredInquiries = useMemo(() => {
     const query =
@@ -925,9 +919,11 @@ export default function AgentDashboardPage() {
     searchQuery,
   ]);
 
-  // =========================================================
-  // STATISTICS
-  // =========================================================
+  /*
+   * =========================================================
+   * STATISTICS
+   * =========================================================
+   */
 
   const totalInquiries =
     inquiries.length;
@@ -964,9 +960,11 @@ export default function AgentDashboardPage() {
         inquiry.property === null
     ).length;
 
-  // =========================================================
-  // LOADING SCREEN
-  // =========================================================
+  /*
+   * =========================================================
+   * LOADING
+   * =========================================================
+   */
 
   if (loading) {
     return (
@@ -980,8 +978,11 @@ export default function AgentDashboardPage() {
     return null;
   }
 
+  const agentOnline =
+    isOnline(agent.lastSeen);
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
 
       {/* =====================================================
           MOBILE OVERLAY
@@ -991,7 +992,7 @@ export default function AgentDashboardPage() {
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-[2px] lg:hidden"
           onClick={() =>
             setMobileMenuOpen(false)
           }
@@ -1009,12 +1010,13 @@ export default function AgentDashboardPage() {
           left-0
           z-50
           flex
-          w-72
+          w-[285px]
           flex-col
           border-r
-          border-slate-200
-          bg-white
-          shadow-xl
+          border-slate-800
+          bg-[#071936]
+          text-white
+          shadow-2xl
           transition-transform
           duration-300
           lg:translate-x-0
@@ -1026,22 +1028,27 @@ export default function AgentDashboardPage() {
         `}
       >
 
-        {/* LOGO / BRAND */}
+        {/* BRAND */}
 
-        <div className="flex h-20 items-center justify-between border-b border-slate-100 px-5">
+        <div className="relative flex h-[82px] items-center justify-between border-b border-white/10 px-5">
+
+          <div className="absolute bottom-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-[#c9a96e]/70 to-transparent" />
 
           <div className="flex items-center gap-3">
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-white">
-              <Building2 size={22} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/10 shadow-lg">
+              <Building2
+                size={21}
+                className="text-[#ead9b8]"
+              />
             </div>
 
             <div>
-              <p className="text-sm font-bold tracking-wide text-slate-950">
+              <p className="text-sm font-bold tracking-[0.18em] text-white">
                 BREA 88
               </p>
 
-              <p className="text-xs text-slate-500">
+              <p className="mt-0.5 text-[10px] font-medium tracking-[0.25em] text-slate-400">
                 REALTY
               </p>
             </div>
@@ -1050,7 +1057,8 @@ export default function AgentDashboardPage() {
 
           <button
             type="button"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            aria-label="Close navigation"
+            className="rounded-xl p-2 text-slate-400 transition hover:bg-white/10 hover:text-white lg:hidden"
             onClick={() =>
               setMobileMenuOpen(false)
             }
@@ -1060,81 +1068,83 @@ export default function AgentDashboardPage() {
 
         </div>
 
-        {/* AGENT MINI PROFILE */}
+        {/* PROFILE */}
 
-        <div className="border-b border-slate-100 p-5">
+        <div className="border-b border-white/10 p-5">
 
-          <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
 
-            <div className="relative">
+            <div className="flex items-center gap-3">
 
-              {agent.profileImage ? (
-                <img
-                  src={agent.profileImage}
-                  alt={agent.fullName}
-                  className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-100"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white">
-                  <User size={21} />
-                </div>
-              )}
+              <div className="relative">
 
-              <span
-                className={`
-                  absolute
-                  bottom-0
-                  right-0
-                  h-3
-                  w-3
-                  rounded-full
-                  border-2
-                  border-white
-                  ${
-                    isOnline(
-                      agent.lastSeen
-                    )
-                      ? 'bg-emerald-500'
-                      : 'bg-slate-300'
-                  }
-                `}
-              />
-
-            </div>
-
-            <div className="min-w-0 flex-1">
-
-              <p className="truncate text-sm font-semibold text-slate-900">
-                {agent.fullName}
-              </p>
-
-              <p className="text-xs text-slate-500">
-                {agent.role}
-              </p>
-
-              <div className="mt-1 flex items-center gap-1.5 text-[11px]">
+                {agent.profileImage ? (
+                  <img
+                    src={agent.profileImage}
+                    alt={agent.fullName}
+                    className="h-12 w-12 rounded-full object-cover ring-2 ring-white/10"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
+                    <User size={20} />
+                  </div>
+                )}
 
                 <span
-                  className={
-                    isOnline(
-                      agent.lastSeen
-                    )
-                      ? 'text-emerald-600'
-                      : 'text-slate-400'
-                  }
-                >
-                  {isOnline(
-                    agent.lastSeen
-                  )
-                    ? 'Online'
-                    : 'Offline'}
-                </span>
+                  className={`
+                    absolute
+                    bottom-0
+                    right-0
+                    h-3
+                    w-3
+                    rounded-full
+                    border-2
+                    border-[#071936]
+                    ${
+                      agentOnline
+                        ? 'bg-emerald-400'
+                        : 'bg-slate-500'
+                    }
+                  `}
+                />
 
-                {heartbeatActive && (
-                  <span className="text-slate-400">
-                    • Active
+              </div>
+
+              <div className="min-w-0 flex-1">
+
+                <p className="truncate text-sm font-semibold text-white">
+                  {agent.fullName}
+                </p>
+
+                <div className="mt-1 flex items-center gap-2">
+
+                  <span className="rounded-full bg-[#c9a96e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#ead9b8]">
+                    {agent.role}
                   </span>
-                )}
+
+                </div>
+
+                <div className="mt-2 flex items-center gap-1.5 text-[10px]">
+
+                  <span
+                    className={
+                      agentOnline
+                        ? 'text-emerald-400'
+                        : 'text-slate-500'
+                    }
+                  >
+                    {agentOnline
+                      ? 'Online'
+                      : 'Offline'}
+                  </span>
+
+                  {heartbeatActive && (
+                    <span className="text-slate-500">
+                      • Active
+                    </span>
+                  )}
+
+                </div>
 
               </div>
 
@@ -1146,7 +1156,11 @@ export default function AgentDashboardPage() {
 
         {/* NAVIGATION */}
 
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="flex-1 space-y-2 p-4">
+
+          <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+            Workspace
+          </p>
 
           {navigation.map(
             (item) => {
@@ -1171,24 +1185,39 @@ export default function AgentDashboardPage() {
                     );
                   }}
                   className={`
+                    group
+                    relative
                     flex
                     w-full
                     items-center
                     gap-3
+                    overflow-hidden
                     rounded-xl
                     px-4
-                    py-3
+                    py-3.5
                     text-sm
                     font-medium
-                    transition
+                    transition-all
                     ${
                       active
-                        ? 'bg-slate-950 text-white shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                        ? 'bg-white text-[#071936] shadow-lg shadow-black/10'
+                        : 'text-slate-400 hover:bg-white/[0.07] hover:text-white'
                     }
                   `}
                 >
-                  <Icon size={19} />
+
+                  {active && (
+                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#c9a96e]" />
+                  )}
+
+                  <Icon
+                    size={19}
+                    className={
+                      active
+                        ? 'text-[#071936]'
+                        : 'text-slate-500 transition group-hover:text-white'
+                    }
+                  />
 
                   <span>
                     {item.name}
@@ -1197,9 +1226,10 @@ export default function AgentDashboardPage() {
                   {active && (
                     <ChevronRight
                       size={16}
-                      className="ml-auto"
+                      className="ml-auto text-[#071936]"
                     />
                   )}
+
                 </button>
               );
             }
@@ -1207,15 +1237,25 @@ export default function AgentDashboardPage() {
 
         </nav>
 
-        {/* LOGOUT */}
+        {/* SIDEBAR FOOTER */}
 
-        <div className="border-t border-slate-100 p-4">
+        <div className="border-t border-white/10 p-4">
+
+          <div className="mb-3 flex items-center gap-2 px-3 text-[10px] text-slate-500">
+            <Sparkles
+              size={12}
+              className="text-[#c9a96e]"
+            />
+            <span>
+              BREA 88 REALTY
+            </span>
+          </div>
 
           <button
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-300 transition hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
 
             {loggingOut ? (
@@ -1240,40 +1280,47 @@ export default function AgentDashboardPage() {
       </aside>
 
       {/* =====================================================
-          MAIN CONTENT
+          MAIN
       ===================================================== */}
 
-      <div className="lg:pl-72">
+      <div className="lg:pl-[285px]">
 
         {/* ===================================================
             TOP BAR
         =================================================== */}
 
-        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
 
-          <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
 
             <div className="flex min-w-0 items-center gap-3">
 
               <button
                 type="button"
-                className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+                aria-label="Open navigation"
+                className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 lg:hidden"
                 onClick={() =>
                   setMobileMenuOpen(
                     true
                   )
                 }
               >
-                <Menu size={22} />
+                <Menu size={21} />
               </button>
 
               <div className="min-w-0">
 
-                <p className="truncate text-xs font-medium text-slate-500">
-                  Agent / Broker Dashboard
-                </p>
+                <div className="flex items-center gap-2">
 
-                <h1 className="truncate text-lg font-bold text-slate-950">
+                  <span className="hidden h-1.5 w-1.5 rounded-full bg-[#c9a96e] sm:block" />
+
+                  <p className="truncate text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Agent / Broker Workspace
+                  </p>
+
+                </div>
+
+                <h1 className="mt-0.5 truncate text-lg font-bold tracking-tight text-[#071936] sm:text-xl">
                   Inquiry Messages
                 </h1>
 
@@ -1281,31 +1328,51 @@ export default function AgentDashboardPage() {
 
             </div>
 
-            {/* MANUAL REFRESH ONLY */}
+            <div className="flex items-center gap-2">
 
-            <button
-              type="button"
-              onClick={() =>
-                loadInquiries(true)
-              }
-              disabled={
-                inquiriesLoading
-              }
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RefreshCw
-                size={16}
-                className={
-                  inquiriesLoading
-                    ? 'animate-spin'
-                    : ''
+              <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500 shadow-sm sm:flex">
+
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    agentOnline
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-300'
+                  }`}
+                />
+
+                {agentOnline
+                  ? 'Online'
+                  : 'Offline'}
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  loadInquiries(true)
                 }
-              />
+                disabled={
+                  inquiriesLoading
+                }
+                className="group inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+              >
 
-              <span className="hidden sm:inline">
-                Refresh
-              </span>
-            </button>
+                <RefreshCw
+                  size={16}
+                  className={
+                    inquiriesLoading
+                      ? 'animate-spin'
+                      : 'transition group-hover:rotate-90'
+                  }
+                />
+
+                <span className="hidden sm:inline">
+                  Refresh
+                </span>
+
+              </button>
+
+            </div>
 
           </div>
 
@@ -1315,69 +1382,114 @@ export default function AgentDashboardPage() {
             PAGE
         =================================================== */}
 
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
-          {/* PAGE INTRO */}
+          {/* =================================================
+              WELCOME / HERO
+          ================================================= */}
 
-          <div className="mb-6">
+          <section className="relative mb-7 overflow-hidden rounded-3xl border border-slate-200 bg-[#071936] p-6 text-white shadow-xl sm:p-8">
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
 
-              <div>
+            <div className="absolute -bottom-28 right-32 h-64 w-64 rounded-full bg-[#c9a96e]/10 blur-3xl" />
 
-                <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-                  Inquiry Messages
+            <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[#ead9b8] via-[#c9a96e] to-transparent" />
+
+            <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+
+              <div className="max-w-2xl">
+
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#ead9b8]">
+
+                  <Sparkles size={12} />
+
+                  BREA 88 REALTY
+
+                </div>
+
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Welcome back,{' '}
+                  <span className="text-[#ead9b8]">
+                    {agent.fullName.split(' ')[0]}
+                  </span>
                 </h2>
 
-                <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                  Messages from clients interested in your properties or contacting you directly.
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
+                  Manage your client inquiries,
+                  follow up with leads, and keep
+                  every conversation organized
+                  in one place.
                 </p>
 
               </div>
 
-              {lastUpdated && (
-                <p className="text-xs text-slate-400">
-                  Last updated{' '}
-                  {lastUpdated.toLocaleTimeString(
-                    'en-PH',
-                    {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    }
-                  )}
-                </p>
-              )}
+              <div className="shrink-0">
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 backdrop-blur-sm">
+
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+                    Account Status
+                  </p>
+
+                  <div className="mt-2 flex items-center gap-2">
+
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        agentOnline
+                          ? 'bg-emerald-400 shadow-lg shadow-emerald-400/30'
+                          : 'bg-slate-500'
+                      }`}
+                    />
+
+                    <span className="text-sm font-semibold text-white">
+                      {agentOnline
+                        ? 'Currently Online'
+                        : 'Currently Offline'}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
 
             </div>
 
-          </div>
+          </section>
 
           {/* =================================================
-              STAT CARDS
+              STATS
           ================================================= */}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
             {/* TOTAL */}
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg">
 
-              <div className="flex items-center justify-between">
+              <div className="absolute left-0 top-0 h-1 w-full bg-slate-900" />
+
+              <div className="flex items-start justify-between">
 
                 <div>
 
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
                     Total Inquiries
                   </p>
 
-                  <p className="mt-2 text-3xl font-bold text-slate-950">
+                  <p className="mt-3 text-3xl font-bold tracking-tight text-[#071936]">
                     {totalInquiries}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    All client messages
                   </p>
 
                 </div>
 
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                  <Inbox size={21} />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-[#071936] group-hover:text-white">
+                  <Inbox size={20} />
                 </div>
 
               </div>
@@ -1386,89 +1498,98 @@ export default function AgentDashboardPage() {
 
             {/* UNREAD */}
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg">
 
-              <div className="flex items-center justify-between">
+              <div className="absolute left-0 top-0 h-1 w-full bg-blue-600" />
+
+              <div className="flex items-start justify-between">
 
                 <div>
 
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
                     Unread
                   </p>
 
-                  <p className="mt-2 text-3xl font-bold text-blue-600">
+                  <p className="mt-3 text-3xl font-bold tracking-tight text-blue-600">
                     {unreadInquiries}
                   </p>
 
+                  <p className="mt-1 text-xs text-slate-400">
+                    Need your attention
+                  </p>
+
                 </div>
 
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <MessageSquare
-                    size={21}
-                  />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
+                  <MessageSquare size={20} />
                 </div>
 
               </div>
 
             </div>
 
-            {/* ACTIVE LEADS */}
+            {/* ACTIVE */}
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg">
 
-              <div className="flex items-center justify-between">
+              <div className="absolute left-0 top-0 h-1 w-full bg-emerald-500" />
+
+              <div className="flex items-start justify-between">
 
                 <div>
 
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
                     Active Leads
                   </p>
 
-                  <p className="mt-2 text-3xl font-bold text-emerald-600">
+                  <p className="mt-3 text-3xl font-bold tracking-tight text-emerald-600">
                     {activeLeads}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    Open client opportunities
                   </p>
 
                 </div>
 
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <User size={21} />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-500 group-hover:text-white">
+                  <User size={20} />
                 </div>
 
               </div>
 
             </div>
 
-            {/* PROPERTY INQUIRIES */}
+            {/* PROPERTY */}
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d9c08d] hover:shadow-lg">
 
-              <div className="flex items-center justify-between">
+              <div className="absolute left-0 top-0 h-1 w-full bg-[#c9a96e]" />
+
+              <div className="flex items-start justify-between">
 
                 <div>
 
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
                     Property Inquiries
                   </p>
 
-                  <p className="mt-2 text-3xl font-bold text-purple-600">
+                  <p className="mt-3 text-3xl font-bold tracking-tight text-[#071936]">
                     {propertyInquiries}
                   </p>
 
                   <p className="mt-1 text-xs text-slate-400">
                     {directProfileInquiries}{' '}
                     direct profile
-                    {directProfileInquiries ===
-                    1
+                    {directProfileInquiries === 1
                       ? ''
                       : 's'}
                   </p>
 
                 </div>
 
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-                  <Building2
-                    size={21}
-                  />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f8f2e7] text-[#a9823e] transition group-hover:bg-[#c9a96e] group-hover:text-white">
+                  <Building2 size={20} />
                 </div>
 
               </div>
@@ -1478,18 +1599,18 @@ export default function AgentDashboardPage() {
           </div>
 
           {/* =================================================
-              SEARCH
+              SEARCH + SUMMARY
           ================================================= */}
 
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
 
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-              <div className="relative flex-1">
+              <div className="relative w-full lg:max-w-xl">
 
                 <Search
                   size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
@@ -1501,16 +1622,17 @@ export default function AgentDashboardPage() {
                     )
                   }
                   placeholder="Search client, property, location, message..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-10 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-100"
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#c9a96e] focus:bg-white focus:ring-4 focus:ring-[#c9a96e]/10"
                 />
 
                 {searchQuery && (
                   <button
                     type="button"
+                    aria-label="Clear search"
                     onClick={() =>
                       setSearchQuery('')
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
                   >
                     <X size={15} />
                   </button>
@@ -1518,45 +1640,68 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              <div className="text-sm text-slate-500">
-                Showing{' '}
-                <span className="font-semibold text-slate-900">
-                  {
-                    filteredInquiries.length
-                  }
-                </span>{' '}
-                of{' '}
-                <span className="font-semibold text-slate-900">
-                  {
-                    inquiries.length
-                  }
-                </span>{' '}
-                inquiries
+              <div className="flex items-center justify-between gap-4 text-sm lg:justify-end">
+
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Showing
+                  </p>
+
+                  <p className="mt-0.5 font-semibold text-[#071936]">
+                    {filteredInquiries.length}{' '}
+                    <span className="font-normal text-slate-400">
+                      of
+                    </span>{' '}
+                    {inquiries.length}
+                  </p>
+                </div>
+
+                <div className="hidden h-8 w-px bg-slate-200 sm:block" />
+
+                <div className="hidden text-right sm:block">
+
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Last Sync
+                  </p>
+
+                  <p className="mt-0.5 text-xs font-medium text-slate-600">
+                    {lastUpdated
+                      ? lastUpdated.toLocaleTimeString(
+                          'en-PH',
+                          {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          }
+                        )
+                      : '—'}
+                  </p>
+
+                </div>
+
               </div>
 
             </div>
 
-          </div>
+          </section>
 
           {/* =================================================
               ERROR
           ================================================= */}
 
           {inquiriesError && (
-            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 shadow-sm">
 
-              <AlertCircle
-                size={20}
-                className="mt-0.5 shrink-0"
-              />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+                <AlertCircle size={18} />
+              </div>
 
               <div className="flex-1">
 
-                <p className="font-semibold">
+                <p className="font-bold">
                   Unable to load inquiries
                 </p>
 
-                <p className="mt-1 text-sm">
+                <p className="mt-1 text-sm leading-6">
                   {inquiriesError}
                 </p>
 
@@ -1566,7 +1711,7 @@ export default function AgentDashboardPage() {
                     loadInquiries(true)
                   }
                   disabled={inquiriesLoading}
-                  className="mt-3 text-sm font-semibold underline disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-3 rounded-lg text-sm font-bold underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Try again
                 </button>
@@ -1577,47 +1722,98 @@ export default function AgentDashboardPage() {
           )}
 
           {/* =================================================
+              INQUIRIES HEADER
+          ================================================= */}
+
+          <div className="mb-4 mt-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+
+            <div>
+
+              <div className="flex items-center gap-2">
+
+                <span className="h-6 w-1 rounded-full bg-[#c9a96e]" />
+
+                <h2 className="text-xl font-bold tracking-tight text-[#071936]">
+                  Client Inquiries
+                </h2>
+
+              </div>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Review and manage your client conversations.
+              </p>
+
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Click an inquiry to view details
+            </p>
+
+          </div>
+
+          {/* =================================================
               INQUIRIES
           ================================================= */}
 
-          <div className="mt-6">
+          <div>
 
             {inquiriesLoading ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+              <div className="rounded-3xl border border-slate-200 bg-white p-14 text-center shadow-sm">
 
-                <Loader2
-                  size={32}
-                  className="mx-auto animate-spin text-slate-400"
-                />
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
 
-                <p className="mt-4 text-sm font-medium text-slate-600">
+                  <Loader2
+                    size={27}
+                    className="animate-spin text-[#c9a96e]"
+                  />
+
+                </div>
+
+                <p className="mt-4 text-sm font-semibold text-slate-700">
                   Loading inquiry messages...
                 </p>
 
-              </div>
-            ) : filteredInquiries.length ===
-              0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <p className="mt-1 text-xs text-slate-400">
+                  Please wait while we retrieve your client conversations.
+                </p>
 
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              </div>
+            ) : filteredInquiries.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center shadow-sm sm:p-16">
+
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-50 text-slate-300">
+
                   {searchQuery ? (
-                    <Search size={28} />
+                    <Search size={32} />
                   ) : (
-                    <Inbox size={28} />
+                    <Inbox size={32} />
                   )}
+
                 </div>
 
-                <h3 className="mt-5 text-lg font-bold text-slate-900">
+                <h3 className="mt-6 text-xl font-bold text-[#071936]">
                   {searchQuery
                     ? 'No inquiries found'
                     : 'No inquiry messages yet'}
                 </h3>
 
-                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
                   {searchQuery
-                    ? 'Try a different search term.'
+                    ? 'Try a different search term or clear your search.'
                     : 'When a client sends you an inquiry from your profile or about a property, the message will appear here.'}
                 </p>
+
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearchQuery('')
+                    }
+                    className="mt-5 rounded-xl bg-[#071936] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#102c53]"
+                  >
+                    Clear Search
+                  </button>
+                )}
 
               </div>
             ) : (
@@ -1647,50 +1843,59 @@ export default function AgentDashboardPage() {
                             inquiry
                           )
                         }
-                        className="group w-full rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                        className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-[#c9a96e]/10"
                       >
 
-                        <div className="p-4 sm:p-5">
+                        {inquiry.status ===
+                          'New' && (
+                          <span className="absolute left-0 top-0 h-full w-1 bg-blue-600" />
+                        )}
 
-                          <div className="flex flex-col gap-4 lg:flex-row">
+                        <div className="p-4 sm:p-5 lg:p-6">
 
-                            {/* PROPERTY IMAGE */}
+                          <div className="flex flex-col gap-5 lg:flex-row">
+
+                            {/* PROPERTY / SOURCE IMAGE */}
 
                             <div className="relative shrink-0">
 
                               {property?.image ? (
-                                <img
-                                  src={
-                                    property.image
-                                  }
-                                  alt={
-                                    property.title
-                                  }
-                                  className="h-28 w-full rounded-xl object-cover sm:h-28 sm:w-40"
-                                />
+                                <div className="relative overflow-hidden rounded-2xl">
+
+                                  <img
+                                    src={
+                                      property.image
+                                    }
+                                    alt={
+                                      property.title
+                                    }
+                                    className="h-36 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-32 sm:w-48"
+                                  />
+
+                                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+
+                                </div>
                               ) : (
-                                <div className="flex h-28 w-full items-center justify-center rounded-xl bg-slate-100 text-slate-400 sm:w-40">
+                                <div className="flex h-36 w-full items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-300 sm:h-32 sm:w-48">
+
                                   {property ? (
                                     <ImageIcon
-                                      size={
-                                        28
-                                      }
+                                      size={30}
                                     />
                                   ) : (
                                     <User
-                                      size={
-                                        28
-                                      }
+                                      size={30}
                                     />
                                   )}
+
                                 </div>
                               )}
 
                               {inquiry.status ===
                                 'New' && (
-                                <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-blue-600 px-2 py-1 text-[10px] font-bold text-white shadow">
+                                <span className="absolute left-2 top-2 flex items-center gap-1.5 rounded-full border border-white/20 bg-blue-600 px-2.5 py-1.5 text-[9px] font-bold tracking-wider text-white shadow-lg">
                                   <Circle
-                                    size={7}
+                                    size={6}
                                     fill="currentColor"
                                   />
                                   NEW
@@ -1699,17 +1904,17 @@ export default function AgentDashboardPage() {
 
                             </div>
 
-                            {/* INQUIRY CONTENT */}
+                            {/* CONTENT */}
 
                             <div className="min-w-0 flex-1">
 
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 
                                 <div className="min-w-0">
 
                                   <div className="flex flex-wrap items-center gap-2">
 
-                                    <h3 className="truncate text-base font-bold text-slate-950 sm:text-lg">
+                                    <h3 className="truncate text-base font-bold text-[#071936] sm:text-lg">
                                       {
                                         inquiry.name
                                       }
@@ -1724,8 +1929,8 @@ export default function AgentDashboardPage() {
                                         border
                                         px-2.5
                                         py-1
-                                        text-[11px]
-                                        font-semibold
+                                        text-[10px]
+                                        font-bold
                                         ${getStatusClasses(
                                           inquiry.status
                                         )}
@@ -1742,7 +1947,7 @@ export default function AgentDashboardPage() {
 
                                   </div>
 
-                                  <p className="mt-1 text-xs text-slate-400">
+                                  <p className="mt-1 text-[11px] font-medium text-slate-400">
                                     Inquiry #
                                     {
                                       inquiry.id
@@ -1757,31 +1962,33 @@ export default function AgentDashboardPage() {
 
                                 </div>
 
-                                <ChevronRight
-                                  size={20}
-                                  className="hidden shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-slate-600 sm:block"
-                                />
+                                <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-300 transition group-hover:border-slate-300 group-hover:text-[#071936] sm:flex">
+
+                                  <ChevronRight
+                                    size={18}
+                                    className="transition group-hover:translate-x-0.5"
+                                  />
+
+                                </div>
 
                               </div>
 
-                              {/* PROPERTY INFORMATION */}
+                              {/* PROPERTY */}
 
                               {property ? (
-                                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5">
 
                                   <div className="flex items-start gap-3">
 
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-white">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#071936] text-white shadow-sm">
                                       <Building2
-                                        size={
-                                          17
-                                        }
+                                        size={16}
                                       />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
 
-                                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#a9823e]">
                                         Property Inquired
                                       </p>
 
@@ -1791,12 +1998,12 @@ export default function AgentDashboardPage() {
                                         }
                                       </p>
 
-                                      <div className="mt-1 flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-4">
+                                      <div className="mt-1.5 flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-5">
 
-                                        <span className="inline-flex items-center gap-1">
+                                        <span className="inline-flex items-center gap-1.5">
                                           <MapPin
                                             size={
-                                              13
+                                              12
                                             }
                                           />
 
@@ -1805,10 +2012,10 @@ export default function AgentDashboardPage() {
                                           }
                                         </span>
 
-                                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
+                                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-700">
                                           <PhilippinePeso
                                             size={
-                                              13
+                                              12
                                             }
                                           />
 
@@ -1821,7 +2028,7 @@ export default function AgentDashboardPage() {
                                       </div>
 
                                       {propertyType && (
-                                        <p className="mt-1 text-[11px] text-slate-400">
+                                        <p className="mt-1 text-[10px] text-slate-400">
                                           {
                                             propertyType
                                           }
@@ -1834,21 +2041,21 @@ export default function AgentDashboardPage() {
 
                                 </div>
                               ) : (
-                                <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+                                <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-3.5">
 
                                   <div className="flex items-center gap-3">
 
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-500">
                                       <User
                                         size={
-                                          17
+                                          16
                                         }
                                       />
                                     </div>
 
                                     <div>
 
-                                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
                                         Inquiry Source
                                       </p>
 
@@ -1856,7 +2063,7 @@ export default function AgentDashboardPage() {
                                         Direct Agent Profile Inquiry
                                       </p>
 
-                                      <p className="text-xs text-slate-400">
+                                      <p className="mt-0.5 text-xs text-slate-400">
                                         No specific property selected
                                       </p>
 
@@ -1867,13 +2074,13 @@ export default function AgentDashboardPage() {
                                 </div>
                               )}
 
-                              {/* MESSAGE PREVIEW */}
+                              {/* MESSAGE */}
 
-                              <div className="mt-3 flex items-start gap-2">
+                              <div className="mt-4 flex items-start gap-2.5">
 
                                 <MessageSquare
                                   size={15}
-                                  className="mt-0.5 shrink-0 text-slate-400"
+                                  className="mt-1 shrink-0 text-slate-300"
                                 />
 
                                 <p className="line-clamp-2 text-sm leading-6 text-slate-600">
@@ -1884,20 +2091,28 @@ export default function AgentDashboardPage() {
 
                               </div>
 
-                              {/* CLIENT CONTACT */}
+                              {/* CONTACT */}
 
-                              <div className="mt-3 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-5">
+                              <div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-5">
 
-                                <span className="inline-flex items-center gap-1.5">
-                                  <Mail size={14} />
+                                <span className="inline-flex min-w-0 items-center gap-1.5">
+                                  <Mail
+                                    size={13}
+                                    className="shrink-0 text-slate-400"
+                                  />
 
-                                  {
-                                    inquiry.email
-                                  }
+                                  <span className="truncate">
+                                    {
+                                      inquiry.email
+                                    }
+                                  </span>
                                 </span>
 
                                 <span className="inline-flex items-center gap-1.5">
-                                  <Phone size={14} />
+                                  <Phone
+                                    size={13}
+                                    className="shrink-0 text-slate-400"
+                                  />
 
                                   {
                                     inquiry.phone
@@ -1932,7 +2147,7 @@ export default function AgentDashboardPage() {
 
       {selectedInquiry && (
         <div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-center sm:p-4"
           onMouseDown={(event) => {
             if (
               event.target ===
@@ -1950,29 +2165,42 @@ export default function AgentDashboardPage() {
           }}
         >
 
-          <div className="max-h-[95vh] w-full max-w-3xl overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl">
+          <div className="relative max-h-[96vh] w-full max-w-4xl overflow-hidden rounded-t-3xl border border-white/20 bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-3xl">
 
-            {/* MODAL HEADER */}
+            {/* GOLD ACCENT */}
 
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+            <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#071936] via-[#c9a96e] to-[#071936]" />
 
-              <div className="min-w-0">
+            {/* HEADER */}
 
-                <p className="text-xs font-medium text-slate-400">
-                  Inquiry #
-                  {
-                    selectedInquiry.id
-                  }
-                </p>
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 sm:px-7">
 
-                <h2 className="truncate text-lg font-bold text-slate-950">
-                  Client Inquiry
-                </h2>
+              <div className="flex min-w-0 items-center gap-3">
+
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071936] text-[#ead9b8]">
+                  <MessageSquare size={19} />
+                </div>
+
+                <div className="min-w-0">
+
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a9823e]">
+                    Client Communication
+                  </p>
+
+                  <h2 className="truncate text-lg font-bold text-[#071936]">
+                    Inquiry #
+                    {
+                      selectedInquiry.id
+                    }
+                  </h2>
+
+                </div>
 
               </div>
 
               <button
                 type="button"
+                aria-label="Close inquiry"
                 onClick={() =>
                   setSelectedInquiryId(
                     null
@@ -1982,40 +2210,40 @@ export default function AgentDashboardPage() {
                   deletingInquiryId ===
                   selectedInquiry.id
                 }
-                className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X size={21} />
+                <X size={20} />
               </button>
 
             </div>
 
-            {/* MODAL BODY */}
+            {/* BODY */}
 
-            <div className="max-h-[calc(95vh-73px)] overflow-y-auto p-5 sm:max-h-[calc(90vh-73px)] sm:p-6">
+            <div className="max-h-[calc(96vh-86px)] overflow-y-auto p-5 sm:max-h-[calc(92vh-86px)] sm:p-7">
 
               {/* CLIENT */}
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
 
-                <div className="flex items-start gap-3">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
 
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#071936] text-white shadow-lg">
                     <User size={20} />
                   </div>
 
                   <div className="min-w-0 flex-1">
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 
                       <div>
 
-                        <h3 className="text-lg font-bold text-slate-950">
+                        <h3 className="text-xl font-bold tracking-tight text-[#071936]">
                           {
                             selectedInquiry.name
                           }
                         </h3>
 
-                        <p className="text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-slate-400">
                           Client
                         </p>
 
@@ -2032,7 +2260,7 @@ export default function AgentDashboardPage() {
                           px-3
                           py-1.5
                           text-xs
-                          font-semibold
+                          font-bold
                           ${getStatusClasses(
                             selectedInquiry.status
                           )}
@@ -2049,15 +2277,15 @@ export default function AgentDashboardPage() {
 
                     </div>
 
-                    <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                    <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
 
                       <a
                         href={`mailto:${selectedInquiry.email}`}
-                        className="flex min-w-0 items-center gap-2 text-slate-600 hover:text-slate-950"
+                        className="flex min-w-0 items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 transition hover:border-slate-300 hover:text-[#071936]"
                       >
                         <Mail
                           size={15}
-                          className="shrink-0"
+                          className="shrink-0 text-slate-400"
                         />
 
                         <span className="truncate">
@@ -2069,11 +2297,11 @@ export default function AgentDashboardPage() {
 
                       <a
                         href={`tel:${selectedInquiry.phone}`}
-                        className="flex items-center gap-2 text-slate-600 hover:text-slate-950"
+                        className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 transition hover:border-slate-300 hover:text-[#071936]"
                       >
                         <Phone
                           size={15}
-                          className="shrink-0"
+                          className="shrink-0 text-slate-400"
                         />
 
                         <span>
@@ -2091,31 +2319,36 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              {/* PROPERTY CARD */}
+              {/* PROPERTY */}
 
-              <div className="mt-5">
+              <div className="mt-6">
 
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-3 flex items-center gap-2">
 
-                  <Building2
-                    size={17}
-                    className="text-slate-700"
-                  />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-[#ead9b8]">
+                    <Building2 size={15} />
+                  </div>
 
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">
-                    Property Inquired
-                  </h3>
+                  <div>
+
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a9823e]">
+                      Reference
+                    </p>
+
+                    <h3 className="text-sm font-bold text-[#071936]">
+                      Property Inquired
+                    </h3>
+
+                  </div>
 
                 </div>
 
                 {selectedInquiry.property ? (
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                    <div className="grid grid-cols-1 sm:grid-cols-[190px_1fr]">
+                    <div className="grid grid-cols-1 sm:grid-cols-[210px_1fr]">
 
-                      {/* IMAGE */}
-
-                      <div className="relative h-48 sm:h-full">
+                      <div className="relative h-48 sm:h-full sm:min-h-[250px]">
 
                         {selectedInquiry
                           .property
@@ -2143,15 +2376,13 @@ export default function AgentDashboardPage() {
 
                       </div>
 
-                      {/* DETAILS */}
+                      <div className="p-5 sm:p-6">
 
-                      <div className="p-5">
-
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a9823e]">
                           Property
                         </p>
 
-                        <h4 className="mt-1 text-xl font-bold leading-tight text-slate-950">
+                        <h4 className="mt-1 text-xl font-bold leading-tight text-[#071936]">
                           {
                             selectedInquiry
                               .property
@@ -2159,22 +2390,23 @@ export default function AgentDashboardPage() {
                           }
                         </h4>
 
-                        <div className="mt-4 space-y-2.5">
+                        <div className="mt-5 space-y-3">
 
-                          <div className="flex items-start gap-2.5 text-sm text-slate-600">
+                          <div className="flex items-start gap-3">
 
-                            <MapPin
-                              size={17}
-                              className="mt-0.5 shrink-0 text-slate-400"
-                            />
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                              <MapPin
+                                size={15}
+                              />
+                            </div>
 
                             <div>
 
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
                                 Location
                               </p>
 
-                              <p className="font-medium text-slate-800">
+                              <p className="mt-0.5 text-sm font-semibold text-slate-800">
                                 {
                                   selectedInquiry
                                     .property
@@ -2186,20 +2418,21 @@ export default function AgentDashboardPage() {
 
                           </div>
 
-                          <div className="flex items-start gap-2.5 text-sm text-slate-600">
+                          <div className="flex items-start gap-3">
 
-                            <PhilippinePeso
-                              size={17}
-                              className="mt-0.5 shrink-0 text-slate-400"
-                            />
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                              <PhilippinePeso
+                                size={15}
+                              />
+                            </div>
 
                             <div>
 
-                              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
                                 Price
                               </p>
 
-                              <p className="font-bold text-slate-900">
+                              <p className="mt-0.5 text-sm font-bold text-[#071936]">
                                 ₱
                                 {
                                   selectedInquiry
@@ -2215,20 +2448,21 @@ export default function AgentDashboardPage() {
                           {getPropertyTypeText(
                             selectedInquiry.property
                           ) && (
-                            <div className="flex items-start gap-2.5 text-sm text-slate-600">
+                            <div className="flex items-start gap-3">
 
-                              <Building2
-                                size={17}
-                                className="mt-0.5 shrink-0 text-slate-400"
-                              />
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                                <Building2
+                                  size={15}
+                                />
+                              </div>
 
                               <div>
 
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-400">
                                   Classification
                                 </p>
 
-                                <p className="font-medium text-slate-800">
+                                <p className="mt-0.5 text-sm font-semibold text-slate-800">
                                   {getPropertyTypeText(
                                     selectedInquiry.property
                                   )}
@@ -2258,7 +2492,7 @@ export default function AgentDashboardPage() {
                             deletingInquiryId ===
                             selectedInquiry.id
                           }
-                          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-950/10 transition hover:bg-[#102c53] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                         >
                           <Eye size={16} />
 
@@ -2289,7 +2523,7 @@ export default function AgentDashboardPage() {
                           Direct Agent Profile Inquiry
                         </p>
 
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
                           This client contacted you directly through your Agent Profile. No specific property was selected.
                         </p>
 
@@ -2302,24 +2536,31 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              {/* CLIENT MESSAGE */}
+              {/* MESSAGE */}
 
-              <div className="mt-5">
+              <div className="mt-6">
 
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-3 flex items-center gap-2">
 
-                  <MessageSquare
-                    size={17}
-                    className="text-slate-700"
-                  />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-[#ead9b8]">
+                    <MessageSquare size={15} />
+                  </div>
 
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700">
-                    Client Message
-                  </h3>
+                  <div>
+
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a9823e]">
+                      Communication
+                    </p>
+
+                    <h3 className="text-sm font-bold text-[#071936]">
+                      Client Message
+                    </h3>
+
+                  </div>
 
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
 
                   <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
                     {
@@ -2331,17 +2572,17 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              {/* INQUIRY DETAILS */}
+              {/* DETAILS */}
 
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
 
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
                     Submitted
                   </p>
 
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                  <p className="mt-1.5 text-sm font-semibold text-slate-800">
                     {formatDateTime(
                       selectedInquiry.createdAt
                     )}
@@ -2349,13 +2590,13 @@ export default function AgentDashboardPage() {
 
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
 
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
                     Last Updated
                   </p>
 
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                  <p className="mt-1.5 text-sm font-semibold text-slate-800">
                     {formatDateTime(
                       selectedInquiry.updatedAt
                     )}
@@ -2367,23 +2608,23 @@ export default function AgentDashboardPage() {
 
               {/* STATUS */}
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                   <div>
 
-                    <h3 className="font-bold text-slate-900">
+                    <h3 className="font-bold text-[#071936]">
                       Inquiry Status
                     </h3>
 
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
                       Update the progress of this client lead.
                     </p>
 
                   </div>
 
-                  <div className="relative">
+                  <div className="relative w-full sm:w-auto">
 
                     <select
                       value={
@@ -2403,7 +2644,7 @@ export default function AgentDashboardPage() {
                         deletingInquiryId ===
                           selectedInquiry.id
                       }
-                      className="appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-sm font-semibold text-slate-700 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 disabled:opacity-60"
+                      className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-11 text-sm font-bold text-slate-700 outline-none transition focus:border-[#c9a96e] focus:bg-white focus:ring-4 focus:ring-[#c9a96e]/10 disabled:opacity-60 sm:w-56"
                     >
                       {INQUIRY_STATUSES.map(
                         (status) => (
@@ -2421,7 +2662,7 @@ export default function AgentDashboardPage() {
                     selectedInquiry.id ? (
                       <Loader2
                         size={16}
-                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400"
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#a9823e]"
                       />
                     ) : (
                       <ChevronDown
@@ -2436,35 +2677,29 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              {/* =================================================
-                  ACTIONS
-              ================================================= */}
+              {/* ACTIONS */}
 
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-
-                {/* EMAIL */}
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
                 <a
                   href={`mailto:${selectedInquiry.email}`}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-slate-950/10 transition hover:bg-[#102c53]"
                 >
                   <Mail size={17} />
-
                   Email Client
                 </a>
 
-                {/* CALL */}
-
                 <a
                   href={`tel:${selectedInquiry.phone}`}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <Phone size={17} />
-
                   Call Client
                 </a>
 
-                {/* DELETE */}
+              </div>
+
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
 
                 <button
                   type="button"
@@ -2479,7 +2714,7 @@ export default function AgentDashboardPage() {
                     updatingInquiryId ===
                       selectedInquiry.id
                   }
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
 
                   {deletingInquiryId ===
@@ -2495,14 +2730,11 @@ export default function AgentDashboardPage() {
                   ) : (
                     <>
                       <X size={17} />
-
-                      Delete
+                      Delete Inquiry
                     </>
                   )}
 
                 </button>
-
-                {/* CLOSE */}
 
                 <button
                   type="button"
@@ -2515,18 +2747,16 @@ export default function AgentDashboardPage() {
                     deletingInquiryId ===
                     selectedInquiry.id
                   }
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Close
                 </button>
 
               </div>
 
-              {/* DELETE NOTICE */}
-
               {deletingInquiryId ===
                 selectedInquiry.id && (
-                <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
+                <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
                   <Loader2
                     size={14}
                     className="animate-spin"
@@ -2546,4 +2776,3 @@ export default function AgentDashboardPage() {
     </div>
   );
 }
-
