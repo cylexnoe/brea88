@@ -763,69 +763,68 @@ const sendEmail = async (
           HERO
       ====================================================== */}
 
-      <section id="hero"className="relative isolate overflow-hidden bg-slate-950 py-20 sm:py-24 md:py-32 lg:min-h-[680px] lg:py-36">
-        <div className="absolute inset-0">
-          <Image src="/img/background.png" alt="" fill priority className="object-cover object-center opacity-35"/>
+      <section
+          id="hero"
+          className="relative isolate overflow-hidden bg-slate-950 py-20 sm:py-24 md:py-32 lg:min-h-[680px] lg:py-36"
+        >
+          <div className="absolute inset-0">
+            <Image
+              src="/img/background.png"
+              alt=""
+              fill
+              priority
+              className="object-cover object-center opacity-35"
+            />
 
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/40" />
-        </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/40" />
+          </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl text-white">
 
-          <div className="max-w-4xl text-white">
-
-            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300 backdrop-blur-sm sm:text-xs">
-              BREA 88 Realty OPC
-            </span>
-
-            <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.05] tracking-[-0.03em] sm:text-5xl md:text-6xl lg:text-7xl">
-              Service with a Heart,
-              <br />
-              <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                Building Trust from the Start.
+              <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300 backdrop-blur-sm sm:text-xs">
+                BREA 88 Realty OPC
               </span>
-            </h1>
 
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base md:text-lg">
-              BREA 88 REALTY OPC provides professional real
-              estate solutions with Integrity, Excellence,
-              and Compassion throughout the Philippines.
-            </p>
+              <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.05] tracking-[-0.03em] sm:text-5xl md:text-6xl lg:text-7xl">
+                Service with a Heart,
+                <br />
+                <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                  Building Trust from the Start.
+                </span>
+              </h1>
 
-                    <div className="mt-9 w-full max-w-4xl sm:mt-10">
-                  <div className="rounded-2xl border border-white/20 bg-white/95 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-3">
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base md:text-lg">
+                BREA 88 REALTY OPC provides professional real
+                estate solutions with Integrity, Excellence,
+                and Compassion throughout the Philippines.
+              </p>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+              {/* PROPERTY CTA */}
+              <div className="mt-9 w-full max-w-4xl sm:mt-10">
+                <div className="inline-flex rounded-2xl border border-white/15 bg-white/10 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+                  <a
+                    href={
+                      agentSlug
+                        ? `/marketplace?agent=${encodeURIComponent(agentSlug)}`
+                        : '/marketplace'
+                    }
+                    className="group inline-flex min-h-[58px] w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 px-8 py-4 text-center text-sm font-bold uppercase tracking-[0.12em] text-white shadow-[0_10px_30px_rgba(15,23,42,0.35)] ring-1 ring-white/10 transition-all duration-300 hover:-translate-y-1 hover:from-blue-900 hover:via-blue-800 hover:to-blue-700 hover:shadow-[0_16px_40px_rgba(30,64,175,0.45)] active:translate-y-0 sm:min-w-[280px] sm:px-10"
+                  >
+                    <Building2 className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
 
-                      {/* SEARCH INPUT */}
-                      <div className="relative md:col-span-8">
-                        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                    <span>
+                      Property For You
+                    </span>
 
-                        <input
-                          type="text"
-                          placeholder="Search properties, locations, or keywords..."
-                          className="w-full rounded-xl border border-transparent bg-slate-100 py-4 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                        />
-                      </div>
-
-                      {/* PROPERTY BUTTON */}
-                      <div className="md:col-span-4">
-                        <a
-                          href={agentSlug ? `/marketplace?agent=${encodeURIComponent(agentSlug)}` : '/marketplace'}
-                          className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-3 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-800 hover:shadow-lg active:translate-y-0"
-                        >
-                          <Building2 className="h-4 w-4" />
-                          Property For You
-                        </a>
-                      </div>
-
-                    </div>
-                  </div>
+                    <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </a>
                 </div>
-
               </div>
+
             </div>
-          </section>  
+          </div>
+        </section> 
 
 
       {/* =====================================================
