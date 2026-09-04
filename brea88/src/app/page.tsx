@@ -25,7 +25,7 @@ export default function LandingPage() {
           <div className="mb-5 flex justify-center">
             <div className="relative rounded-full bg-gradient-to-br from-[#ead9b8] via-white/20 to-[#c9a96e] p-[2px] shadow-[0_0_55px_rgba(201,169,110,.18)]">
               <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-2xl" />
-              <div className="relative h-20 w-20 overflow-hidden rounded-full border border-white/10 bg-white sm:h-24 sm:w-24">
+              <div className="relative h-20 w-20 overflow-hidden rounded-full border border-white/10 sm:h-25 sm:w-25">
                 <img src="/img/LOGO.png" alt="BREA 88 Realty" className="h-full w-full object-cover" />
               </div>
             </div>
