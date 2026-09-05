@@ -79,13 +79,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     setInquiryError('');
     setInquirySuccess(false);
     setIsSiteViewing(true);
-    setInquiryForm({
-      name: '',
-      email: '',
-      phone: '',
-      message: '',
-      preferredViewingDate: '',
-    });
+    setInquiryForm({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
     setShowInquiry(true);
   };
 
@@ -123,6 +117,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
 
       {showDetails && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md" onClick={closeDetails}>
         <div onClick={(event) => event.stopPropagation()} className="relative max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button type="button" onClick={closeDetails} aria-label="Back to properties" className="absolute left-4 top-4 z-30 flex h-11 items-center gap-2 rounded-full border border-white/30 bg-slate-950/65 px-4 text-sm font-bold text-white shadow-lg backdrop-blur-md transition hover:bg-[#c9a96e] active:scale-95"><ChevronLeft className="h-5 w-5" /> Back</button>
           <button type="button" onClick={closeDetails} aria-label="Close property details" className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-slate-950/65 text-white shadow-lg backdrop-blur-md transition hover:bg-[#c9a96e] active:scale-95"><X className="h-5 w-5" /></button>
           <div className="relative h-[300px] overflow-hidden bg-slate-950 sm:h-[380px] md:h-[460px]">
             {propertyImages.length ? <img src={propertyImages[0]} alt={property.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-white">No Image</div>}
@@ -136,7 +131,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
             <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">{property.beds != null && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><BedDouble className="mb-3 h-5 w-5 text-[#071936]" /><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bedrooms</p><p className="mt-1 text-lg font-black text-slate-900">{property.beds}</p></div>}{property.baths != null && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><Bath className="mb-3 h-5 w-5 text-[#071936]" /><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bathrooms</p><p className="mt-1 text-lg font-black text-slate-900">{property.baths}</p></div>}{property.sqft != null && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><Maximize className="mb-3 h-5 w-5 text-[#071936]" /><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Area</p><p className="mt-1 text-lg font-black text-slate-900">{property.sqft} sqm</p></div>}</div>
             {property.description && <div className="mt-8"><h3 className="text-lg font-black text-slate-950">Property Description</h3><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">{property.description}</p></div>}
             <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-5"><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Location</p><p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><MapPin className="h-4 w-4 text-[#c9a96e]" />{property.location}</p></div>
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2"><button type="button" onClick={openSiteViewing} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0"><CalendarDays className="h-5 w-5" /> Schedule Site Viewing</button><button type="button" onClick={() => setShowContact(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:shadow-lg active:translate-y-0"><Phone className="h-5 w-5" /> Contact Agent</button></div>
+            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3"><button type="button" onClick={openSiteViewing} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0"><CalendarDays className="h-5 w-5" /> Schedule Site Viewing</button><button type="button" onClick={() => openInquiry(`Hello, I am interested in ${property.title}. Please contact me with more information.`)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#071936] bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:bg-[#faf7ef] hover:shadow-lg active:translate-y-0"><Send className="h-5 w-5" /> Send Inquiry</button><button type="button" onClick={() => setShowContact(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:shadow-lg active:translate-y-0"><Phone className="h-5 w-5" /> Contact Agent</button></div>
           </div>
         </div>
       </div>}
