@@ -1411,36 +1411,6 @@ export default function AgentDashboardPage() {
 
               </div>
 
-              <div className="shrink-0">
-
-                <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 backdrop-blur-sm">
-
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
-                    Account Status
-                  </p>
-
-                  <div className="mt-2 flex items-center gap-2">
-
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        agentOnline
-                          ? 'bg-emerald-400 shadow-lg shadow-emerald-400/30'
-                          : 'bg-slate-500'
-                      }`}
-                    />
-
-                    <span className="text-sm font-semibold text-white">
-                      {agentOnline
-                        ? 'Currently Online'
-                        : 'Currently Offline'}
-                    </span>
-
-                  </div>
-
-                </div>
-
-              </div>
-
             </div>
 
           </section>
