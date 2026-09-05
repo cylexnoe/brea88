@@ -1907,27 +1907,18 @@ export default function ProfilePage() {
                 </button>
 
                 {/* Notifications */}
-
                 <button
                   type="button"
                   onClick={() =>
-                    alert(
-                      'Notification settings are coming soon.'
-                    )
+                    router.push('/agent/inquiries')
                   }
                   className="group flex w-full items-center gap-4 px-6 py-4 text-left transition-all duration-200 hover:bg-slate-50"
                 >
-
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all group-hover:bg-blue-50 group-hover:text-blue-700">
-
-                    <Bell
-                      size={17}
-                    />
-
+                    <Bell size={17} />
                   </div>
 
                   <div className="min-w-0 flex-1">
-
                     <p className="text-sm font-bold text-slate-800">
                       Notifications
                     </p>
@@ -1935,15 +1926,15 @@ export default function ProfilePage() {
                     <p className="mt-0.5 text-[11px] text-slate-500">
                       Manage account notifications
                     </p>
-
                   </div>
 
                   <ChevronRight
                     size={16}
                     className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-600"
                   />
-
                 </button>
+
+
 
                 {/* Security */}
 
