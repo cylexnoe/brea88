@@ -147,7 +147,7 @@ export async function POST(request: Request) {
     if ('error' in parsed) return NextResponse.json({ success: false, message: parsed.error }, { status: 400 });
 
     const agentValidation = await validateAgent(parsed.data.agentId);
-    if (agentValidation.error) return agentValidation.error;
+    if ('error' in agentValidation) return agentValidation.error;
 
     const property = await prisma.property.create({ data: parsed.data, include: { agent: { select: agentSelect } } });
     return NextResponse.json({ success: true, message: 'Property created successfully.', property }, { status: 201 });
@@ -173,7 +173,7 @@ export async function PUT(request: Request) {
     if ('error' in parsed) return NextResponse.json({ success: false, message: parsed.error }, { status: 400 });
 
     const agentValidation = await validateAgent(parsed.data.agentId);
-    if (agentValidation.error) return agentValidation.error;
+    if ('error' in agentValidation) return agentValidation.error;
 
     const existing = await prisma.property.findUnique({ where: { id }, select: { id: true } });
     if (!existing) return NextResponse.json({ success: false, message: 'Property not found.' }, { status: 404 });
