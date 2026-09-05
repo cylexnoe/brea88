@@ -1240,17 +1240,6 @@ export default function AgentDashboardPage() {
         {/* SIDEBAR FOOTER */}
 
         <div className="border-t border-white/10 p-4">
-
-          <div className="mb-3 flex items-center gap-2 px-3 text-[10px] text-slate-500">
-            <Sparkles
-              size={12}
-              className="text-[#c9a96e]"
-            />
-            <span>
-              BREA 88 REALTY
-            </span>
-          </div>
-
           <button
             type="button"
             onClick={handleLogout}
