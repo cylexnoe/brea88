@@ -1405,7 +1405,7 @@ export default function AdminDashboardPage() {
                 />
 
                 <span className="flex-1">
-                  Active Accounts
+                  Agent Accounts
                 </span>
 
                 <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
