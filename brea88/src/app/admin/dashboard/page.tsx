@@ -1174,23 +1174,6 @@ export default function AdminDashboardPage() {
                       {activeAccounts}
                     </span>
                   </button>
-
-                  {/* Create Account */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSidebarOpen(false);
-                      router.push('/admin/agents/create');
-                    }}
-                    className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-blue-400"
-                    aria-label="Create Agent or Broker account"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-900/30 transition-transform duration-200 group-hover:scale-105">
-                      <UserPlus size={17} />
-                    </span>
-
-                    <span className="flex-1">Create Account</span>
-                  </button>
                 </nav>
 
             <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
