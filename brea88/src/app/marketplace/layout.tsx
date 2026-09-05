@@ -2,10 +2,33 @@
 
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 export default function MarketplaceLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linkedAgent = params.get('agent')?.trim();
+
+    if (!linkedAgent) return;
+
+    const lockLinkedAgent = () => {
+      document.querySelectorAll<HTMLSelectElement>('#inquiryAgent').forEach((select) => {
+        select.disabled = true;
+        select.tabIndex = -1;
+        select.setAttribute('aria-disabled', 'true');
+        select.setAttribute('data-agent-linked', 'true');
+      });
+    };
+
+    lockLinkedAgent();
+
+    const observer = new MutationObserver(lockLinkedAgent);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleBack = () => {
     if (window.history.length > 1) {
