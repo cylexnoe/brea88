@@ -89,6 +89,7 @@ const STOREY_OPTIONS = ['1', '2', '3', '4+'];
 export default function MarketplacePage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [agentSlug, setAgentSlug] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPropertyType, setSelectedPropertyType] = useState('All');
@@ -96,6 +97,11 @@ export default function MarketplacePage() {
   const [selectedStorey, setSelectedStorey] = useState('All');
   const [maxPrice, setMaxPrice] = useState(500000000);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setAgentSlug(params.get('agent')?.trim() || '');
+  }, []);
 
   useEffect(() => {
     const loadProperties = async () => {
@@ -324,7 +330,7 @@ export default function MarketplacePage() {
           <div className="flex min-h-[400px] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white shadow-sm"><div className="text-center"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50"><Loader2 className="h-8 w-8 animate-spin text-blue-800" /></div><p className="mt-5 text-sm font-black text-slate-700">Loading properties...</p><p className="mt-1 text-xs text-slate-400">Preparing the latest listings for you.</p></div></div>
         ) : filteredProperties.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
-            {filteredProperties.map((property) => <PropertyCard key={property.id} property={property} />)}
+            {filteredProperties.map((property) => <PropertyCard key={property.id} property={property} agentSlug={agentSlug} />)}
           </div>
         ) : (
           <div className="mx-auto max-w-lg rounded-[1.75rem] border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
