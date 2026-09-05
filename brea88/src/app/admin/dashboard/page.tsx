@@ -453,38 +453,6 @@ export default function AdminDashboardPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (
-        typeof window !== 'undefined' &&
-        'speechSynthesis' in window
-      ) {
-        window.speechSynthesis.cancel();
-
-        const message =
-          new SpeechSynthesisUtterance(
-            'Welcome to BREA 88 Realty Admin Dashboard.',
-          );
-
-        message.rate = 0.95;
-        message.pitch = 1;
-
-        window.speechSynthesis.speak(message);
-      }
-    }, 700);
-
-    return () => {
-      window.clearTimeout(timer);
-
-      if (
-        typeof window !== 'undefined' &&
-        'speechSynthesis' in window
-      ) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
   function handleInputChange(
     event:
       | ChangeEvent<HTMLInputElement>
