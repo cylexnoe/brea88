@@ -250,20 +250,6 @@ export default function AgentProfilePage({
 
         <MapBackground />
 
-        {/* =====================================================
-            BACK BUTTON
-        ====================================================== */}
-
-        <div className="relative z-20 mx-auto w-full max-w-2xl">
-          <button
-            onClick={() => router.back()}
-            className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-[#071936]/60 px-4 py-2.5 text-sm font-semibold text-white/70 shadow-lg backdrop-blur-xl transition duration-300 hover:border-[#d6b77a]/40 hover:bg-[#071936]/80 hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
-
-            Back
-          </button>
-        </div>
 
         {/* =====================================================
             PROFILE
