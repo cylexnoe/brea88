@@ -785,7 +785,7 @@ export default function ProfilePage() {
 
                   {/* User identity */}
 
-                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
 
                     {/* Profile picture */}
 
@@ -844,11 +844,11 @@ export default function ProfilePage() {
 
                     {/* Identity */}
 
-                    <div className="min-w-0 pb-1">
+                    <div className="min-w-0 flex-1 pb-1">
 
                       <div className="flex flex-wrap items-center gap-2">
 
-                        <h2 className="max-w-full truncate text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                        <h2 className="break-words text-2xl font-bold leading-tight tracking-tight text-slate-950 sm:text-3xl">
                           {profile.fullName ||
                             'Your Name'}
                         </h2>
