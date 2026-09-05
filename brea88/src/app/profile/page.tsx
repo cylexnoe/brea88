@@ -1934,47 +1934,6 @@ export default function ProfilePage() {
                   />
                 </button>
 
-
-
-                {/* Security */}
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push(
-                      '/profile/security'
-                    )
-                  }
-                  className="group flex w-full items-center gap-4 px-6 py-4 text-left transition-all duration-200 hover:bg-slate-50"
-                >
-
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition-all group-hover:bg-blue-50 group-hover:text-blue-700">
-
-                    <ShieldCheck
-                      size={17}
-                    />
-
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-
-                    <p className="text-sm font-bold text-slate-800">
-                      Security
-                    </p>
-
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      Protect your BREA 88 account
-                    </p>
-
-                  </div>
-
-                  <ChevronRight
-                    size={16}
-                    className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-600"
-                  />
-
-                </button>
-
               </div>
 
             </section>
