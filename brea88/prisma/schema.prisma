@@ -63,16 +63,17 @@ model Property {
 }
 
 model Inquiry {
-  id         Int       @id @default(autoincrement())
-  name       String
-  email      String
-  phone      String
-  message    String
-  propertyId Int?
-  agentId    Int?
-  status     String    @default("New")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  email                String
+  phone                String
+  message              String
+  propertyId           Int?
+  agentId              Int?
+  preferredViewingDate DateTime?
+  status               String    @default("New")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   agent      Agent?    @relation(fields: [agentId], references: [id])
   property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -80,5 +81,6 @@ model Inquiry {
   @@index([propertyId])
   @@index([agentId])
   @@index([status])
+  @@index([preferredViewingDate])
   @@map("inquiries")
 }
