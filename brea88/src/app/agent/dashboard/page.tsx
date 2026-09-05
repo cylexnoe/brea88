@@ -79,13 +79,7 @@ type Inquiry = {
 
 const INQUIRY_STATUSES = [
   'New',
-  'Read',
-  'Contacted',
-  'Viewing Scheduled',
-  'Viewing Completed',
-  'Follow Up',
-  'Closed',
-  'Cancelled',
+  'Read'
 ];
 
 function isOnline(
