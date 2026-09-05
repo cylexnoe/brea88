@@ -346,503 +346,539 @@ const sendEmail = async (
     NAVIGATION
 ====================================================== */}
 
-<nav className="fixed inset-x-0 top-0 z-50 w-full border-b border-white/30 bg-white/55 shadow-[0_8px_40px_rgba(15,23,42,0.10)] backdrop-blur-2xl backdrop-saturate-150">
 
-  {/* Glass highlight */}
-  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/80" />
+<nav className="fixed inset-x-0 top-0 z-50 w-full px-3 pt-3 sm:px-5 lg:px-8">
 
-  {/* Subtle bottom glow */}
-  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+  {/* GLASS NAVBAR */}
+  <div className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl border border-white/70 bg-white/60 shadow-[0_12px_50px_rgba(15,23,42,0.12)] backdrop-blur-2xl backdrop-saturate-150">
 
-  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {/* Top glass reflection */}
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
 
-    <div className="flex min-h-[72px] items-center justify-between gap-4 sm:min-h-[78px]">
+    {/* Bottom ambient glow */}
+    <div className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
 
-      {/* =====================================================
-          LOGO / BRAND
-      ====================================================== */}
-      <a
-        href="#hero"
-        onClick={() => setMobileMenuOpen(false)}
-        className="group flex min-w-0 items-center gap-3"
-      >
+    {/* Soft internal light */}
+    <div className="pointer-events-none absolute -top-20 left-1/3 h-32 w-64 rounded-full bg-blue-400/5 blur-3xl" />
 
-        {/* Logo */}
-        <div className="relative shrink-0">
-
-          {/* Premium glow */}
-          <div className="absolute -inset-2 rounded-full bg-blue-600/10 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100" />
-
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-full shadow-[0_6px_25px_rgba(15,23,42,0.14)] ring-1 ring-slate-200/80 transition-all duration-300 group-hover:scale-105 group-hover:ring-blue-300/70 sm:h-12 sm:w-12 lg:h-14 lg:w-14">
-
-            <Image
-              src="/img/LOGO.png"
-              alt="BREA 88 Realty OPC"
-              width={56}
-              height={56}
-              priority
-              className="h-full w-full rounded-full object-cover"
-            />
-
-          </div>
-        </div>
-
-        {/* Brand */}
-        <div className="min-w-0">
-
-          <div className="flex items-center gap-2">
-
-            <p className="truncate text-[11px] font-black tracking-[-0.02em] text-slate-900 sm:text-base lg:text-lg">
-              BREA 88 REALTY
-            </p>
-
-            <span className="hidden rounded-full border border-amber-200/80 bg-amber-50/80 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-amber-700 shadow-sm sm:inline-flex">
-              OPC
-            </span>
-
-          </div>
-
-          <div className="mt-0.5 flex items-center gap-2">
-
-            <span className="h-px w-5 bg-gradient-to-r from-amber-500 to-transparent" />
-
-            <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-slate-800 sm:text-[8px]">
-  Service with a Heart
-</p>
-
-          </div>
-
-        </div>
-
-      </a>
-
+    <div className="relative">
 
       {/* =====================================================
-          CLIENT NAVIGATION
+          MAIN NAV
       ====================================================== */}
-      {!agent && !agentLoading && (
-        <div className="hidden items-center gap-1 lg:flex">
 
-          {/* HOME */}
-          <a
-            href="#hero"
-            className="group relative px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:text-blue-900 xl:px-4"
-          >
-            <span>Home</span>
+      <div className="flex min-h-[70px] items-center justify-between gap-3 px-3 sm:min-h-[76px] sm:px-5 lg:px-6">
 
-            <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-300 group-hover:w-6" />
-          </a>
+        {/* =====================================================
+            LOGO
+        ====================================================== */}
 
+        <a
+          href="#hero"
+          onClick={() => setMobileMenuOpen(false)}
+          className="group flex min-w-0 items-center gap-3"
+        >
 
-          {/* ABOUT */}
-          <a
-            href="#profile"
-            className="group relative px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:text-blue-900 xl:px-4"
-          >
-            <span>About Us</span>
+          {/* Logo */}
+          <div className="relative shrink-0">
 
-            <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-300 group-hover:w-6" />
-          </a>
+            <div className="absolute -inset-2 rounded-full bg-blue-500/10 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100" />
 
+            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/80 bg-white/80 shadow-[0_5px_20px_rgba(15,23,42,0.12)] transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_25px_rgba(37,99,235,0.18)] sm:h-11 sm:w-11 lg:h-12 lg:w-12">
 
-          {/* LEADERSHIP */}
-          <a
-            href="#ceo"
-            className="group relative px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:text-blue-900 xl:px-4"
-          >
-            <span>Leadership</span>
+              <Image
+                src="/img/LOGO.png"
+                alt="BREA 88 Realty OPC"
+                width={56}
+                height={56}
+                priority
+                className="h-full w-full rounded-full object-cover"
+              />
 
-            <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-300 group-hover:w-6" />
-          </a>
-
-
-          {/* SERVICES */}
-          <a
-            href="#services"
-            className="group relative px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:text-blue-900 xl:px-4"
-          >
-            <span>Services</span>
-
-            <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-300 group-hover:w-6" />
-          </a>
-
-
-          {/* CONTACT */}
-          <a
-            href="#contact"
-            className="group relative ml-1 rounded-full bg-gradient-to-r from-blue-900 to-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(30,64,175,0.20)] transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-800 hover:to-cyan-600 hover:shadow-[0_8px_25px_rgba(30,64,175,0.28)]"
-          >
-            <span>Contact Us</span>
-          </a>
-
-        </div>
-      )}
-
-      {/* =====================================================
-          AGENT / BROKER NAVIGATION
-      ====================================================== */}
-      {agent && !agentLoading && (
-        <div className="hidden items-center gap-1 md:flex">
-
-          <a
-            href="/home"
-            className="group inline-flex items-center gap-2 rounded-xl bg-blue-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_18px_rgba(23,37,84,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-900 hover:shadow-[0_8px_24px_rgba(23,37,84,0.25)]"
-          >
-            <Home className="h-4 w-4" />
-            Home
-          </a>
-
-          <a
-            href="/agent/dashboard"
-            className="group inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-blue-50 hover:text-blue-950"
-          >
-            <Briefcase className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
-            Dashboard
-          </a>
-
-          <a
-            href={
-              agentSlug
-                ? `/marketplace?agent=${encodeURIComponent(agentSlug)}`
-                : '/marketplace'
-            }
-            className="group inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-blue-50 hover:text-blue-950"
-          >
-            <Building2 className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
-            Properties
-          </a>
-
-          <a
-            href="/profile"
-            className="group inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-blue-50 hover:text-blue-950"
-          >
-            <User className="h-4 w-4 transition-transform duration-300 group-hover:scale-105" />
-            Profile
-          </a>
-
-        </div>
-      )}
-
-      {/* =====================================================
-          AGENT ACCOUNT
-      ====================================================== */}
-      {agent && !agentLoading && (
-        <div className="hidden items-center gap-2 md:flex">
-
-          <a
-            href="/profile"
-            className="group flex items-center gap-2.5 rounded-2xl border border-transparent px-2.5 py-1.5 transition-all duration-300 hover:border-slate-200 hover:bg-slate-50"
-          >
-            <div className="relative">
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-50 to-slate-100 ring-2 ring-white shadow-sm">
-                {agent.profileImage ? (
-                  <img
-                    src={agent.profileImage}
-                    alt={agent.fullName}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <User
-                    size={18}
-                    className="text-slate-400"
-                  />
-                )}
-              </div>
-
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
             </div>
+          </div>
 
-            <div className="max-w-[135px] text-left">
-              <p className="truncate text-sm font-bold text-slate-900">
-                {agent.fullName}
+          {/* Brand */}
+          <div className="min-w-0">
+
+            <div className="flex items-center gap-2">
+
+              <p className="truncate text-[11px] font-black tracking-[-0.025em] text-slate-950 sm:text-base lg:text-[17px]">
+                BREA 88 REALTY
               </p>
 
-              <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-blue-800">
-                  {agent.role}
-                </span>
+              <span className="hidden rounded-full border border-amber-200/70 bg-amber-50/70 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider text-amber-700 shadow-sm sm:inline-flex">
+                OPC
+              </span>
 
-                <span className="h-1 w-1 rounded-full bg-emerald-500" />
-              </div>
             </div>
-          </a>
 
-          <button
-            type="button"
-            onClick={handleAgentLogout}
-            disabled={agentLoggingOut}
-            aria-label="Logout"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition-all duration-300 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {agentLoggingOut ? (
-              <Loader2
-                size={17}
-                className="animate-spin"
-              />
-            ) : (
-              <LogOut size={17} />
-            )}
+            <div className="mt-0.5 flex items-center gap-2">
 
-            <span className="hidden xl:inline">
-              Logout
-            </span>
-          </button>
+              <span className="h-px w-5 bg-gradient-to-r from-amber-500 to-transparent" />
 
-        </div>
-      )}
+              <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-slate-600 sm:text-[8px]">
+                Service with a Heart
+              </p>
 
-      {/* =====================================================
-          MOBILE MENU BUTTON
-      ====================================================== */}
-      <button
-        type="button"
-        onClick={() =>
-          setMobileMenuOpen(previous => !previous)
-        }
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all duration-300 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-950 active:scale-95 lg:hidden"
-        aria-label="Toggle navigation"
-        aria-expanded={mobileMenuOpen}
-      >
-        {mobileMenuOpen ? (
-          <X size={21} />
-        ) : (
-          <Menu size={21} />
+            </div>
+
+          </div>
+
+        </a>
+
+
+        {/* =====================================================
+            CLIENT NAVIGATION
+        ====================================================== */}
+
+        {!agent && !agentLoading && (
+          <div className="hidden items-center gap-1 lg:flex">
+
+            {/* Navigation group */}
+            <div className="flex items-center rounded-xl border border-white/60 bg-white/35 p-1 shadow-inner backdrop-blur-md">
+
+              <a
+                href="#hero"
+                className="group relative rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-white/70 hover:text-blue-950 xl:px-4"
+              >
+                Home
+
+                <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-blue-600 transition-all duration-300 group-hover:w-5" />
+              </a>
+
+              <a
+                href="#profile"
+                className="group relative rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-white/70 hover:text-blue-950 xl:px-4"
+              >
+                About Us
+
+                <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-blue-600 transition-all duration-300 group-hover:w-5" />
+              </a>
+
+              <a
+                href="#ceo"
+                className="group relative rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-white/70 hover:text-blue-950 xl:px-4"
+              >
+                Leadership
+
+                <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-blue-600 transition-all duration-300 group-hover:w-5" />
+              </a>
+
+              <a
+                href="#services"
+                className="group relative rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-white/70 hover:text-blue-950 xl:px-4"
+              >
+                Services
+
+                <span className="absolute bottom-1 left-1/2 h-0.5 w-0 -translate-x-1/2 rounded-full bg-blue-600 transition-all duration-300 group-hover:w-5" />
+              </a>
+
+            </div>
+
+            {/* Contact */}
+            <a
+              href="#contact"
+              className="ml-2 inline-flex items-center rounded-xl bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_7px_22px_rgba(30,64,175,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-900 hover:to-blue-700 hover:shadow-[0_10px_30px_rgba(30,64,175,0.30)]"
+            >
+              Contact Us
+            </a>
+
+          </div>
         )}
-      </button>
 
-    </div>
-  </div>
 
-  {/* =====================================================
-      MOBILE NAVIGATION
-  ====================================================== */}
-  {mobileMenuOpen && (
-    <div className="border-t border-slate-200/70 bg-white/95 shadow-[0_15px_35px_rgba(15,23,42,0.10)] backdrop-blur-xl lg:hidden">
+        {/* =====================================================
+            AGENT / BROKER NAVIGATION
+        ====================================================== */}
 
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+        {agent && !agentLoading && (
+          <div className="hidden items-center gap-1 md:flex">
 
-        {agent && !agentLoading ? (
-          <>
-            {/* AGENT ACCOUNT */}
-            <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
-              <div className="flex items-center gap-3">
-
-                <div className="relative shrink-0">
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white ring-2 ring-white shadow-md">
-                    {agent.profileImage ? (
-                      <img
-                        src={agent.profileImage}
-                        alt={agent.fullName}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <User
-                        size={20}
-                        className="text-slate-400"
-                      />
-                    )}
-                  </div>
-
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-900">
-                    {agent.fullName}
-                  </p>
-
-                  <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-800">
-                    {agent.role}
-                  </p>
-                </div>
-
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
+            <div className="flex items-center rounded-xl border border-white/60 bg-white/35 p-1 shadow-inner backdrop-blur-md">
 
               <a
                 href="/home"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center gap-3 rounded-xl bg-blue-950 px-4 py-3.5 text-left text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-blue-900"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_18px_rgba(23,37,84,0.18)] transition-all duration-300 hover:bg-blue-900"
               >
-                <Home size={18} />
-
-                <span className="flex-1">
-                  Home
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="opacity-50 transition-transform group-hover:translate-x-1"
-                />
+                <Home className="h-4 w-4" />
+                Home
               </a>
 
               <a
                 href="/agent/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-blue-50 hover:text-blue-950"
+                className="group inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-white/80 hover:text-blue-950"
               >
-                <Briefcase size={18} />
-
-                <span className="flex-1">
-                  Dashboard
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="opacity-40 transition-transform group-hover:translate-x-1"
-                />
+                <Briefcase className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+                Dashboard
               </a>
 
               <a
                 href={
                   agentSlug
                     ? `/marketplace?agent=${encodeURIComponent(agentSlug)}`
-                    : '/marketplace'
+                    : "/marketplace"
                 }
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-blue-50 hover:text-blue-950"
+                className="group inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all duration-300 hover:bg-white/80 hover:text-blue-950"
               >
-                <Building2 size={18} />
-
-                <span className="flex-1">
-                  Properties
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="opacity-40 transition-transform group-hover:translate-x-1"
-                />
-              </a>
-
-              <a
-                href="/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-blue-50 hover:text-blue-950"
-              >
-                <User size={18} />
-
-                <span className="flex-1">
-                  Profile
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="opacity-40 transition-transform group-hover:translate-x-1"
-                />
+                <Building2 className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+                Properties
               </a>
 
             </div>
 
+          </div>
+        )}
+
+
+        {/* =====================================================
+            AGENT ACCOUNT
+        ====================================================== */}
+
+        {agent && !agentLoading && (
+          <div className="hidden items-center gap-2 md:flex">
+
+            {/* Profile */}
+            <a
+              href="/profile"
+              className="group flex items-center gap-3 rounded-xl border border-white/70 bg-white/45 px-2.5 py-1.5 shadow-[0_4px_18px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200/80 hover:bg-white/75 hover:shadow-[0_8px_25px_rgba(15,23,42,0.10)]"
+            >
+
+              <div className="relative shrink-0">
+
+                <div className="rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-300 p-[2px] shadow-sm">
+
+                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">
+
+                    {agent.profileImage ? (
+                      <img
+                        src={agent.profileImage}
+                        alt={agent.fullName}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <User
+                        size={17}
+                        className="text-slate-400"
+                      />
+                    )}
+
+                  </div>
+
+                </div>
+
+                {/* Online */}
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.55)]" />
+
+              </div>
+
+
+              <div className="max-w-[135px] min-w-0 text-left">
+
+                <p className="truncate text-[12px] font-bold tracking-tight text-slate-900 transition-colors group-hover:text-blue-800">
+                  {agent.fullName}
+                </p>
+
+                <div className="mt-0.5 flex items-center gap-1.5">
+
+                  <span className="truncate rounded-md bg-blue-50/80 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-blue-800">
+                    {agent.role}
+                  </span>
+
+                  <span className="text-[8px] font-medium text-slate-400">
+                    Account
+                  </span>
+
+                </div>
+
+              </div>
+
+              <ChevronRight
+                size={14}
+                className="mr-1 text-slate-300 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-blue-600"
+              />
+
+            </a>
+
+
+            {/* Logout */}
             <button
               type="button"
               onClick={handleAgentLogout}
               disabled={agentLoggingOut}
-              className="mt-3 flex w-full items-center gap-3 rounded-xl border border-red-100 bg-red-50/70 px-4 py-3.5 text-left text-sm font-semibold text-red-600 transition-all duration-300 hover:bg-red-100 disabled:opacity-50"
+              aria-label="Logout"
+              className="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/70 bg-white/45 text-slate-500 shadow-[0_4px_18px_rgba(15,23,42,0.05)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-[0_8px_25px_rgba(239,68,68,0.12)] disabled:cursor-not-allowed disabled:opacity-50"
             >
+
               {agentLoggingOut ? (
                 <Loader2
-                  size={18}
+                  size={17}
                   className="animate-spin"
                 />
               ) : (
-                <LogOut size={18} />
+                <LogOut
+                  size={17}
+                  className="transition-transform duration-300 group-hover:translate-x-0.5"
+                />
               )}
 
-              <span>
-                Logout
-              </span>
             </button>
-          </>
-        ) : (
-          <>
-            {/* CLIENT MOBILE NAVIGATION */}
-            <div className="space-y-1.5">
 
-              <a
-                href="#hero"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center rounded-xl bg-blue-50 px-4 py-3.5 text-sm font-semibold text-blue-950 transition-all duration-300"
-              >
-                <span className="flex-1">
-                  Home
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="text-blue-400 transition-transform group-hover:translate-x-1"
-                />
-              </a>
-
-              <a
-                href="#profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-blue-950"
-              >
-                <span className="flex-1">
-                  About Us
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="text-slate-300 transition-transform group-hover:translate-x-1"
-                />
-              </a>
-
-              <a
-                href="#ceo"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-blue-950"
-              >
-                <span className="flex-1">
-                  Leadership
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="text-slate-300 transition-transform group-hover:translate-x-1"
-                />
-              </a>
-
-              <a
-                href="#services"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-blue-950"
-              >
-                <span className="flex-1">
-                  Services
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="text-slate-300 transition-transform group-hover:translate-x-1"
-                />
-              </a>
-
-              <a
-                href="#contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-blue-950"
-              >
-                <span className="flex-1">
-                  Contact Us
-                </span>
-
-                <ChevronRight
-                  size={17}
-                  className="text-slate-300 transition-transform group-hover:translate-x-1"
-                />
-              </a>
-
-            </div>
-          </>
+          </div>
         )}
 
+
+        {/* =====================================================
+            MOBILE BUTTON
+        ====================================================== */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setMobileMenuOpen(previous => !previous)
+          }
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/65 text-slate-700 shadow-[0_4px_15px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-950 active:scale-95 lg:hidden"
+          aria-label="Toggle navigation"
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? (
+            <X size={20} />
+          ) : (
+            <Menu size={20} />
+          )}
+        </button>
+
       </div>
+
+
+      {/* =====================================================
+          MOBILE MENU
+      ====================================================== */}
+
+      {mobileMenuOpen && (
+        <div className="border-t border-white/60 bg-white/75 backdrop-blur-2xl lg:hidden">
+
+          <div className="px-3 py-3 sm:px-5">
+
+            {agent && !agentLoading ? (
+              <>
+
+                {/* Agent Account */}
+                <div className="mb-3 rounded-xl border border-white/80 bg-white/60 p-3 shadow-[0_5px_20px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="relative">
+
+                      <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-white ring-2 ring-blue-100 shadow-md">
+
+                        {agent.profileImage ? (
+                          <img
+                            src={agent.profileImage}
+                            alt={agent.fullName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <User
+                            size={19}
+                            className="text-slate-400"
+                          />
+                        )}
+
+                      </div>
+
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
+
+                    </div>
+
+                    <div className="min-w-0">
+
+                      <p className="truncate text-sm font-bold text-slate-900">
+                        {agent.fullName}
+                      </p>
+
+                      <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-blue-800">
+                        {agent.role}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                {/* Agent Links */}
+                <div className="space-y-1.5">
+
+                  <a
+                    href="/home"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="group flex w-full items-center gap-3 rounded-xl bg-blue-950 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-300"
+                  >
+                    <Home size={18} />
+
+                    <span className="flex-1">
+                      Home
+                    </span>
+
+                    <ChevronRight size={16} className="opacity-50" />
+                  </a>
+
+                  <a
+                    href="/agent/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-white hover:text-blue-950"
+                  >
+                    <Briefcase size={18} />
+
+                    <span className="flex-1">
+                      Dashboard
+                    </span>
+
+                    <ChevronRight size={16} className="opacity-30" />
+                  </a>
+
+                  <a
+                    href={
+                      agentSlug
+                        ? `/marketplace?agent=${encodeURIComponent(agentSlug)}`
+                        : "/marketplace"
+                    }
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-white hover:text-blue-950"
+                  >
+                    <Building2 size={18} />
+
+                    <span className="flex-1">
+                      Properties
+                    </span>
+
+                    <ChevronRight size={16} className="opacity-30" />
+                  </a>
+
+                  <a
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="group flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-white hover:text-blue-950"
+                  >
+                    <User size={18} />
+
+                    <span className="flex-1">
+                      Profile
+                    </span>
+
+                    <ChevronRight size={16} className="opacity-30" />
+                  </a>
+
+                </div>
+
+
+                {/* Logout */}
+                <button
+                  type="button"
+                  onClick={handleAgentLogout}
+                  disabled={agentLoggingOut}
+                  className="mt-3 flex w-full items-center gap-3 rounded-xl border border-red-100/80 bg-red-50/70 px-4 py-3.5 text-left text-sm font-semibold text-red-600 backdrop-blur-md transition-all duration-300 hover:bg-red-100 disabled:opacity-50"
+                >
+
+                  {agentLoggingOut ? (
+                    <Loader2
+                      size={18}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <LogOut size={18} />
+                  )}
+
+                  <span>
+                    Logout
+                  </span>
+
+                </button>
+
+              </>
+            ) : (
+
+              /* =================================================
+                 CLIENT MOBILE NAVIGATION
+              ================================================== */
+
+              <div className="space-y-1.5">
+
+                <a
+                  href="#hero"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="group flex w-full items-center rounded-xl bg-blue-50/80 px-4 py-3.5 text-sm font-semibold text-blue-950 transition-all duration-300"
+                >
+                  <span className="flex-1">
+                    Home
+                  </span>
+
+                  <ChevronRight size={17} className="text-blue-400" />
+                </a>
+
+                <a
+                  href="#profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-white hover:text-blue-950"
+                >
+                  <span className="flex-1">
+                    About Us
+                  </span>
+
+                  <ChevronRight size={17} className="text-slate-300" />
+                </a>
+
+                <a
+                  href="#ceo"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-white hover:text-blue-950"
+                >
+                  <span className="flex-1">
+                    Leadership
+                  </span>
+
+                  <ChevronRight size={17} className="text-slate-300" />
+                </a>
+
+                <a
+                  href="#services"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="group flex w-full items-center rounded-xl px-4 py-3.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:bg-white hover:text-blue-950"
+                >
+                  <span className="flex-1">
+                    Services
+                  </span>
+
+                  <ChevronRight size={17} className="text-slate-300" />
+                </a>
+
+                <a
+                  href="#contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="group flex w-full items-center rounded-xl bg-blue-950 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-blue-900"
+                >
+                  <span className="flex-1">
+                    Contact Us
+                  </span>
+
+                  <ChevronRight size={17} className="opacity-50" />
+                </a>
+
+              </div>
+
+            )}
+
+          </div>
+        </div>
+      )}
+
     </div>
-  )}
+  </div>
 </nav>
+
+
 
 
       {/* =====================================================
@@ -917,7 +953,7 @@ const sendEmail = async (
                   solutions with <span className="font-semibold text-white">Integrity</span>,
                   <span className="font-semibold text-white"> Excellence</span>, and
                   <span className="font-semibold text-white"> Compassion</span>
-                  throughout the Philippines.
+                  <br />throughout the Philippines.
                 </p>
 
                 {/* =====================================================
