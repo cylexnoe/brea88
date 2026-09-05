@@ -37,9 +37,7 @@ import {
   Settings,
   Loader2,
   UserRound,
-  Building,
   Warehouse,
-  UserPlus,
 } from 'lucide-react';
 
 const MAX_IMAGES = 10;
@@ -81,11 +79,13 @@ const HOUSE_TYPES = [
   'Duplex',
 ];
 
-const STOREY_OPTIONS = ['1', '2', '3 or more'];
-
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
-type Section = 'overview' | 'properties' | 'add' | 'settings';
+type Section =
+  | 'overview'
+  | 'properties'
+  | 'add'
+  | 'settings';
 
 interface ImageItem {
   id: string;
@@ -142,6 +142,16 @@ const INITIAL_FORM: FormData = {
   sqft: '',
 };
 
+/**
+ * Determines whether House Type and Storey
+ * should be displayed.
+ *
+ * Rules:
+ * - House & Lot: show except Lot Only Subdivision
+ * - Condominiums: never show
+ * - For Rent: show
+ * - For Sale by Owner: show for house/residential property types
+ */
 function requiresHouseDetails(
   category: string,
   propertyType: string,
@@ -150,10 +160,11 @@ function requiresHouseDetails(
     return propertyType !== 'Lot Only Subdivision';
   }
 
-  if (
-    category === 'For Rent' &&
-    propertyType === 'House For Rent'
-  ) {
+  if (category === 'For Rent') {
+    return propertyType === 'House For Rent';
+  }
+
+  if (category === 'For Sale by Owner') {
     return true;
   }
 
@@ -186,6 +197,7 @@ function SelectField({
         className="text-sm font-semibold text-slate-700"
       >
         {label}
+
         {required && (
           <span className="ml-1 text-blue-600">*</span>
         )}
@@ -201,7 +213,9 @@ function SelectField({
           disabled={disabled}
           className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-100"
         >
-          <option value="">Select {label}</option>
+          <option value="">
+            Select {label}
+          </option>
 
           {options.map((option) => (
             <option key={option} value={option}>
@@ -273,31 +287,43 @@ function StatCard({
 export default function AdminDashboardPage() {
   const router = useRouter();
 
-  const [activeAccounts, setActiveAccounts] = useState(0);
+  const [activeAccounts, setActiveAccounts] =
+    useState(0);
 
   const [formData, setFormData] =
     useState<FormData>(INITIAL_FORM);
 
-  const [images, setImages] = useState<ImageItem[]>([]);
-  const [imageSource, setImageSource] = useState<'upload' | 'url'>(
-    'upload',
+  const [images, setImages] = useState<ImageItem[]>(
+    [],
   );
+
+  const [imageSource, setImageSource] =
+    useState<'upload' | 'url'>('upload');
+
   const [imageUrl, setImageUrl] = useState('');
 
-  const [status, setStatus] = useState<Status>('idle');
+  const [status, setStatus] =
+    useState<Status>('idle');
 
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<
+    Property[]
+  >([]);
+
   const [editingId, setEditingId] = useState<
     number | string | null
   >(null);
 
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] =
+    useState(true);
+
+  const [searchTerm, setSearchTerm] =
+    useState('');
 
   const [activeSection, setActiveSection] =
     useState<Section>('overview');
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
 
   const propertyTypeOptions = useMemo(() => {
     switch (formData.category) {
@@ -323,21 +349,27 @@ export default function AdminDashboardPage() {
     }
   }, [formData.category]);
 
-  const showHouseDetails = requiresHouseDetails(
-    formData.category,
-    formData.propertyType,
-  );
+  const showHouseDetails =
+    requiresHouseDetails(
+      formData.category,
+      formData.propertyType,
+    );
 
   async function fetchProperties() {
     try {
-      const response = await fetch('/api/properties', {
-        method: 'GET',
-        cache: 'no-store',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        '/api/properties',
+        {
+          method: 'GET',
+          cache: 'no-store',
+          credentials: 'include',
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch properties');
+        throw new Error(
+          'Failed to fetch properties',
+        );
       }
 
       const data = await response.json();
@@ -350,18 +382,25 @@ export default function AdminDashboardPage() {
 
       setProperties(propertyList);
     } catch (error) {
-      console.error('Fetch properties error:', error);
+      console.error(
+        'Fetch properties error:',
+        error,
+      );
+
       setProperties([]);
     }
   }
 
   async function fetchActiveAccounts() {
     try {
-      const response = await fetch('/api/admin/agents', {
-        method: 'GET',
-        cache: 'no-store',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        '/api/admin/agents',
+        {
+          method: 'GET',
+          cache: 'no-store',
+          credentials: 'include',
+        },
+      );
 
       if (!response.ok) {
         return;
@@ -376,13 +415,18 @@ export default function AdminDashboardPage() {
           : [];
 
       const active = accounts.filter(
-        (agent: { isActive?: boolean }) =>
+        (agent: {
+          isActive?: boolean;
+        }) =>
           agent.isActive === true,
       ).length;
 
       setActiveAccounts(active);
     } catch (error) {
-      console.error('Fetch active accounts error:', error);
+      console.error(
+        'Fetch active accounts error:',
+        error,
+      );
     }
   }
 
@@ -417,9 +461,10 @@ export default function AdminDashboardPage() {
       ) {
         window.speechSynthesis.cancel();
 
-        const message = new SpeechSynthesisUtterance(
-          'Welcome to BREA 88 Realty Admin Dashboard.',
-        );
+        const message =
+          new SpeechSynthesisUtterance(
+            'Welcome to BREA 88 Realty Admin Dashboard.',
+          );
 
         message.rate = 0.95;
         message.pitch = 1;
@@ -460,10 +505,11 @@ export default function AdminDashboardPage() {
     }
 
     if (name === 'propertyType') {
-      const shouldShowHouseDetails = requiresHouseDetails(
-        formData.category,
-        value,
-      );
+      const shouldShowHouseDetails =
+        requiresHouseDetails(
+          formData.category,
+          value,
+        );
 
       setFormData((current) => ({
         ...current,
@@ -488,15 +534,24 @@ export default function AdminDashboardPage() {
   function handleImageUpload(
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    const files = Array.from(event.target.files || []);
+    const files = Array.from(
+      event.target.files || [],
+    );
 
     if (!files.length) {
       return;
     }
 
-    if (images.length + files.length > MAX_IMAGES) {
-      alert(`You can upload up to ${MAX_IMAGES} images.`);
+    if (
+      images.length + files.length >
+      MAX_IMAGES
+    ) {
+      alert(
+        `You can upload up to ${MAX_IMAGES} images.`,
+      );
+
       event.target.value = '';
+
       return;
     }
 
@@ -514,6 +569,7 @@ export default function AdminDashboardPage() {
         alert(
           `${file.name} is not a supported image type. Use JPG, JPEG, PNG, or WEBP.`,
         );
+
         continue;
       }
 
@@ -521,6 +577,7 @@ export default function AdminDashboardPage() {
         alert(
           `${file.name} is larger than 5MB and cannot be uploaded.`,
         );
+
         continue;
       }
 
@@ -532,27 +589,37 @@ export default function AdminDashboardPage() {
       });
     }
 
-    setImages((current) => [...current, ...newImages]);
+    setImages((current) => [
+      ...current,
+      ...newImages,
+    ]);
 
     event.target.value = '';
   }
 
   function addImageUrl() {
-    const trimmedUrl = imageUrl.trim();
+    const trimmedUrl =
+      imageUrl.trim();
 
     if (!trimmedUrl) {
       return;
     }
 
     if (images.length >= MAX_IMAGES) {
-      alert(`You can add up to ${MAX_IMAGES} images.`);
+      alert(
+        `You can add up to ${MAX_IMAGES} images.`,
+      );
+
       return;
     }
 
     try {
       new URL(trimmedUrl);
     } catch {
-      alert('Please enter a valid image URL.');
+      alert(
+        'Please enter a valid image URL.',
+      );
+
       return;
     }
 
@@ -570,19 +637,25 @@ export default function AdminDashboardPage() {
 
   function removeImage(id: string) {
     setImages((current) => {
-      const image = current.find((item) => item.id === id);
+      const image = current.find(
+        (item) => item.id === id,
+      );
 
       if (image?.source === 'upload') {
         URL.revokeObjectURL(image.url);
       }
 
-      return current.filter((item) => item.id !== id);
+      return current.filter(
+        (item) => item.id !== id,
+      );
     });
   }
 
   function setCoverImage(id: string) {
     setImages((current) => {
-      const selected = current.find((item) => item.id === id);
+      const selected = current.find(
+        (item) => item.id === id,
+      );
 
       if (!selected) {
         return current;
@@ -590,26 +663,40 @@ export default function AdminDashboardPage() {
 
       return [
         selected,
-        ...current.filter((item) => item.id !== id),
+        ...current.filter(
+          (item) => item.id !== id,
+        ),
       ];
     });
   }
 
-  async function uploadImageToBlob(file: File) {
+  async function uploadImageToBlob(
+    file: File,
+  ) {
     const body = new FormData();
+
     body.append('file', file);
 
-    const response = await fetch('/api/blob/upload', {
-      method: 'POST',
-      body,
-      credentials: 'include',
-    });
+    const response = await fetch(
+      '/api/blob/upload',
+      {
+        method: 'POST',
+        body,
+        credentials: 'include',
+      },
+    );
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
-    if (!response.ok || !data?.success || !data?.url) {
+    if (
+      !response.ok ||
+      !data?.success ||
+      !data?.url
+    ) {
       throw new Error(
-        data?.message || 'Failed to upload image.',
+        data?.message ||
+          'Failed to upload image.',
       );
     }
 
@@ -631,10 +718,16 @@ export default function AdminDashboardPage() {
     setEditingId(null);
   }
 
-  function editProperty(property: Property) {
-    const id = property.id ?? property._id;
+  function editProperty(
+    property: Property,
+  ) {
+    const id =
+      property.id ?? property._id;
 
-    if (id === undefined || id === null) {
+    if (
+      id === undefined ||
+      id === null
+    ) {
       return;
     }
 
@@ -642,31 +735,47 @@ export default function AdminDashboardPage() {
 
     setFormData({
       title: property.title || '',
-      category: property.category || 'House & Lot',
-      propertyType: property.propertyType || '',
-      houseType: property.houseType || '',
+      category:
+        property.category ||
+        'House & Lot',
+
+      propertyType:
+        property.propertyType || '',
+
+      houseType:
+        property.houseType || 'None',
+
       storey:
         property.storey !== null &&
         property.storey !== undefined
           ? String(property.storey)
-          : '',
-      tag: property.tag || 'Residential',
+          : 'None',
+
+      tag:
+        property.tag ||
+        'Residential',
+
       price:
         property.price !== null &&
         property.price !== undefined
           ? String(property.price)
           : '',
-      location: property.location || '',
+
+      location:
+        property.location || '',
+
       beds:
         property.beds !== null &&
         property.beds !== undefined
           ? String(property.beds)
           : '',
+
       baths:
         property.baths !== null &&
         property.baths !== undefined
           ? String(property.baths)
           : '',
+
       sqft:
         property.sqft !== null &&
         property.sqft !== undefined
@@ -675,18 +784,21 @@ export default function AdminDashboardPage() {
     });
 
     const existingImages =
-      property.images && property.images.length
+      property.images &&
+      property.images.length
         ? property.images
         : property.image
           ? [property.image]
           : [];
 
     setImages(
-      existingImages.map((url, index) => ({
-        id: `existing-${index}-${Date.now()}`,
-        url,
-        source: 'url',
-      })),
+      existingImages.map(
+        (url, index) => ({
+          id: `existing-${index}-${Date.now()}`,
+          url,
+          source: 'url',
+        }),
+      ),
     );
 
     setImageSource('url');
@@ -703,15 +815,20 @@ export default function AdminDashboardPage() {
   async function deleteProperty(
     property: Property,
   ) {
-    const id = property.id ?? property._id;
+    const id =
+      property.id ?? property._id;
 
-    if (id === undefined || id === null) {
+    if (
+      id === undefined ||
+      id === null
+    ) {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${property.title}"?`,
-    );
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to delete "${property.title}"?`,
+      );
 
     if (!confirmed) {
       return;
@@ -719,24 +836,34 @@ export default function AdminDashboardPage() {
 
     try {
       const response = await fetch(
-        `/api/properties?id=${encodeURIComponent(String(id))}`,
+        `/api/properties?id=${encodeURIComponent(
+          String(id),
+        )}`,
         {
           method: 'DELETE',
           credentials: 'include',
         },
       );
 
-      const data = await response.json().catch(() => null);
+      const data =
+        await response
+          .json()
+          .catch(() => null);
 
       if (!response.ok) {
         throw new Error(
-          data?.message || 'Failed to delete property.',
+          data?.message ||
+            'Failed to delete property.',
         );
       }
 
       await fetchProperties();
     } catch (error) {
-      console.error('Delete property error:', error);
+      console.error(
+        'Delete property error:',
+        error,
+      );
+
       alert(
         error instanceof Error
           ? error.message
@@ -751,65 +878,86 @@ export default function AdminDashboardPage() {
     event.preventDefault();
 
     if (!formData.title.trim()) {
-      alert('Please enter the property title.');
+      alert(
+        'Please enter the property title.',
+      );
+
       return;
     }
 
     if (!formData.price.trim()) {
-      alert('Please enter the property price.');
+      alert(
+        'Please enter the property price.',
+      );
+
       return;
     }
 
     if (!formData.location.trim()) {
-      alert('Please enter the property location.');
+      alert(
+        'Please enter the property location.',
+      );
+
       return;
     }
 
     if (!formData.category) {
-      alert('Please select a property category.');
+      alert(
+        'Please select a property category.',
+      );
+
       return;
     }
 
     if (!formData.propertyType) {
-      alert('Please select a property type.');
+      alert(
+        'Please select a property type.',
+      );
+
       return;
     }
 
-    if (
-      showHouseDetails &&
-      !formData.houseType.trim()
-    ) {
-      alert('Please select the house type.');
-      return;
-    }
+    /*
+     * House Type and Storey are optional.
+     * Blank values are automatically saved as "None".
+     */
+    const normalizedHouseType =
+      formData.houseType.trim() || null;
 
-    if (
-      showHouseDetails &&
-      !formData.storey.trim()
-    ) {
-      alert('Please select the number of storeys.');
-      return;
-    }
+    const normalizedStorey =
+      formData.storey.trim() || null;
 
     if (!images.length) {
-      alert('Please add at least one property image.');
+      alert(
+        'Please add at least one property image.',
+      );
+
       return;
     }
 
     setStatus('loading');
 
     try {
-      const uploadedImageUrls: string[] = [];
+      const uploadedImageUrls: string[] =
+        [];
 
       for (const image of images) {
-        if (image.source === 'upload' && image.file) {
-          const uploadedUrl = await uploadImageToBlob(
-            image.file,
-          );
+        if (
+          image.source === 'upload' &&
+          image.file
+        ) {
+          const uploadedUrl =
+            await uploadImageToBlob(
+              image.file,
+            );
 
-          uploadedImageUrls.push(uploadedUrl);
+          uploadedImageUrls.push(
+            uploadedUrl,
+          );
         } else {
-          uploadedImageUrls.push(image.url);
+          uploadedImageUrls.push(
+            image.url,
+          );
         }
       }
 
@@ -820,50 +968,78 @@ export default function AdminDashboardPage() {
       }
 
       const payload = {
-        ...(editingId !== null
-          ? { id: editingId }
-          : {}),
-        title: formData.title.trim(),
-        category: formData.category,
-        propertyType: formData.propertyType,
-        houseType: showHouseDetails
-          ? formData.houseType || null
-          : null,
-        storey: showHouseDetails
-          ? formData.storey || null
-          : null,
-        tag: formData.tag || 'Residential',
-        price: formData.price.trim(),
-        location: formData.location.trim(),
-        beds: formData.beds
-          ? Number(formData.beds)
-          : null,
-        baths: formData.baths
-          ? Number(formData.baths)
-          : null,
-        sqft: formData.sqft
-          ? Number(formData.sqft)
-          : null,
-        image: uploadedImageUrls[0],
-        images: uploadedImageUrls,
-      };
+            ...(editingId !== null
+              ? { id: editingId }
+              : {}),
+            title: formData.title.trim(),
+            category: formData.category,
+            propertyType: formData.propertyType,
 
-      const response = await fetch('/api/properties', {
-        method: editingId !== null ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
+            houseType: showHouseDetails
+              ? normalizedHouseType
+              : null,
 
-      const data = await response.json().catch(() => null);
+            storey: showHouseDetails
+              ? normalizedStorey
+              : null,
+
+            tag: formData.tag || 'Residential',
+
+            price: formData.price.trim(),
+            location: formData.location.trim(),
+
+            beds: formData.beds
+              ? Number(formData.beds)
+              : null,
+
+            baths: formData.baths
+              ? Number(formData.baths)
+              : null,
+
+            sqft: formData.sqft
+              ? Number(formData.sqft)
+              : null,
+
+            image: uploadedImageUrls[0],
+            images: uploadedImageUrls,
+          };
+
+      const response =
+        await fetch(
+          '/api/properties',
+          {
+            method:
+              editingId !== null
+                ? 'PUT'
+                : 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            credentials:
+              'include',
+
+            body:
+              JSON.stringify(
+                payload,
+              ),
+          },
+        );
+
+      const data =
+        await response
+          .json()
+          .catch(() => null);
 
       if (!response.ok) {
         throw new Error(
           data?.message ||
             `Failed to ${
-              editingId !== null ? 'update' : 'create'
+              editingId !== null
+                ? 'update'
+                : 'create'
             } property.`,
         );
       }
@@ -874,10 +1050,16 @@ export default function AdminDashboardPage() {
 
       window.setTimeout(() => {
         resetForm();
-        setActiveSection('properties');
+        setActiveSection(
+          'properties',
+        );
       }, 800);
     } catch (error) {
-      console.error('Save property error:', error);
+      console.error(
+        'Save property error:',
+        error,
+      );
+
       setStatus('error');
 
       alert(
@@ -890,70 +1072,113 @@ export default function AdminDashboardPage() {
 
   async function handleLogout() {
     try {
-      await fetch('/api/admin/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await fetch(
+        '/api/admin/logout',
+        {
+          method: 'POST',
+          credentials:
+            'include',
+        },
+      );
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error(
+        'Logout error:',
+        error,
+      );
     } finally {
       router.replace('/');
       router.refresh();
     }
   }
 
-  const filteredProperties = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+  const filteredProperties =
+    useMemo(() => {
+      const term =
+        searchTerm
+          .trim()
+          .toLowerCase();
 
-    if (!term) {
-      return properties;
-    }
+      if (!term) {
+        return properties;
+      }
 
-    return properties.filter((property) => {
-      const values = [
-        property.title,
-        property.location,
-        property.tag,
-        property.category,
-        property.propertyType,
-        property.houseType,
-        property.price,
-      ];
+      return properties.filter(
+        (property) => {
+          const values = [
+            property.title,
+            property.location,
+            property.tag,
+            property.category,
+            property.propertyType,
+            property.houseType,
+            property.price,
+          ];
 
-      return values.some((value) =>
-        String(value || '')
-          .toLowerCase()
-          .includes(term),
+          return values.some(
+            (value) =>
+              String(
+                value || '',
+              )
+                .toLowerCase()
+                .includes(term),
+          );
+        },
       );
-    });
-  }, [properties, searchTerm]);
+    }, [
+      properties,
+      searchTerm,
+    ]);
 
-  const houseLotCount = properties.filter(
-    (property) => property.category === 'House & Lot',
-  ).length;
+  const houseLotCount =
+    properties.filter(
+      (property) =>
+        property.category ===
+        'House & Lot',
+    ).length;
 
-  const condominiumCount = properties.filter(
-    (property) => property.category === 'Condominiums',
-  ).length;
+  const condominiumCount =
+    properties.filter(
+      (property) =>
+        property.category ===
+        'Condominiums',
+    ).length;
 
-  const forRentCount = properties.filter(
-    (property) => property.category === 'For Rent',
-  ).length;
+  const forRentCount =
+    properties.filter(
+      (property) =>
+        property.category ===
+        'For Rent',
+    ).length;
 
-  const ownerCount = properties.filter(
-    (property) =>
-      property.category === 'For Sale by Owner',
-  ).length;
+  const ownerCount =
+    properties.filter(
+      (property) =>
+        property.category ===
+        'For Sale by Owner',
+    ).length;
 
-  function navigate(section: Section) {
-    setActiveSection(section);
-    setSidebarOpen(false);
+  function navigate(
+    section: Section,
+  ) {
+    setActiveSection(
+      section,
+    );
 
-    if (section !== 'properties') {
+    setSidebarOpen(
+      false,
+    );
+
+    if (
+      section !==
+      'properties'
+    ) {
       setSearchTerm('');
     }
 
-    if (section === 'add' && editingId === null) {
+    if (
+      section === 'add' &&
+      editingId === null
+    ) {
       setStatus('idle');
     }
 
@@ -963,29 +1188,47 @@ export default function AdminDashboardPage() {
     });
   }
 
-  function formatPrice(price: string | number) {
-    const numeric = String(price || '')
-      .replace(/[^0-9.]/g, '');
+  function formatPrice(
+    price: string | number,
+  ) {
+    const numeric =
+      String(price || '')
+        .replace(
+          /[^0-9.]/g,
+          '',
+        );
 
     if (!numeric) {
       return '₱0';
     }
 
-    const amount = Number(numeric);
+    const amount =
+      Number(numeric);
 
-    if (Number.isNaN(amount)) {
+    if (
+      Number.isNaN(amount)
+    ) {
       return `₱${price}`;
     }
 
-    return `₱${amount.toLocaleString('en-US')}`;
+    return `₱${amount.toLocaleString(
+      'en-US',
+    )}`;
   }
 
-  function getPropertyImage(property: Property) {
-    if (property.images?.length) {
+  function getPropertyImage(
+    property: Property,
+  ) {
+    if (
+      property.images?.length
+    ) {
       return property.images[0];
     }
 
-    return property.image || '/img/background.png';
+    return (
+      property.image ||
+      '/img/background.png'
+    );
   }
 
   if (loading) {
@@ -1025,7 +1268,9 @@ export default function AdminDashboardPage() {
       {sidebarOpen && (
         <button
           aria-label="Close sidebar"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() =>
+            setSidebarOpen(false)
+          }
           className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden"
         />
       )}
@@ -1038,7 +1283,6 @@ export default function AdminDashboardPage() {
             : '-translate-x-full'
         }`}
       >
-        {/* Sidebar glow */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-600/20 blur-3xl" />
           <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -1058,8 +1302,12 @@ export default function AdminDashboardPage() {
 
               <div>
                 <p className="text-[15px] font-bold tracking-wide">
-                  <span className="text-black">BREA</span>
-                  <span className="text-blue-400">88</span>
+                  <span className="text-black">
+                    BREA
+                  </span>
+                  <span className="text-blue-400">
+                    88
+                  </span>
                 </p>
 
                 <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
@@ -1078,103 +1326,125 @@ export default function AdminDashboardPage() {
             </p>
 
             <nav className="space-y-1.5">
-                  {/* Overview */}
-                  <button
-                    type="button"
-                    onClick={() => navigate('overview')}
-                    className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                      activeSection === 'overview'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    <LayoutDashboard
-                      size={18}
-                      className={
-                        activeSection === 'overview'
-                          ? 'text-white'
-                          : 'text-slate-500 group-hover:text-blue-400'
-                      }
-                    />
+              <button
+                type="button"
+                onClick={() =>
+                  navigate('overview')
+                }
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection ===
+                  'overview'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <LayoutDashboard
+                  size={18}
+                  className={
+                    activeSection ===
+                    'overview'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
 
-                    <span className="flex-1">Overview</span>
-                  </button>
+                <span className="flex-1">
+                  Overview
+                </span>
+              </button>
 
-                  {/* Properties */}
-                  <button
-                    type="button"
-                    onClick={() => navigate('properties')}
-                    className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                      activeSection === 'properties'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
-                    }`}
-                  >
-                    <Building2
-                      size={18}
-                      className={
-                        activeSection === 'properties'
-                          ? 'text-white'
-                          : 'text-slate-500 group-hover:text-blue-400'
-                      }
-                    />
+              <button
+                type="button"
+                onClick={() =>
+                  navigate('properties')
+                }
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection ===
+                  'properties'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                }`}
+              >
+                <Building2
+                  size={18}
+                  className={
+                    activeSection ===
+                    'properties'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
 
-                    <span className="flex-1">Properties</span>
+                <span className="flex-1">
+                  Properties
+                </span>
 
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] ${
-                        activeSection === 'properties'
-                          ? 'bg-white/15 text-white'
-                          : 'bg-white/5 text-slate-500'
-                      }`}
-                    >
-                      {properties.length}
-                    </span>
-                  </button>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] ${
+                    activeSection ===
+                    'properties'
+                      ? 'bg-white/15 text-white'
+                      : 'bg-white/5 text-slate-500'
+                  }`}
+                >
+                  {properties.length}
+                </span>
+              </button>
 
-                  {/* Add Property */}
-                  <button
-                    type="button"
-                    onClick={() => navigate('add')}
-                    className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                      activeSection === 'add'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
-                    }`}
-                  >
-                    <PlusCircle
-                      size={18}
-                      className={
-                        activeSection === 'add'
-                          ? 'text-white'
-                          : 'text-slate-500 group-hover:text-blue-400'
-                      }
-                    />
+              <button
+                type="button"
+                onClick={() =>
+                  navigate('add')
+                }
+                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                  activeSection ===
+                  'add'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                }`}
+              >
+                <PlusCircle
+                  size={18}
+                  className={
+                    activeSection ===
+                    'add'
+                      ? 'text-white'
+                      : 'text-slate-500 group-hover:text-blue-400'
+                  }
+                />
 
-                    <span>Add Property</span>
-                  </button>
+                <span>
+                  Add Property
+                </span>
+              </button>
 
-                  {/* Active Accounts */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSidebarOpen(false);
-                      router.push('/admin/agents');
-                    }}
-                    className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
-                  >
-                    <UserRound
-                      size={18}
-                      className="text-slate-500 group-hover:text-emerald-400"
-                    />
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(
+                    false,
+                  );
 
-                    <span className="flex-1">Active Accounts</span>
+                  router.push(
+                    '/admin/agents',
+                  );
+                }}
+                className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
+              >
+                <UserRound
+                  size={18}
+                  className="text-slate-500 group-hover:text-emerald-400"
+                />
 
-                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
-                      {activeAccounts}
-                    </span>
-                  </button>
-                </nav>
+                <span className="flex-1">
+                  Active Accounts
+                </span>
+
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
+                  {activeAccounts}
+                </span>
+              </button>
+            </nav>
 
             <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
               System
@@ -1182,9 +1452,13 @@ export default function AdminDashboardPage() {
 
             <nav>
               <button
-                onClick={() => navigate('settings')}
+                type="button"
+                onClick={() =>
+                  navigate('settings')
+                }
                 className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection === 'settings'
+                  activeSection ===
+                  'settings'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
                     : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
                 }`}
@@ -1192,13 +1466,16 @@ export default function AdminDashboardPage() {
                 <Settings
                   size={18}
                   className={
-                    activeSection === 'settings'
+                    activeSection ===
+                    'settings'
                       ? 'text-white'
                       : 'text-slate-500 group-hover:text-blue-400'
                   }
                 />
 
-                <span>Settings</span>
+                <span>
+                  Settings
+                </span>
               </button>
             </nav>
           </div>
@@ -1207,11 +1484,13 @@ export default function AdminDashboardPage() {
           <div className="border-t border-white/10 p-4">
             <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.04] p-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600/15 text-blue-400">
-                <ShieldCheck size={18} />
+                <ShieldCheck
+                  size={18}
+                />
               </div>
 
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold text-black">
+                <p className="truncate text-xs font-semibold text-white">
                   Administrator
                 </p>
 
@@ -1222,11 +1501,16 @@ export default function AdminDashboardPage() {
             </div>
 
             <button
-              onClick={handleLogout}
+              type="button"
+              onClick={
+                handleLogout
+              }
               className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
             >
               <LogOut size={18} />
-              <span>Sign Out</span>
+              <span>
+                Sign Out
+              </span>
             </button>
           </div>
         </div>
@@ -1239,7 +1523,12 @@ export default function AdminDashboardPage() {
           <div className="flex h-[76px] items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setSidebarOpen(true)}
+                type="button"
+                onClick={() =>
+                  setSidebarOpen(
+                    true,
+                  )
+                }
                 className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden"
               >
                 <Menu size={20} />
@@ -1258,6 +1547,7 @@ export default function AdminDashboardPage() {
 
             <div className="flex items-center gap-2 sm:gap-3">
               <button
+                type="button"
                 onClick={async () => {
                   setLoading(true);
 
@@ -1277,6 +1567,7 @@ export default function AdminDashboardPage() {
               <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
 
@@ -1291,7 +1582,8 @@ export default function AdminDashboardPage() {
         {/* CONTENT */}
         <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {/* OVERVIEW */}
-          {activeSection === 'overview' && (
+          {activeSection ===
+            'overview' && (
             <section className="space-y-7">
               <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
@@ -1305,9 +1597,7 @@ export default function AdminDashboardPage() {
                   </h2>
 
                   <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                    Manage your BREA 88 Realty property
-                    marketplace and monitor your platform
-                    activity from one place.
+                    Manage your BREA 88 Realty property marketplace and monitor your platform activity from one place.
                   </p>
                 </div>
               </div>
@@ -1315,7 +1605,9 @@ export default function AdminDashboardPage() {
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <StatCard
                   icon={UserRound}
-                  value={activeAccounts}
+                  value={
+                    activeAccounts
+                  }
                   label="Active Accounts"
                   description="Agent & Broker accounts"
                   accent="green"
@@ -1323,23 +1615,33 @@ export default function AdminDashboardPage() {
 
                 <StatCard
                   icon={Home}
-                  value={houseLotCount}
+                  value={
+                    houseLotCount
+                  }
                   label="House & Lot"
                   description="Property listings"
                   accent="blue"
                 />
 
                 <StatCard
-                  icon={Building2}
-                  value={condominiumCount}
+                  icon={
+                    Building2
+                  }
+                  value={
+                    condominiumCount
+                  }
                   label="Condominiums"
                   description="Property listings"
                   accent="violet"
                 />
 
                 <StatCard
-                  icon={Warehouse}
-                  value={forRentCount}
+                  icon={
+                    Warehouse
+                  }
+                  value={
+                    forRentCount
+                  }
                   label="For Rent"
                   description="Rental listings"
                   accent="gold"
@@ -1347,7 +1649,9 @@ export default function AdminDashboardPage() {
 
                 <StatCard
                   icon={Star}
-                  value={ownerCount}
+                  value={
+                    ownerCount
+                  }
                   label="Owner Listings"
                   description="Direct owner listings"
                   accent="blue"
@@ -1369,8 +1673,11 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <button
+                      type="button"
                       onClick={() =>
-                        navigate('properties')
+                        navigate(
+                          'properties',
+                        )
                       }
                       className="text-xs font-bold text-blue-600 hover:text-blue-700"
                     >
@@ -1378,10 +1685,13 @@ export default function AdminDashboardPage() {
                     </button>
                   </div>
 
-                  {properties.length === 0 ? (
+                  {properties.length ===
+                  0 ? (
                     <div className="px-6 py-16 text-center">
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                        <Building2 size={24} />
+                        <Building2
+                          size={24}
+                        />
                       </div>
 
                       <p className="mt-4 font-semibold text-slate-800">
@@ -1393,60 +1703,84 @@ export default function AdminDashboardPage() {
                       </p>
 
                       <button
-                        onClick={() => navigate('add')}
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            'add',
+                          )
+                        }
                         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white"
                       >
-                        <PlusCircle size={16} />
+                        <PlusCircle
+                          size={16}
+                        />
                         Add Property
                       </button>
                     </div>
                   ) : (
                     <div className="divide-y divide-slate-100">
-                      {properties.slice(0, 5).map(
-                        (property) => (
-                          <div
-                            key={
-                              property.id ??
-                              property._id
-                            }
-                            className="flex items-center gap-4 px-5 py-4 transition hover:bg-slate-50 sm:px-6"
-                          >
-                            <img
-                              src={getPropertyImage(
-                                property,
-                              )}
-                              alt={property.title}
-                              className="h-16 w-20 rounded-xl object-cover"
-                            />
+                      {properties
+                        .slice(0, 5)
+                        .map(
+                          (
+                            property,
+                          ) => (
+                            <div
+                              key={
+                                property.id ??
+                                property._id
+                              }
+                              className="flex items-center gap-4 px-5 py-4 transition hover:bg-slate-50 sm:px-6"
+                            >
+                              <img
+                                src={getPropertyImage(
+                                  property,
+                                )}
+                                alt={
+                                  property.title
+                                }
+                                className="h-16 w-20 rounded-xl object-cover"
+                              />
 
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-bold text-slate-900">
-                                {property.title}
-                              </p>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold text-slate-900">
+                                  {
+                                    property.title
+                                  }
+                                </p>
 
-                              <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                                <MapPin size={12} />
-                                <span className="truncate">
-                                  {property.location}
-                                </span>
+                                <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                                  <MapPin
+                                    size={
+                                      12
+                                    }
+                                  />
+
+                                  <span className="truncate">
+                                    {
+                                      property.location
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="hidden text-right sm:block">
+                                <p className="text-sm font-bold text-blue-600">
+                                  {formatPrice(
+                                    property.price,
+                                  )}
+                                </p>
+
+                                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                  {
+                                    property.category ||
+                                    'Property'
+                                  }
+                                </p>
                               </div>
                             </div>
-
-                            <div className="hidden text-right sm:block">
-                              <p className="text-sm font-bold text-blue-600">
-                                {formatPrice(
-                                  property.price,
-                                )}
-                              </p>
-
-                              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                                {property.category ||
-                                  'Property'}
-                              </p>
-                            </div>
-                          </div>
-                        ),
-                      )}
+                          ),
+                        )}
                     </div>
                   )}
                 </div>
@@ -1455,7 +1789,9 @@ export default function AdminDashboardPage() {
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                      <Activity size={20} />
+                      <Activity
+                        size={20}
+                      />
                     </div>
 
                     <div>
@@ -1483,7 +1819,9 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                        <CheckCircle2 size={14} />
+                        <CheckCircle2
+                          size={14}
+                        />
                         Online
                       </span>
                     </div>
@@ -1501,7 +1839,9 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                        <CheckCircle2 size={14} />
+                        <CheckCircle2
+                          size={14}
+                        />
                         Active
                       </span>
                     </div>
@@ -1519,7 +1859,10 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <span className="text-xs font-bold text-slate-700">
-                        {properties.length} listings
+                        {
+                          properties.length
+                        }{' '}
+                        listings
                       </span>
                     </div>
                   </div>
@@ -1527,7 +1870,9 @@ export default function AdminDashboardPage() {
                   <div className="mt-6 rounded-xl border border-[#c9a96e]/20 bg-[#c9a96e]/5 p-4">
                     <div className="flex gap-3">
                       <div className="mt-0.5 text-[#a9874f]">
-                        <Star size={15} />
+                        <Star
+                          size={15}
+                        />
                       </div>
 
                       <div>
@@ -1547,7 +1892,8 @@ export default function AdminDashboardPage() {
           )}
 
           {/* PROPERTIES */}
-          {activeSection === 'properties' && (
+          {activeSection ===
+            'properties' && (
             <section className="space-y-6">
               <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
@@ -1561,21 +1907,24 @@ export default function AdminDashboardPage() {
                   </h2>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    Manage all property listings from the
-                    admin panel.
+                    Manage all property listings from the admin panel.
                   </p>
                 </div>
 
                 <button
-                  onClick={() => navigate('add')}
+                  type="button"
+                  onClick={() =>
+                    navigate('add')
+                  }
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
                 >
-                  <PlusCircle size={18} />
+                  <PlusCircle
+                    size={18}
+                  />
                   Add Property
                 </button>
               </div>
 
-              {/* Search */}
               <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
                 <div className="relative">
                   <Search
@@ -1585,9 +1934,16 @@ export default function AdminDashboardPage() {
 
                   <input
                     type="search"
-                    value={searchTerm}
-                    onChange={(event) =>
-                      setSearchTerm(event.target.value)
+                    value={
+                      searchTerm
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setSearchTerm(
+                        event.target
+                          .value,
+                      )
                     }
                     placeholder="Search properties by title, location, category, type..."
                     className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
@@ -1595,10 +1951,13 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {filteredProperties.length === 0 ? (
+              {filteredProperties.length ===
+              0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-20 text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                    <Search size={25} />
+                    <Search
+                      size={25}
+                    />
                   </div>
 
                   <h3 className="mt-5 font-bold text-slate-900">
@@ -1613,10 +1972,17 @@ export default function AdminDashboardPage() {
 
                   {!searchTerm && (
                     <button
-                      onClick={() => navigate('add')}
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          'add',
+                        )
+                      }
                       className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-bold text-white"
                     >
-                      <PlusCircle size={16} />
+                      <PlusCircle
+                        size={16}
+                      />
                       Add Property
                     </button>
                   )}
@@ -1624,13 +1990,18 @@ export default function AdminDashboardPage() {
               ) : (
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {filteredProperties.map(
-                    (property) => {
+                    (
+                      property,
+                    ) => {
                       const propertyId =
-                        property.id ?? property._id;
+                        property.id ??
+                        property._id;
 
                       return (
                         <article
-                          key={propertyId}
+                          key={
+                            propertyId
+                          }
                           className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60"
                         >
                           <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
@@ -1638,7 +2009,9 @@ export default function AdminDashboardPage() {
                               src={getPropertyImage(
                                 property,
                               )}
-                              alt={property.title}
+                              alt={
+                                property.title
+                              }
                               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                             />
 
@@ -1646,46 +2019,64 @@ export default function AdminDashboardPage() {
 
                             <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                               <span className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-700 shadow-sm backdrop-blur">
-                                {property.category ||
-                                  'Property'}
+                                {
+                                  property.category ||
+                                  'Property'
+                                }
                               </span>
                             </div>
 
                             {property.tag && (
                               <span className="absolute right-4 top-4 rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
-                                {property.tag}
+                                {
+                                  property.tag
+                                }
                               </span>
                             )}
                           </div>
 
                           <div className="p-5">
                             <h3 className="line-clamp-1 text-base font-bold text-slate-900">
-                              {property.title}
+                              {
+                                property.title
+                              }
                             </h3>
 
                             <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                              <MapPin size={14} />
+                              <MapPin
+                                size={14}
+                              />
+
                               <span className="line-clamp-1">
-                                {property.location}
+                                {
+                                  property.location
+                                }
                               </span>
                             </div>
 
                             <div className="mt-4 flex flex-wrap gap-2">
                               {property.propertyType && (
                                 <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
-                                  {property.propertyType}
+                                  {
+                                    property.propertyType
+                                  }
                                 </span>
                               )}
 
                               {property.houseType && (
                                 <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
-                                  {property.houseType}
+                                  {
+                                    property.houseType
+                                  }
                                 </span>
                               )}
 
                               {property.storey && (
                                 <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
-                                  {property.storey} storey
+                                  {
+                                    property.storey
+                                  }{' '}
+                                  storey
                                 </span>
                               )}
                             </div>
@@ -1696,9 +2087,12 @@ export default function AdminDashboardPage() {
                                   size={14}
                                   className="text-blue-500"
                                 />
+
                                 <span>
-                                  {property.beds ??
-                                    '—'}{' '}
+                                  {
+                                    property.beds ??
+                                    '—'
+                                  }{' '}
                                   Beds
                                 </span>
                               </div>
@@ -1708,9 +2102,12 @@ export default function AdminDashboardPage() {
                                   size={14}
                                   className="text-blue-500"
                                 />
+
                                 <span>
-                                  {property.baths ??
-                                    '—'}{' '}
+                                  {
+                                    property.baths ??
+                                    '—'
+                                  }{' '}
                                   Baths
                                 </span>
                               </div>
@@ -1720,6 +2117,7 @@ export default function AdminDashboardPage() {
                                   size={14}
                                   className="text-blue-500"
                                 />
+
                                 <span>
                                   {property.sqft
                                     ? `${property.sqft.toLocaleString()}`
@@ -1743,6 +2141,7 @@ export default function AdminDashboardPage() {
 
                               <div className="flex gap-2">
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     editProperty(
                                       property,
@@ -1751,10 +2150,13 @@ export default function AdminDashboardPage() {
                                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                                   title="Edit property"
                                 >
-                                  <Pencil size={15} />
+                                  <Pencil
+                                    size={15}
+                                  />
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     deleteProperty(
                                       property,
@@ -1763,7 +2165,9 @@ export default function AdminDashboardPage() {
                                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                   title="Delete property"
                                 >
-                                  <Trash2 size={15} />
+                                  <Trash2
+                                    size={15}
+                                  />
                                 </button>
                               </div>
                             </div>
@@ -1778,7 +2182,8 @@ export default function AdminDashboardPage() {
           )}
 
           {/* ADD / EDIT */}
-          {activeSection === 'add' && (
+          {activeSection ===
+            'add' && (
             <section className="mx-auto max-w-5xl space-y-6">
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
@@ -1788,23 +2193,29 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <h2 className="text-3xl font-bold tracking-tight text-slate-950">
-                    {editingId !== null
+                    {editingId !==
+                    null
                       ? 'Edit Property'
                       : 'Add Property'}
                   </h2>
 
                   <p className="mt-2 text-sm text-slate-500">
-                    {editingId !== null
+                    {editingId !==
+                    null
                       ? 'Update the property listing information below.'
                       : 'Create a new property listing for the marketplace.'}
                   </p>
                 </div>
 
-                {editingId !== null && (
+                {editingId !==
+                  null && (
                   <button
+                    type="button"
                     onClick={() => {
                       resetForm();
-                      navigate('properties');
+                      navigate(
+                        'properties',
+                      );
                     }}
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
                   >
@@ -1814,22 +2225,30 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              {status === 'success' && (
+              {status ===
+                'success' && (
                 <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
-                  <CheckCircle2 size={19} />
+                  <CheckCircle2
+                    size={19}
+                  />
                   Property saved successfully.
                 </div>
               )}
 
-              {status === 'error' && (
+              {status ===
+                'error' && (
                 <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
-                  <AlertCircle size={19} />
+                  <AlertCircle
+                    size={19}
+                  />
                   Something went wrong while saving the property.
                 </div>
               )}
 
               <form
-                onSubmit={handleSubmit}
+                onSubmit={
+                  handleSubmit
+                }
                 className="space-y-6"
               >
                 {/* Classification */}
@@ -1837,7 +2256,9 @@ export default function AdminDashboardPage() {
                   <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                        <Building2 size={19} />
+                        <Building2
+                          size={19}
+                        />
                       </div>
 
                       <div>
@@ -1846,8 +2267,7 @@ export default function AdminDashboardPage() {
                         </h3>
 
                         <p className="mt-1 text-xs text-slate-500">
-                          Define the property category and
-                          classification.
+                          Define the property category and classification.
                         </p>
                       </div>
                     </div>
@@ -1857,26 +2277,42 @@ export default function AdminDashboardPage() {
                     <SelectField
                       label="Category"
                       name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      options={CATEGORY_OPTIONS}
+                      value={
+                        formData.category
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      options={
+                        CATEGORY_OPTIONS
+                      }
                       required
                     />
 
                     <SelectField
                       label="Property Type"
                       name="propertyType"
-                      value={formData.propertyType}
-                      onChange={handleInputChange}
-                      options={propertyTypeOptions}
+                      value={
+                        formData.propertyType
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      options={
+                        propertyTypeOptions
+                      }
                       required
                     />
 
                     <SelectField
                       label="Listing Tag"
                       name="tag"
-                      value={formData.tag}
-                      onChange={handleInputChange}
+                      value={
+                        formData.tag
+                      }
+                      onChange={
+                        handleInputChange
+                      }
                       options={[
                         'Residential',
                         'Commercial',
@@ -1887,26 +2323,42 @@ export default function AdminDashboardPage() {
                     />
 
                     {showHouseDetails && (
-                      <>
-                        <SelectField
-                          label="House Type"
-                          name="houseType"
-                          value={formData.houseType}
-                          onChange={handleInputChange}
-                          options={HOUSE_TYPES}
-                          required
-                        />
+                            <>
+                              <SelectField
+                                label="House Type"
+                                name="houseType"
+                                value={formData.houseType}
+                                onChange={handleInputChange}
+                                options={HOUSE_TYPES}
+                                required={false}
+                              />
 
-                        <SelectField
-                          label="Storey"
-                          name="storey"
-                          value={formData.storey}
-                          onChange={handleInputChange}
-                          options={STOREY_OPTIONS}
-                          required
-                        />
-                      </>
-                    )}
+                              <div className="space-y-2">
+                                  <label
+                                    htmlFor="storey"
+                                    className="text-sm font-semibold text-slate-700"
+                                  >
+                                    Storey
+                                  </label>
+
+                                  <input
+                                    id="storey"
+                                    name="storey"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={formData.storey}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter number of storeys"
+                                    className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                  />
+
+                                  <p className="text-xs text-slate-400">
+                                    Leave blank if not specified.
+                                  </p>
+                                </div>
+                            </>
+                          )}
                   </div>
                 </div>
 
@@ -1915,7 +2367,9 @@ export default function AdminDashboardPage() {
                   <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                        <Home size={19} />
+                        <Home
+                          size={19}
+                        />
                       </div>
 
                       <div>
@@ -1946,8 +2400,12 @@ export default function AdminDashboardPage() {
                         <input
                           id="title"
                           name="title"
-                          value={formData.title}
-                          onChange={handleInputChange}
+                          value={
+                            formData.title
+                          }
+                          onChange={
+                            handleInputChange
+                          }
                           placeholder="e.g. Premium Residential Villa"
                           required
                           className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
@@ -1973,8 +2431,12 @@ export default function AdminDashboardPage() {
                           <input
                             id="price"
                             name="price"
-                            value={formData.price}
-                            onChange={handleInputChange}
+                            value={
+                              formData.price
+                            }
+                            onChange={
+                              handleInputChange
+                            }
                             placeholder="12,500,000"
                             required
                             inputMode="decimal"
@@ -2004,8 +2466,12 @@ export default function AdminDashboardPage() {
                         <input
                           id="location"
                           name="location"
-                          value={formData.location}
-                          onChange={handleInputChange}
+                          value={
+                            formData.location
+                          }
+                          onChange={
+                            handleInputChange
+                          }
                           placeholder="e.g. Canduman, Mandaue City"
                           required
                           className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
@@ -2035,8 +2501,12 @@ export default function AdminDashboardPage() {
                                 name="beds"
                                 type="number"
                                 min="0"
-                                value={formData.beds}
-                                onChange={handleInputChange}
+                                value={
+                                  formData.beds
+                                }
+                                onChange={
+                                  handleInputChange
+                                }
                                 placeholder="4"
                                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                               />
@@ -2062,8 +2532,12 @@ export default function AdminDashboardPage() {
                                 name="baths"
                                 type="number"
                                 min="0"
-                                value={formData.baths}
-                                onChange={handleInputChange}
+                                value={
+                                  formData.baths
+                                }
+                                onChange={
+                                  handleInputChange
+                                }
                                 placeholder="3"
                                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                               />
@@ -2097,8 +2571,12 @@ export default function AdminDashboardPage() {
                             name="sqft"
                             type="number"
                             min="0"
-                            value={formData.sqft}
-                            onChange={handleInputChange}
+                            value={
+                              formData.sqft
+                            }
+                            onChange={
+                              handleInputChange
+                            }
                             placeholder="250"
                             className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                           />
@@ -2114,7 +2592,9 @@ export default function AdminDashboardPage() {
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                          <ImageIcon size={19} />
+                          <ImageIcon
+                            size={19}
+                          />
                         </div>
 
                         <div>
@@ -2123,62 +2603,82 @@ export default function AdminDashboardPage() {
                           </h3>
 
                           <p className="mt-1 text-xs text-slate-500">
-                            Add up to {MAX_IMAGES} photos. The
-                            first image is the cover.
+                            Add up to{' '}
+                            {MAX_IMAGES}{' '}
+                            photos. The first image is the cover.
                           </p>
                         </div>
                       </div>
 
                       <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">
-                        {images.length}/{MAX_IMAGES}
+                        {
+                          images.length
+                        }
+                        /
+                        {
+                          MAX_IMAGES
+                        }
                       </div>
                     </div>
                   </div>
 
                   <div className="p-5 sm:p-6">
-                    {/* Image source tabs */}
                     <div className="mb-5 inline-flex rounded-xl bg-slate-100 p-1">
                       <button
                         type="button"
                         onClick={() =>
-                          setImageSource('upload')
+                          setImageSource(
+                            'upload',
+                          )
                         }
                         className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
-                          imageSource === 'upload'
+                          imageSource ===
+                          'upload'
                             ? 'bg-white text-blue-600 shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                         }`}
                       >
-                        <Upload size={15} />
+                        <Upload
+                          size={15}
+                        />
                         Upload
                       </button>
 
                       <button
                         type="button"
                         onClick={() =>
-                          setImageSource('url')
+                          setImageSource(
+                            'url',
+                          )
                         }
                         className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
-                          imageSource === 'url'
+                          imageSource ===
+                          'url'
                             ? 'bg-white text-blue-600 shadow-sm'
                             : 'text-slate-500 hover:text-slate-700'
                         }`}
                       >
-                        <LinkIcon size={15} />
+                        <LinkIcon
+                          size={15}
+                        />
                         Image URL
                       </button>
                     </div>
 
-                    {imageSource === 'upload' ? (
+                    {imageSource ===
+                    'upload' ? (
                       <label
                         className={`group flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/70 px-6 text-center transition hover:border-blue-300 hover:bg-blue-50/40 ${
-                          images.length >= MAX_IMAGES
+                          images.length >=
+                          MAX_IMAGES
                             ? 'pointer-events-none opacity-50'
                             : ''
                         }`}
                       >
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm transition group-hover:scale-105">
-                          <Upload size={23} />
+                          <Upload
+                            size={23}
+                          />
                         </div>
 
                         <p className="mt-4 text-sm font-bold text-slate-700">
@@ -2186,18 +2686,20 @@ export default function AdminDashboardPage() {
                         </p>
 
                         <p className="mt-1 text-xs text-slate-400">
-                          PNG, JPG, JPEG or WEBP • Max 5MB
-                          each
+                          PNG, JPG, JPEG or WEBP • Max 5MB each
                         </p>
 
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/jpg,image/webp"
                           multiple
-                          onChange={handleImageUpload}
+                          onChange={
+                            handleImageUpload
+                          }
                           className="hidden"
                           disabled={
-                            images.length >= MAX_IMAGES
+                            images.length >=
+                            MAX_IMAGES
                           }
                         />
                       </label>
@@ -2211,14 +2713,25 @@ export default function AdminDashboardPage() {
 
                           <input
                             type="url"
-                            value={imageUrl}
-                            onChange={(event) =>
+                            value={
+                              imageUrl
+                            }
+                            onChange={(
+                              event,
+                            ) =>
                               setImageUrl(
-                                event.target.value,
+                                event
+                                  .target
+                                  .value,
                               )
                             }
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter') {
+                            onKeyDown={(
+                              event,
+                            ) => {
+                              if (
+                                event.key ===
+                                'Enter'
+                              ) {
                                 event.preventDefault();
                                 addImageUrl();
                               }
@@ -2230,9 +2743,12 @@ export default function AdminDashboardPage() {
 
                         <button
                           type="button"
-                          onClick={addImageUrl}
+                          onClick={
+                            addImageUrl
+                          }
                           disabled={
-                            images.length >= MAX_IMAGES
+                            images.length >=
+                            MAX_IMAGES
                           }
                           className="h-12 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -2241,7 +2757,8 @@ export default function AdminDashboardPage() {
                       </div>
                     )}
 
-                    {images.length > 0 && (
+                    {images.length >
+                      0 && (
                       <div className="mt-6">
                         <div className="mb-3 flex items-center justify-between">
                           <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
@@ -2255,26 +2772,42 @@ export default function AdminDashboardPage() {
 
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                           {images.map(
-                            (image, index) => (
+                            (
+                              image,
+                              index,
+                            ) => (
                               <div
-                                key={image.id}
+                                key={
+                                  image.id
+                                }
                                 className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
                               >
                                 <img
-                                  src={image.url}
-                                  alt={`Property image ${index + 1}`}
+                                  src={
+                                    image.url
+                                  }
+                                  alt={`Property image ${
+                                    index +
+                                    1
+                                  }`}
                                   className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                 />
 
-                                {index === 0 && (
+                                {index ===
+                                  0 && (
                                   <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-[#c9a96e] px-2 py-1 text-[9px] font-bold text-white shadow-sm">
-                                    <Star size={10} />
+                                    <Star
+                                      size={
+                                        10
+                                      }
+                                    />
                                     Cover
                                   </div>
                                 )}
 
                                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-2 pt-8 opacity-0 transition group-hover:opacity-100">
-                                  {index !== 0 ? (
+                                  {index !==
+                                  0 ? (
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -2299,7 +2832,11 @@ export default function AdminDashboardPage() {
                                     }
                                     className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500 text-white"
                                   >
-                                    <X size={13} />
+                                    <X
+                                      size={
+                                        13
+                                      }
+                                    />
                                   </button>
                                 </div>
                               </div>
@@ -2315,8 +2852,13 @@ export default function AdminDashboardPage() {
                 <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
-                    onClick={resetForm}
-                    disabled={status === 'loading'}
+                    onClick={
+                      resetForm
+                    }
+                    disabled={
+                      status ===
+                      'loading'
+                    }
                     className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                   >
                     Clear Form
@@ -2324,10 +2866,14 @@ export default function AdminDashboardPage() {
 
                   <button
                     type="submit"
-                    disabled={status === 'loading'}
+                    disabled={
+                      status ===
+                      'loading'
+                    }
                     className="flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {status === 'loading' ? (
+                    {status ===
+                    'loading' ? (
                       <>
                         <Loader2
                           size={17}
@@ -2335,14 +2881,19 @@ export default function AdminDashboardPage() {
                         />
                         Saving...
                       </>
-                    ) : editingId !== null ? (
+                    ) : editingId !==
+                      null ? (
                       <>
-                        <CheckCircle2 size={17} />
+                        <CheckCircle2
+                          size={17}
+                        />
                         Update Property
                       </>
                     ) : (
                       <>
-                        <PlusCircle size={17} />
+                        <PlusCircle
+                          size={17}
+                        />
                         Publish Property
                       </>
                     )}
@@ -2353,7 +2904,8 @@ export default function AdminDashboardPage() {
           )}
 
           {/* SETTINGS */}
-          {activeSection === 'settings' && (
+          {activeSection ===
+            'settings' && (
             <section className="mx-auto max-w-5xl space-y-6">
               <div>
                 <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
@@ -2366,15 +2918,16 @@ export default function AdminDashboardPage() {
                 </h2>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Review your BREA 88 Realty administration
-                  environment.
+                  Review your BREA 88 Realty administration environment.
                 </p>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                    <Database size={20} />
+                    <Database
+                      size={20}
+                    />
                   </div>
 
                   <h3 className="mt-5 font-bold text-slate-900">
@@ -2382,19 +2935,22 @@ export default function AdminDashboardPage() {
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Property data is connected to the BREA 88
-                    Realty database through the platform API.
+                    Property data is connected to the BREA 88 Realty database through the platform API.
                   </p>
 
                   <div className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
-                    <CheckCircle2 size={15} />
+                    <CheckCircle2
+                      size={15}
+                    />
                     Database Online
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                    <ShieldCheck size={20} />
+                    <ShieldCheck
+                      size={20}
+                    />
                   </div>
 
                   <h3 className="mt-5 font-bold text-slate-900">
@@ -2402,12 +2958,13 @@ export default function AdminDashboardPage() {
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Property management functions are restricted
-                    to authenticated administrators.
+                    Property management functions are restricted to authenticated administrators.
                   </p>
 
                   <div className="mt-5 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700">
-                    <CheckCircle2 size={15} />
+                    <CheckCircle2
+                      size={15}
+                    />
                     Authentication Active
                   </div>
                 </div>
@@ -2438,7 +2995,9 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <span className="font-bold text-slate-900">
-                      {houseLotCount}
+                      {
+                        houseLotCount
+                      }
                     </span>
                   </div>
 
@@ -2455,7 +3014,9 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <span className="font-bold text-slate-900">
-                      {condominiumCount}
+                      {
+                        condominiumCount
+                      }
                     </span>
                   </div>
 
@@ -2472,7 +3033,9 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <span className="font-bold text-slate-900">
-                      {forRentCount}
+                      {
+                        forRentCount
+                      }
                     </span>
                   </div>
 
@@ -2489,7 +3052,9 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <span className="font-bold text-slate-900">
-                      {ownerCount}
+                      {
+                        ownerCount
+                      }
                     </span>
                   </div>
                 </div>
@@ -2500,6 +3065,7 @@ export default function AdminDashboardPage() {
                   <div>
                     <div className="flex items-center gap-2 text-[#c9a96e]">
                       <span className="h-px w-6 bg-[#c9a96e]" />
+
                       <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
                         BREA 88 REALTY
                       </span>
@@ -2510,9 +3076,7 @@ export default function AdminDashboardPage() {
                     </h3>
 
                     <p className="mt-2 max-w-lg text-sm leading-6 text-slate-400">
-                      Your administration workspace is designed
-                      to keep your property marketplace organized,
-                      secure, and easy to manage.
+                      Your administration workspace is designed to keep your property marketplace organized, secure, and easy to manage.
                     </p>
                   </div>
 
@@ -2532,3 +3096,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
