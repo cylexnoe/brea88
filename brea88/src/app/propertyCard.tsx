@@ -65,12 +65,27 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   const openGallery = () => { setSelectedImage(0); setShowGallery(true); };
   const closeGallery = () => setShowGallery(false);
 
-  const openInquiry = (message = '', siteViewing = false) => {
+  const openInquiry = (message = '') => {
     setShowContact(false);
     setInquiryError('');
     setInquirySuccess(false);
-    setIsSiteViewing(siteViewing);
-    setInquiryForm((current) => ({ ...current, message, preferredViewingDate: siteViewing ? current.preferredViewingDate : '' }));
+    setIsSiteViewing(false);
+    setInquiryForm((current) => ({ ...current, message, preferredViewingDate: '' }));
+    setShowInquiry(true);
+  };
+
+  const openSiteViewing = () => {
+    setShowContact(false);
+    setInquiryError('');
+    setInquirySuccess(false);
+    setIsSiteViewing(true);
+    setInquiryForm({
+      name: '',
+      email: '',
+      phone: '',
+      message: '',
+      preferredViewingDate: '',
+    });
     setShowInquiry(true);
   };
 
@@ -121,7 +136,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
             <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">{property.beds != null && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><BedDouble className="mb-3 h-5 w-5 text-[#071936]" /><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bedrooms</p><p className="mt-1 text-lg font-black text-slate-900">{property.beds}</p></div>}{property.baths != null && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><Bath className="mb-3 h-5 w-5 text-[#071936]" /><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bathrooms</p><p className="mt-1 text-lg font-black text-slate-900">{property.baths}</p></div>}{property.sqft != null && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><Maximize className="mb-3 h-5 w-5 text-[#071936]" /><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Area</p><p className="mt-1 text-lg font-black text-slate-900">{property.sqft} sqm</p></div>}</div>
             {property.description && <div className="mt-8"><h3 className="text-lg font-black text-slate-950">Property Description</h3><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">{property.description}</p></div>}
             <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-5"><p className="text-xs font-bold uppercase tracking-wider text-slate-400">Location</p><p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><MapPin className="h-4 w-4 text-[#c9a96e]" />{property.location}</p></div>
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2"><button type="button" onClick={() => openInquiry('', true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0"><CalendarDays className="h-5 w-5" /> Schedule Site Viewing</button><button type="button" onClick={() => setShowContact(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:shadow-lg active:translate-y-0"><Phone className="h-5 w-5" /> Contact Agent</button></div>
+            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2"><button type="button" onClick={openSiteViewing} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0"><CalendarDays className="h-5 w-5" /> Schedule Site Viewing</button><button type="button" onClick={() => setShowContact(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:shadow-lg active:translate-y-0"><Phone className="h-5 w-5" /> Contact Agent</button></div>
           </div>
         </div>
       </div>}
@@ -129,14 +144,14 @@ export default function PropertyCard({ property }: PropertyCardProps) {
       {showInquiry && <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md" onClick={() => !inquirySubmitting && setShowInquiry(false)}>
         <div onClick={(event) => event.stopPropagation()} className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl">
           <button type="button" onClick={() => !inquirySubmitting && setShowInquiry(false)} aria-label="Close inquiry form" className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"><X className="h-5 w-5" /></button>
-          <div className="bg-[#071936] p-6 text-white sm:p-7"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ead9b8]">BREA 88 REALTY</p><h2 className="mt-2 text-2xl font-black">{isSiteViewing ? 'Schedule Site Viewing' : 'Send an Inquiry'}</h2><p className="mt-1 line-clamp-2 text-sm text-white/70">{property.title}</p></div>
+          <div className={`p-6 text-white sm:p-7 ${isSiteViewing ? 'bg-gradient-to-br from-[#071936] via-[#0b2347] to-[#123d68]' : 'bg-[#071936]'}`}><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ead9b8]">BREA 88 REALTY</p><div className="mt-2 flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10"><CalendarDays className="h-5 w-5 text-[#ead9b8]" /></div><div><h2 className="text-2xl font-black">{isSiteViewing ? 'Schedule Site Viewing' : 'Send an Inquiry'}</h2><p className="mt-1 line-clamp-2 text-sm text-white/70">{property.title}</p></div></div></div>
           {inquirySuccess ? <div className="p-7 text-center sm:p-9"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><CheckCircle2 className="h-8 w-8" /></div><h3 className="mt-5 text-xl font-black text-slate-950">{isSiteViewing ? 'Viewing Request Submitted' : 'Inquiry Submitted'}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{isSiteViewing ? 'Your preferred viewing date has been sent to the assigned agent. The agent will contact you to confirm the available schedule.' : 'Thank you. Your inquiry has been submitted successfully. Our team will get back to you soon.'}</p><button type="button" onClick={() => setShowInquiry(false)} className="mt-6 min-h-11 rounded-xl bg-[#071936] px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800">Done</button></div> : <form onSubmit={async (event) => {
             event.preventDefault();
             setInquirySubmitting(true); setInquiryError('');
             try {
-              const response = await fetch('/api/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: property.id, ...inquiryForm, ...(isSiteViewing ? { requestType: 'Site Viewing' } : {}), ...(property.agent?.slug ? { agentSlug: property.agent.slug } : {}) }) });
+              const response = await fetch('/api/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: property.id, name: inquiryForm.name, email: inquiryForm.email, phone: inquiryForm.phone, message: isSiteViewing ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.` : inquiryForm.message, preferredViewingDate: isSiteViewing ? inquiryForm.preferredViewingDate : undefined, ...(property.agent?.slug ? { agentSlug: property.agent.slug } : {}) }) });
               const data = await response.json();
-              if (!response.ok) throw new Error(data.message || 'Failed to submit inquiry.');
+              if (!response.ok) throw new Error(data.message || data.error || 'Failed to submit inquiry.');
               setInquirySuccess(true); setInquiryForm({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
             } catch (error) { setInquiryError(error instanceof Error ? error.message : 'Unable to submit inquiry.'); }
             finally { setInquirySubmitting(false); }
