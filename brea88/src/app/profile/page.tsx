@@ -1860,7 +1860,7 @@ export default function ProfilePage() {
                 </p>
 
                 <h3 className="mt-1 text-lg font-bold text-slate-950">
-                  Security & Settings
+                  Password & Settings
                 </h3>
 
               </div>
