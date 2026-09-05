@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   MapPin, BedDouble, Bath, Maximize, X, Phone, CalendarDays,
   Images, ChevronLeft, ChevronRight, Mail, MessageCircle, Send,
-  Loader2, CheckCircle2,
+  Loader2, CheckCircle2, Users, ChevronDown, Sparkles, LockKeyhole,
 } from 'lucide-react';
 
 interface Property {
@@ -60,6 +60,7 @@ export default function PropertyCard({ property, agentSlug = '' }: PropertyCardP
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [agentsError, setAgentsError] = useState('');
   const [selectedAgentSlug, setSelectedAgentSlug] = useState(defaultAgentSlug);
+  const [showAgentPicker, setShowAgentPicker] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [inquirySuccess, setInquirySuccess] = useState(false);
@@ -77,6 +78,11 @@ export default function PropertyCard({ property, agentSlug = '' }: PropertyCardP
     if (valid.length) return valid;
     return typeof property.image === 'string' && property.image.trim() ? [property.image] : [];
   }, [property.images, property.image]);
+
+  const selectedAgent = useMemo(
+    () => agents.find((agent) => agent.slug === selectedAgentSlug) ?? null,
+    [agents, selectedAgentSlug]
+  );
 
   const loadAgents = async () => {
     if (agentsLoading) return;
@@ -104,6 +110,10 @@ export default function PropertyCard({ property, agentSlug = '' }: PropertyCardP
     if (showInquiry) loadAgents();
   }, [showInquiry]);
 
+  useEffect(() => {
+    if (!showInquiry) setShowAgentPicker(false);
+  }, [showInquiry]);
+
   const openDetails = () => { setSelectedImage(0); setShowDetails(true); };
   const closeDetails = () => setShowDetails(false);
   const openGallery = () => { setSelectedImage(0); setShowGallery(true); };
@@ -115,6 +125,7 @@ export default function PropertyCard({ property, agentSlug = '' }: PropertyCardP
     setInquirySuccess(false);
     setIsSiteViewing(false);
     setSelectedAgentSlug(defaultAgentSlug);
+    setShowAgentPicker(false);
     setInquiryForm((current) => ({ ...current, message, preferredViewingDate: '' }));
     setShowInquiry(true);
   };
@@ -125,6 +136,7 @@ export default function PropertyCard({ property, agentSlug = '' }: PropertyCardP
     setInquirySuccess(false);
     setIsSiteViewing(true);
     setSelectedAgentSlug(defaultAgentSlug);
+    setShowAgentPicker(false);
     setInquiryForm({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
     setShowInquiry(true);
   };
@@ -203,13 +215,77 @@ export default function PropertyCard({ property, agentSlug = '' }: PropertyCardP
             finally { setInquirySubmitting(false); }
           }} className="space-y-4 p-6 sm:p-7">
             <div className="rounded-xl border border-[#ead9b8] bg-[#faf7ef] p-3 text-xs leading-5 text-slate-600">{isSiteViewing ? 'Choose your preferred date. This is a request, not a confirmed appointment. The selected Agent or Broker will contact you to confirm availability.' : 'Tell us how we can help. Select an Agent or Broker and your inquiry will be routed directly to that registered account.'}</div>
-            <div>
+            <div className="relative">
               <label htmlFor="inquiryAgent" className="text-xs font-bold uppercase tracking-wider text-slate-500">Choose an Agent or Broker</label>
-              <select id="inquiryAgent" required value={selectedAgentSlug} onChange={(event) => setSelectedAgentSlug(event.target.value)} disabled={agentsLoading || agents.length === 0} className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                <option value="">{agentsLoading ? 'Loading Agents and Brokers...' : agents.length === 0 ? 'No Agents or Brokers available' : 'Select an Agent or Broker'}</option>
-                {agents.map((agent) => <option key={agent.id} value={agent.slug}>{agent.fullName} — {agent.role}</option>)}
-              </select>
-              {linkedAgentSlug && <p className="mt-1.5 text-xs font-semibold text-[#071936]">This link is connected to a specific Agent/Broker. Their account is selected automatically.</p>}
+              <button
+                id="inquiryAgent"
+                type="button"
+                disabled={Boolean(linkedAgentSlug) || agentsLoading || agents.length === 0}
+                onClick={() => !linkedAgentSlug && setShowAgentPicker((current) => !current)}
+                aria-expanded={showAgentPicker}
+                aria-haspopup="listbox"
+                className={`mt-2 flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border px-4 text-left outline-none transition-all duration-300 ${showAgentPicker ? 'border-cyan-400 bg-slate-950 text-white shadow-[0_0_35px_rgba(34,211,238,0.25)] ring-4 ring-cyan-400/10' : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-cyan-300 hover:shadow-[0_0_25px_rgba(34,211,238,0.10)]'} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${showAgentPicker ? 'border-cyan-300/30 bg-cyan-400/10 text-cyan-300' : 'border-slate-200 bg-slate-50 text-[#071936]'}`}>
+                    {linkedAgentSlug ? <LockKeyhole className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className={`block truncate text-sm font-bold ${showAgentPicker ? 'text-white' : ''}`}>
+                      {selectedAgent ? selectedAgent.fullName : linkedAgentSlug ? 'Linked Agent/Broker' : agentsLoading ? 'Loading Agents and Brokers...' : agents.length === 0 ? 'No Agents or Brokers available' : 'Select an Agent or Broker'}
+                    </span>
+                    <span className={`mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.12em] ${showAgentPicker ? 'text-cyan-200/70' : 'text-slate-400'}`}>
+                      {selectedAgent ? selectedAgent.role : linkedAgentSlug ? 'Assigned by shared link' : 'Tap to open agent selection'}
+                    </span>
+                  </span>
+                </span>
+                {linkedAgentSlug ? <LockKeyhole className="h-4 w-4 shrink-0 text-slate-400" /> : <ChevronDown className={`h-5 w-5 shrink-0 transition-transform duration-300 ${showAgentPicker ? 'rotate-180 text-cyan-300' : 'text-slate-400'}`} />}
+              </button>
+
+              {showAgentPicker && !linkedAgentSlug && agents.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-[100] mt-3 origin-top animate-in overflow-hidden rounded-[1.35rem] border border-cyan-300/30 bg-[#020b1d]/95 shadow-[0_25px_80px_rgba(2,11,29,0.45),0_0_45px_rgba(34,211,238,0.12)] backdrop-blur-2xl duration-300">
+                  <div className="relative overflow-hidden border-b border-cyan-300/15 px-4 py-3">
+                    <div className="absolute -right-10 -top-16 h-32 w-32 rounded-full bg-cyan-400/15 blur-2xl animate-pulse" />
+                    <div className="absolute -left-12 -bottom-20 h-32 w-32 rounded-full bg-blue-500/15 blur-2xl animate-pulse" />
+                    <div className="relative flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-cyan-300 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100">Agent Network</span>
+                      <span className="ml-auto text-[10px] font-bold text-white/40">{agents.length} available</span>
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto p-2 [scrollbar-width:thin]">
+                    {agents.map((agent) => {
+                      const isSelected = selectedAgentSlug === agent.slug;
+                      const isOnline = agent.lastSeen ? Date.now() - new Date(agent.lastSeen).getTime() < 15 * 60 * 1000 : false;
+                      return (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => { setSelectedAgentSlug(agent.slug); setShowAgentPicker(false); }}
+                          className={`group/agent relative mb-1 flex w-full items-center gap-3 overflow-hidden rounded-xl border px-3 py-3 text-left transition-all duration-300 last:mb-0 ${isSelected ? 'border-cyan-300/40 bg-cyan-400/10 shadow-[0_0_25px_rgba(34,211,238,0.10)]' : 'border-transparent hover:border-cyan-300/20 hover:bg-white/[0.04] hover:shadow-[0_0_20px_rgba(34,211,238,0.07)]'}`}
+                        >
+                          <div className="absolute inset-y-0 left-0 w-px bg-cyan-300/0 transition-all duration-300 group-hover/agent:bg-cyan-300/80" />
+                          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-cyan-200/20 bg-gradient-to-br from-blue-500/20 to-cyan-300/10">
+                            {agent.profileImage ? <img src={agent.profileImage} alt={agent.fullName} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-sm font-black text-cyan-200">{agent.fullName.split(' ').map((name) => name[0]).slice(0, 2).join('')}</div>}
+                            <span className={`absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#071936] ${isOnline ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-slate-500'}`} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-extrabold text-white">{agent.fullName}</p>
+                            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.13em] text-cyan-200/55">{agent.role} <span className="mx-1 text-white/20">•</span> {isOnline ? 'Online' : 'Available'}</p>
+                          </div>
+                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${isSelected ? 'border-cyan-300/50 bg-cyan-300/15 text-cyan-200' : 'border-white/10 text-white/20 group-hover/agent:border-cyan-300/30 group-hover/agent:text-cyan-200'}`}>
+                            {isSelected ? <Sparkles className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {linkedAgentSlug && <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#071936]"><LockKeyhole className="h-3.5 w-3.5" /> This shared link is locked to the assigned Agent/Broker.</p>}
               {!linkedAgentSlug && property.agent && selectedAgentSlug === property.agent.slug && <p className="mt-1.5 text-xs text-slate-400">This property already has {property.agent.fullName} assigned, but you can choose another available Agent or Broker.</p>}
               {!linkedAgentSlug && !property.agent && !agentsLoading && agents.length > 0 && <p className="mt-1.5 text-xs text-slate-400">Direct Client: choose the Agent or Broker you want to handle this inquiry.</p>}
               {agentsError && <p className="mt-1.5 text-xs text-red-600">{agentsError}</p>}
