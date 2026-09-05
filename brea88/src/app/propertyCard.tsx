@@ -42,9 +42,14 @@ interface AvailableAgent {
   lastSeen?: string | null;
 }
 
-interface PropertyCardProps { property: Property; }
+interface PropertyCardProps {
+  property: Property;
+  agentSlug?: string;
+}
 
-export default function PropertyCard({ property }: PropertyCardProps) {
+export default function PropertyCard({ property, agentSlug = '' }: PropertyCardProps) {
+  const linkedAgentSlug = agentSlug.trim();
+  const defaultAgentSlug = linkedAgentSlug || property.agent?.slug || '';
   const [showDetails, setShowDetails] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -54,7 +59,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   const [agents, setAgents] = useState<AvailableAgent[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [agentsError, setAgentsError] = useState('');
-  const [selectedAgentSlug, setSelectedAgentSlug] = useState(property.agent?.slug ?? '');
+  const [selectedAgentSlug, setSelectedAgentSlug] = useState(defaultAgentSlug);
   const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [inquirySuccess, setInquirySuccess] = useState(false);
@@ -83,13 +88,17 @@ export default function PropertyCard({ property }: PropertyCardProps) {
       if (!response.ok) throw new Error(data.error || 'Unable to load available Agents and Brokers.');
       const list = Array.isArray(data) ? data : Array.isArray(data.agents) ? data.agents : [];
       setAgents(list);
-      setSelectedAgentSlug((current) => current || property.agent?.slug || '');
+      setSelectedAgentSlug((current) => linkedAgentSlug || current || property.agent?.slug || '');
     } catch (error) {
       setAgentsError(error instanceof Error ? error.message : 'Unable to load available Agents and Brokers.');
     } finally {
       setAgentsLoading(false);
     }
   };
+
+  useEffect(() => {
+    setSelectedAgentSlug(defaultAgentSlug);
+  }, [defaultAgentSlug]);
 
   useEffect(() => {
     if (showInquiry) loadAgents();
@@ -105,7 +114,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     setInquiryError('');
     setInquirySuccess(false);
     setIsSiteViewing(false);
-    setSelectedAgentSlug(property.agent?.slug ?? '');
+    setSelectedAgentSlug(defaultAgentSlug);
     setInquiryForm((current) => ({ ...current, message, preferredViewingDate: '' }));
     setShowInquiry(true);
   };
@@ -115,7 +124,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     setInquiryError('');
     setInquirySuccess(false);
     setIsSiteViewing(true);
-    setSelectedAgentSlug(property.agent?.slug ?? '');
+    setSelectedAgentSlug(defaultAgentSlug);
     setInquiryForm({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
     setShowInquiry(true);
   };
@@ -200,8 +209,9 @@ export default function PropertyCard({ property }: PropertyCardProps) {
                 <option value="">{agentsLoading ? 'Loading Agents and Brokers...' : agents.length === 0 ? 'No Agents or Brokers available' : 'Select an Agent or Broker'}</option>
                 {agents.map((agent) => <option key={agent.id} value={agent.slug}>{agent.fullName} — {agent.role}</option>)}
               </select>
-              {property.agent && selectedAgentSlug === property.agent.slug && <p className="mt-1.5 text-xs text-slate-400">This property already has {property.agent.fullName} assigned, but you can choose another available Agent or Broker.</p>}
-              {!property.agent && !agentsLoading && agents.length > 0 && <p className="mt-1.5 text-xs text-slate-400">Direct Client: choose the Agent or Broker you want to handle this inquiry.</p>}
+              {linkedAgentSlug && <p className="mt-1.5 text-xs font-semibold text-[#071936]">This link is connected to a specific Agent/Broker. Their account is selected automatically.</p>}
+              {!linkedAgentSlug && property.agent && selectedAgentSlug === property.agent.slug && <p className="mt-1.5 text-xs text-slate-400">This property already has {property.agent.fullName} assigned, but you can choose another available Agent or Broker.</p>}
+              {!linkedAgentSlug && !property.agent && !agentsLoading && agents.length > 0 && <p className="mt-1.5 text-xs text-slate-400">Direct Client: choose the Agent or Broker you want to handle this inquiry.</p>}
               {agentsError && <p className="mt-1.5 text-xs text-red-600">{agentsError}</p>}
               {!agentsLoading && agents.length === 0 && !agentsError && <p className="mt-1.5 text-xs text-red-600">No active Agent or Broker accounts are currently available.</p>}
             </div>
