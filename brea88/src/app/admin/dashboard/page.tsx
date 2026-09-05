@@ -39,6 +39,7 @@ import {
   UserRound,
   Building,
   Warehouse,
+  UserPlus,
 } from 'lucide-react';
 
 const MAX_IMAGES = 10;
@@ -1077,102 +1078,120 @@ export default function AdminDashboardPage() {
             </p>
 
             <nav className="space-y-1.5">
-              <button
-                onClick={() => navigate('overview')}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection === 'overview'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <LayoutDashboard
-                  size={18}
-                  className={
-                    activeSection === 'overview'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
+                  {/* Overview */}
+                  <button
+                    type="button"
+                    onClick={() => navigate('overview')}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                      activeSection === 'overview'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <LayoutDashboard
+                      size={18}
+                      className={
+                        activeSection === 'overview'
+                          ? 'text-white'
+                          : 'text-slate-500 group-hover:text-blue-400'
+                      }
+                    />
 
-                <span className="flex-1">
-                  Overview
-                </span>
-              </button>
+                    <span className="flex-1">Overview</span>
+                  </button>
 
-              <button
-                onClick={() => navigate('properties')}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection === 'properties'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
-                }`}
-              >
-                <Building2
-                  size={18}
-                  className={
-                    activeSection === 'properties'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
+                  {/* Properties */}
+                  <button
+                    type="button"
+                    onClick={() => navigate('properties')}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                      activeSection === 'properties'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                    }`}
+                  >
+                    <Building2
+                      size={18}
+                      className={
+                        activeSection === 'properties'
+                          ? 'text-white'
+                          : 'text-slate-500 group-hover:text-blue-400'
+                      }
+                    />
 
-                <span className="flex-1">
-                  Properties
-                </span>
+                    <span className="flex-1">Properties</span>
 
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] ${
-                    activeSection === 'properties'
-                      ? 'bg-white/15 text-white'
-                      : 'bg-white/5 text-slate-500'
-                  }`}
-                >
-                  {properties.length}
-                </span>
-              </button>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] ${
+                        activeSection === 'properties'
+                          ? 'bg-white/15 text-white'
+                          : 'bg-white/5 text-slate-500'
+                      }`}
+                    >
+                      {properties.length}
+                    </span>
+                  </button>
 
-              <button
-                onClick={() => navigate('add')}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection === 'add'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-600'
-                }`}
-              >
-                <PlusCircle
-                  size={18}
-                  className={
-                    activeSection === 'add'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
+                  {/* Add Property */}
+                  <button
+                    type="button"
+                    onClick={() => navigate('add')}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+                      activeSection === 'add'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                    }`}
+                  >
+                    <PlusCircle
+                      size={18}
+                      className={
+                        activeSection === 'add'
+                          ? 'text-white'
+                          : 'text-slate-500 group-hover:text-blue-400'
+                      }
+                    />
 
-                <span>Add Property</span>
-              </button>
+                    <span>Add Property</span>
+                  </button>
 
-              <button
-                onClick={() => {
-                  setSidebarOpen(false);
-                  window.location.href =
-                    '/admin/agents';
-                }}
-                className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
-              >
-                <UserRound
-                  size={18}
-                  className="text-slate-500 group-hover:text-blue-400"
-                />
+                  {/* Active Accounts */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      router.push('/admin/agents');
+                    }}
+                    className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
+                  >
+                    <UserRound
+                      size={18}
+                      className="text-slate-500 group-hover:text-emerald-400"
+                    />
 
-                <span className="flex-1">
-                  Active Accounts
-                </span>
+                    <span className="flex-1">Active Accounts</span>
 
-                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
-                  {activeAccounts}
-                </span>
-              </button>
-            </nav>
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
+                      {activeAccounts}
+                    </span>
+                  </button>
+
+                  {/* Create Account */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      router.push('/admin/agents/create');
+                    }}
+                    className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-blue-400"
+                    aria-label="Create Agent or Broker account"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md shadow-blue-900/30 transition-transform duration-200 group-hover:scale-105">
+                      <UserPlus size={17} />
+                    </span>
+
+                    <span className="flex-1">Create Account</span>
+                  </button>
+                </nav>
 
             <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
               System

@@ -162,15 +162,6 @@ export default function AdminCreateAccountPage() {
 
       <section className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="mb-8">
-          <button
-            type="button"
-            onClick={() => router.push('/admin/agents')}
-            className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-blue-700"
-          >
-            <ArrowLeft size={16} />
-            Agents &amp; Brokers
-          </button>
-
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">

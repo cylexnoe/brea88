@@ -18,18 +18,6 @@ export default async function AdminDashboardLayout({
     <div className="admin-dashboard-shell">
       {children}
 
-      <Link
-        href="/admin/agents/create"
-        className="admin-create-account-shortcut group"
-        aria-label="Create Agent or Broker account"
-      >
-        <span className="admin-create-account-icon">
-          <UserPlus size={17} />
-        </span>
-        <span className="flex-1">Create Account</span>
-        <span className="admin-create-account-arrow">+</span>
-      </Link>
-
       <style dangerouslySetInnerHTML={{ __html: `
         .admin-dashboard-shell {
           min-height: 100vh;
