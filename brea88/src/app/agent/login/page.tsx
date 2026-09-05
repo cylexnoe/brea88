@@ -3,8 +3,16 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Building2, Lock, Mail, Loader2, ArrowLeft, UserPlus, Eye, EyeOff,
-  ShieldCheck, CheckCircle2, ArrowRight,
+  Building2,
+  Lock,
+  Mail,
+  Loader2,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  CheckCircle2,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function AgentLoginPage() {
@@ -114,15 +122,12 @@ export default function AgentLoginPage() {
                   </button>
                 </form>
 
-                <div className="my-7 flex items-center gap-4"><div className="h-px flex-1 bg-slate-100" /><span className="text-xs font-semibold text-slate-400">OR</span><div className="h-px flex-1 bg-slate-100" /></div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm"><UserPlus className="h-5 w-5 text-blue-900" /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-slate-900">New to BREA 88 REALTY?</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">Create an Agent account. Broker status is managed by an administrator.</p>
-                      <button type="button" onClick={() => router.push('/agent/register')} className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-blue-900 transition hover:text-blue-700">Register as Agent <ArrowRight className="h-3.5 w-3.5" /></button>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm"><ShieldCheck className="h-5 w-5 text-blue-900" /></div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">Account access is administrator-controlled</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Agent and Broker accounts are created by a BREA 88 REALTY administrator. Contact your administrator if you need an account.</p>
                     </div>
                   </div>
                 </div>
