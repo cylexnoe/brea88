@@ -242,8 +242,6 @@ export default function AdminAgentsPage() {
             </div>
 
             <div className="hidden items-center gap-2 md:flex">
-              <button type="button" onClick={() => router.push('/admin/dashboard')} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">Dashboard</button>
-              <button type="button" className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20">Agents &amp; Brokers</button>
               <button
                 type="button"
                 onClick={() => router.push('/admin/agents/create')}
@@ -263,12 +261,6 @@ export default function AdminAgentsPage() {
         {mobileMenuOpen && (
           <div className="border-t border-slate-200 bg-white md:hidden">
             <div className="space-y-1 px-4 py-3">
-              <button type="button" onClick={() => { setMobileMenuOpen(false); router.push('/admin/dashboard'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">
-                <Building2 size={18} /> Dashboard
-              </button>
-              <button type="button" className="flex w-full items-center gap-3 rounded-xl bg-blue-600 px-4 py-3 text-left text-sm font-bold text-white">
-                <UserCheck size={18} /> Agents &amp; Brokers
-              </button>
               <button type="button" onClick={() => { setMobileMenuOpen(false); router.push('/admin/agents/create'); }} className="flex w-full items-center gap-3 rounded-xl bg-[#030b1c] px-4 py-3 text-left text-sm font-bold text-white">
                 <UserPlus size={18} /> Create Account
               </button>
@@ -288,9 +280,6 @@ export default function AdminAgentsPage() {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={() => router.push('/admin/agents/create')} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#030b1c] px-5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-blue-700">
-              <UserPlus size={17} /> Create Account
-            </button>
             <button type="button" onClick={() => loadAgents(true)} disabled={refreshing} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50">
               <RefreshCw size={17} className={refreshing ? 'animate-spin' : ''} /> Refresh
             </button>
