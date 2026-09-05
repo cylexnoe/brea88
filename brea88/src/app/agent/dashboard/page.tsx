@@ -858,9 +858,7 @@ export default function AgentDashboardPage() {
     },
     {
       name: 'My Profile',
-      href: agent
-        ? `/agent/${agent.slug}`
-        : '/profile',
+      href: '/profile',
       icon: User,
     },
   ];
