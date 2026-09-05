@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   MapPin, BedDouble, Bath, Maximize, X, Phone, CalendarDays,
   Images, ChevronLeft, ChevronRight, Mail, MessageCircle, Send,
@@ -33,6 +33,15 @@ interface Property {
   description?: string;
 }
 
+interface AvailableAgent {
+  id: number;
+  fullName: string;
+  role: string;
+  slug: string;
+  profileImage?: string | null;
+  lastSeen?: string | null;
+}
+
 interface PropertyCardProps { property: Property; }
 
 export default function PropertyCard({ property }: PropertyCardProps) {
@@ -42,6 +51,10 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   const [showContact, setShowContact] = useState(false);
   const [showInquiry, setShowInquiry] = useState(false);
   const [isSiteViewing, setIsSiteViewing] = useState(false);
+  const [agents, setAgents] = useState<AvailableAgent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [agentsError, setAgentsError] = useState('');
+  const [selectedAgentSlug, setSelectedAgentSlug] = useState(property.agent?.slug ?? '');
   const [inquiryForm, setInquiryForm] = useState({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [inquirySuccess, setInquirySuccess] = useState(false);
@@ -60,6 +73,28 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     return typeof property.image === 'string' && property.image.trim() ? [property.image] : [];
   }, [property.images, property.image]);
 
+  const loadAgents = async () => {
+    if (agentsLoading) return;
+    setAgentsLoading(true);
+    setAgentsError('');
+    try {
+      const response = await fetch('/api/agents', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to load available Agents and Brokers.');
+      const list = Array.isArray(data) ? data : Array.isArray(data.agents) ? data.agents : [];
+      setAgents(list);
+      setSelectedAgentSlug((current) => current || property.agent?.slug || '');
+    } catch (error) {
+      setAgentsError(error instanceof Error ? error.message : 'Unable to load available Agents and Brokers.');
+    } finally {
+      setAgentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showInquiry) loadAgents();
+  }, [showInquiry]);
+
   const openDetails = () => { setSelectedImage(0); setShowDetails(true); };
   const closeDetails = () => setShowDetails(false);
   const openGallery = () => { setSelectedImage(0); setShowGallery(true); };
@@ -70,6 +105,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     setInquiryError('');
     setInquirySuccess(false);
     setIsSiteViewing(false);
+    setSelectedAgentSlug(property.agent?.slug ?? '');
     setInquiryForm((current) => ({ ...current, message, preferredViewingDate: '' }));
     setShowInquiry(true);
   };
@@ -79,6 +115,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     setInquiryError('');
     setInquirySuccess(false);
     setIsSiteViewing(true);
+    setSelectedAgentSlug(property.agent?.slug ?? '');
     setInquiryForm({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
     setShowInquiry(true);
   };
@@ -143,20 +180,36 @@ export default function PropertyCard({ property }: PropertyCardProps) {
           {inquirySuccess ? <div className="p-7 text-center sm:p-9"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><CheckCircle2 className="h-8 w-8" /></div><h3 className="mt-5 text-xl font-black text-slate-950">{isSiteViewing ? 'Viewing Request Submitted' : 'Inquiry Submitted'}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{isSiteViewing ? 'Your preferred viewing date has been sent to the assigned agent. The agent will contact you to confirm the available schedule.' : 'Thank you. Your inquiry has been submitted successfully. Our team will get back to you soon.'}</p><button type="button" onClick={() => setShowInquiry(false)} className="mt-6 min-h-11 rounded-xl bg-[#071936] px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800">Done</button></div> : <form onSubmit={async (event) => {
             event.preventDefault();
             setInquirySubmitting(true); setInquiryError('');
+            if (!selectedAgentSlug) {
+              setInquiryError('Please select an Agent or Broker before submitting.');
+              setInquirySubmitting(false);
+              return;
+            }
             try {
-              const response = await fetch('/api/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: property.id, name: inquiryForm.name, email: inquiryForm.email, phone: inquiryForm.phone, message: isSiteViewing ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.` : inquiryForm.message, preferredViewingDate: isSiteViewing ? inquiryForm.preferredViewingDate : undefined, ...(property.agent?.slug ? { agentSlug: property.agent.slug } : {}) }) });
+              const response = await fetch('/api/inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ propertyId: property.id, name: inquiryForm.name, email: inquiryForm.email, phone: inquiryForm.phone, message: isSiteViewing ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.` : inquiryForm.message, preferredViewingDate: isSiteViewing ? inquiryForm.preferredViewingDate : undefined, agentSlug: selectedAgentSlug }) });
               const data = await response.json();
               if (!response.ok) throw new Error(data.message || data.error || 'Failed to submit inquiry.');
               setInquirySuccess(true); setInquiryForm({ name: '', email: '', phone: '', message: '', preferredViewingDate: '' });
             } catch (error) { setInquiryError(error instanceof Error ? error.message : 'Unable to submit inquiry.'); }
             finally { setInquirySubmitting(false); }
           }} className="space-y-4 p-6 sm:p-7">
-            <div className="rounded-xl border border-[#ead9b8] bg-[#faf7ef] p-3 text-xs leading-5 text-slate-600">{isSiteViewing ? 'Choose your preferred date. This is a request, not a confirmed appointment. The assigned agent will contact you to confirm availability.' : 'Tell us how we can help. Your inquiry will be routed through the registered account associated with this property when an agent profile is available.'}</div>
+            <div className="rounded-xl border border-[#ead9b8] bg-[#faf7ef] p-3 text-xs leading-5 text-slate-600">{isSiteViewing ? 'Choose your preferred date. This is a request, not a confirmed appointment. The selected Agent or Broker will contact you to confirm availability.' : 'Tell us how we can help. Select an Agent or Broker and your inquiry will be routed directly to that registered account.'}</div>
+            <div>
+              <label htmlFor="inquiryAgent" className="text-xs font-bold uppercase tracking-wider text-slate-500">Choose an Agent or Broker</label>
+              <select id="inquiryAgent" required value={selectedAgentSlug} onChange={(event) => setSelectedAgentSlug(event.target.value)} disabled={agentsLoading || agents.length === 0} className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+                <option value="">{agentsLoading ? 'Loading Agents and Brokers...' : agents.length === 0 ? 'No Agents or Brokers available' : 'Select an Agent or Broker'}</option>
+                {agents.map((agent) => <option key={agent.id} value={agent.slug}>{agent.fullName} — {agent.role}</option>)}
+              </select>
+              {property.agent && selectedAgentSlug === property.agent.slug && <p className="mt-1.5 text-xs text-slate-400">This property already has {property.agent.fullName} assigned, but you can choose another available Agent or Broker.</p>}
+              {!property.agent && !agentsLoading && agents.length > 0 && <p className="mt-1.5 text-xs text-slate-400">Direct Client: choose the Agent or Broker you want to handle this inquiry.</p>}
+              {agentsError && <p className="mt-1.5 text-xs text-red-600">{agentsError}</p>}
+              {!agentsLoading && agents.length === 0 && !agentsError && <p className="mt-1.5 text-xs text-red-600">No active Agent or Broker accounts are currently available.</p>}
+            </div>
             {(['name', 'email', 'phone'] as const).map((field) => <div key={field}><label className="text-xs font-bold uppercase tracking-wider text-slate-500">{field === 'name' ? 'Full Name' : field === 'email' ? 'Email Address' : 'Contact Number'}</label><input required type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'} value={inquiryForm[field]} onChange={(event) => setInquiryForm({ ...inquiryForm, [field]: event.target.value })} placeholder={field === 'phone' ? '09XXXXXXXXX' : field === 'email' ? 'you@example.com' : 'Enter your full name'} className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10" /></div>)}
             {isSiteViewing && <div><label htmlFor="preferredViewingDate" className="text-xs font-bold uppercase tracking-wider text-slate-500">Preferred Site Viewing Date</label><div className="relative mt-2"><CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#c9a96e]" /><input id="preferredViewingDate" required type="date" min={minViewingDate} value={inquiryForm.preferredViewingDate} onChange={(event) => setInquiryForm({ ...inquiryForm, preferredViewingDate: event.target.value })} className="min-h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10" /></div></div>}
             {!isSiteViewing && <div><label className="text-xs font-bold uppercase tracking-wider text-slate-500">Message</label><textarea required rows={4} value={inquiryForm.message} onChange={(event) => setInquiryForm({ ...inquiryForm, message: event.target.value })} placeholder="I'm interested in this property..." className="mt-2 w-full resize-none rounded-xl border border-slate-200 p-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10" /></div>}
             {inquiryError && <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{inquiryError}</div>}
-            <button type="submit" disabled={inquirySubmitting} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{inquirySubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <><Send className="h-4 w-4" /> {isSiteViewing ? 'Request Site Viewing' : 'Submit Inquiry'}</>}</button>
+            <button type="submit" disabled={inquirySubmitting || agentsLoading || agents.length === 0} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{inquirySubmitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <><Send className="h-4 w-4" /> {isSiteViewing ? 'Request Site Viewing' : 'Submit Inquiry'}</>}</button>
           </form>}
         </div>
       </div>}
