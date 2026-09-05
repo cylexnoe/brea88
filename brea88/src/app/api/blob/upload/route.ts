@@ -1,96 +1,52 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+
 import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { hasValidContentLength, validateImageFile } from '@/lib/security';
+import { getClientKey, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
+  const limit = rateLimit(getClientKey(request, 'blob-upload'), 20);
+
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { success: false, message: 'Too many uploads. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+    );
+  }
+
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 401 });
+  }
+
+  if (!hasValidContentLength(request, 6 * 1024 * 1024)) {
+    return NextResponse.json({ success: false, message: 'Upload is too large.' }, { status: 413 });
+  }
+
   try {
-    const authenticated = await isAdminAuthenticated();
-
-    if (!authenticated) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Unauthorized.',
-        },
-        { status: 401 }
-      );
-    }
-
     const formData = await request.formData();
-
     const file = formData.get('file');
 
     if (!(file instanceof File)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'No image file was provided.',
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'No image file was provided.' }, { status: 400 });
     }
 
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Only JPG, JPEG, and WebP images are allowed.',
-        },
-        { status: 400 }
-      );
+    const validation = await validateImageFile(file);
+    if (!validation.ok) {
+      return NextResponse.json({ success: false, message: validation.message }, { status: 400 });
     }
 
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Image must be 5MB or smaller.',
-        },
-        { status: 400 }
-      );
-    }
-
-    const extension =
-      file.type === 'image/png'
-        ? 'png'
-        : file.type === 'image/webp'
-        ? 'webp'
-        : 'jpg';
-
-    const filename = `properties/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const filename = `properties/${crypto.randomUUID()}.${validation.extension}`;
 
     const blob = await put(filename, file, {
       access: 'public',
       addRandomSuffix: true,
+      contentType: file.type,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        url: blob.url,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, url: blob.url }, { status: 200 });
   } catch (error) {
-    console.error('Blob upload error:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Image upload failed.',
-      },
-      { status: 500 }
-    );
+    console.error('Blob upload failed:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json({ success: false, message: 'Image upload failed.' }, { status: 500 });
   }
 }

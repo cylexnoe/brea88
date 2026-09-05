@@ -2,226 +2,62 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 
 const SESSION_COOKIE = 'admin_session';
-
-// Admin session expires after 2 hours.
-const SESSION_DURATION =
-  60 * 60 * 2 * 1000;
-
-/*
-|--------------------------------------------------------------------------
-| ADMIN SESSION SECRET
-|--------------------------------------------------------------------------
-*/
+const SESSION_DURATION = 60 * 60 * 2 * 1000;
+const MIN_SECRET_LENGTH = 32;
 
 function getSecret(): string {
-  const secret =
-    process.env.ADMIN_SESSION_SECRET;
+  const secret = process.env.ADMIN_SESSION_SECRET;
 
-  if (!secret) {
-    throw new Error(
-      'ADMIN_SESSION_SECRET is not configured'
-    );
+  if (!secret || secret.length < MIN_SECRET_LENGTH) {
+    throw new Error('ADMIN_SESSION_SECRET must be configured with at least 32 characters.');
   }
 
   return secret;
 }
 
-/*
-|--------------------------------------------------------------------------
-| CREATE SIGNATURE
-|--------------------------------------------------------------------------
-*/
-
-function createSignature(
-  timestamp: string
-): string {
-  return crypto
-    .createHmac(
-      'sha256',
-      getSecret()
-    )
-    .update(timestamp)
-    .digest('hex');
+function createSignature(timestamp: string): string {
+  return crypto.createHmac('sha256', getSecret()).update(timestamp).digest('hex');
 }
-
-/*
-|--------------------------------------------------------------------------
-| SAFE STRING COMPARISON
-|--------------------------------------------------------------------------
-*/
-
-function safeCompare(
-  a: string,
-  b: string
-): boolean {
-  const bufferA =
-    Buffer.from(a);
-
-  const bufferB =
-    Buffer.from(b);
-
-  if (
-    bufferA.length !==
-    bufferB.length
-  ) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(
-    bufferA,
-    bufferB
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| CREATE ADMIN SESSION TOKEN
-|--------------------------------------------------------------------------
-|
-| Format:
-|
-| timestamp.signature
-|
-| The timestamp is signed using HMAC-SHA256.
-|--------------------------------------------------------------------------
-*/
 
 export function createAdminSessionToken(): string {
-  const timestamp =
-    Date.now().toString();
-
-  const signature =
-    createSignature(timestamp);
-
-  return `${timestamp}.${signature}`;
+  const timestamp = Date.now().toString();
+  return `${timestamp}.${createSignature(timestamp)}`;
 }
 
-/*
-|--------------------------------------------------------------------------
-| VALIDATE ADMIN SESSION TOKEN
-|--------------------------------------------------------------------------
-*/
+export function isValidSessionToken(token: string | undefined): boolean {
+  if (!token || token.length > 160) return false;
 
-export function isValidSessionToken(
-  token: string | undefined
-): boolean {
-  if (!token) {
-    return false;
-  }
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
 
-  const parts =
-    token.split('.');
+  const [timestamp, signature] = parts;
+  if (!/^\d{13}$/.test(timestamp) || !/^[a-f0-9]{64}$/i.test(signature)) return false;
 
-  if (parts.length !== 2) {
-    return false;
-  }
+  const timestampNumber = Number(timestamp);
+  if (!Number.isSafeInteger(timestampNumber)) return false;
 
-  const [
-    timestamp,
-    signature,
-  ] = parts;
+  const age = Date.now() - timestampNumber;
+  if (age < 0 || age > SESSION_DURATION) return false;
 
-  if (
-    !timestamp ||
-    !signature
-  ) {
-    return false;
-  }
+  const expectedSignature = createSignature(timestamp);
+  const actual = Buffer.from(signature, 'utf8');
+  const expected = Buffer.from(expectedSignature, 'utf8');
 
-  /*
-  |--------------------------------------------------------------------------
-  | VALIDATE TIMESTAMP
-  |--------------------------------------------------------------------------
-  */
-
-  const timestampNumber =
-    Number(timestamp);
-
-  if (
-    !Number.isFinite(
-      timestampNumber
-    )
-  ) {
-    return false;
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | VALIDATE SESSION AGE
-  |--------------------------------------------------------------------------
-  */
-
-  const age =
-    Date.now() -
-    timestampNumber;
-
-  /*
-  | Reject:
-  |
-  | - Future timestamps
-  | - Expired sessions
-  |--------------------------------------------------------------------------
-  */
-
-  if (
-    age < 0 ||
-    age > SESSION_DURATION
-  ) {
-    return false;
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | VERIFY SIGNATURE
-  |--------------------------------------------------------------------------
-  */
-
-  const expectedSignature =
-    createSignature(timestamp);
-
-  return safeCompare(
-    signature,
-    expectedSignature
-  );
+  if (actual.length !== expected.length) return false;
+  return crypto.timingSafeEqual(actual, expected);
 }
-
-/*
-|--------------------------------------------------------------------------
-| CHECK ADMIN AUTHENTICATION
-|--------------------------------------------------------------------------
-*/
 
 export async function isAdminAuthenticated(): Promise<boolean> {
-  const cookieStore =
-    await cookies();
-
-  const session =
-    cookieStore.get(
-      SESSION_COOKIE
-    )?.value;
-
-  return isValidSessionToken(
-    session
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| REQUIRE ADMIN
-|--------------------------------------------------------------------------
-|
-| Useful for protected server-side operations.
-|--------------------------------------------------------------------------
-*/
-
-export async function requireAdmin(): Promise<void> {
-  const authenticated =
-    await isAdminAuthenticated();
-
-  if (!authenticated) {
-    throw new Error(
-      'UNAUTHORIZED'
-    );
+  try {
+    const cookieStore = await cookies();
+    return isValidSessionToken(cookieStore.get(SESSION_COOKIE)?.value);
+  } catch {
+    return false;
   }
 }
 
+export async function requireAdmin(): Promise<void> {
+  if (!(await isAdminAuthenticated())) {
+    throw new Error('UNAUTHORIZED');
+  }
+}
