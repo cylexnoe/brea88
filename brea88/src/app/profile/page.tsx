@@ -1910,7 +1910,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() =>
-                    router.push('/agent/inquiries')
+                    router.push('/agent/dashboard')
                   }
                   className="group flex w-full items-center gap-4 px-6 py-4 text-left transition-all duration-200 hover:bg-slate-50"
                 >
