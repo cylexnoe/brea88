@@ -162,6 +162,31 @@ export default function AgentProfilePage({
     }
   };
 
+  /*
+   * IMPORTANT:
+   * Keep the current Agent/Broker slug when opening
+   * the Marketplace.
+   *
+   * Example:
+   * /agent/cylex-noe-catadman
+   *
+   * becomes:
+   * /marketplace?agent=cylex-noe-catadman
+   *
+   * This allows the Marketplace to keep the inquiry
+   * connected to the profile that the visitor came from.
+   */
+  const openAgentMarketplace = () => {
+    if (!agent?.slug) {
+      router.push('/marketplace');
+      return;
+    }
+
+    router.push(
+      `/marketplace?agent=${encodeURIComponent(agent.slug)}`
+    );
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#071936]">
@@ -462,7 +487,7 @@ export default function AgentProfilePage({
               </p>
 
               <button
-                onClick={() => router.push('/marketplace')}
+                onClick={openAgentMarketplace}
                 className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
               >
                 <Building2 className="h-4 w-4" />
@@ -559,7 +584,7 @@ export default function AgentProfilePage({
                 </button>
 
                 <button
-                  onClick={() => router.push('/marketplace')}
+                  onClick={openAgentMarketplace}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition hover:border-white/20 hover:bg-white/10"
                 >
                   <Building2 className="h-4 w-4" />
@@ -809,3 +834,4 @@ export default function AgentProfilePage({
     </main>
   );
 }
+
