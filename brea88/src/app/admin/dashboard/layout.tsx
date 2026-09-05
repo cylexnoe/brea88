@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { UserPlus } from 'lucide-react';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export default async function AdminDashboardLayout({
@@ -15,6 +17,19 @@ export default async function AdminDashboardLayout({
   return (
     <div className="admin-dashboard-shell">
       {children}
+
+      <Link
+        href="/admin/agents/create"
+        className="admin-create-account-shortcut group"
+        aria-label="Create Agent or Broker account"
+      >
+        <span className="admin-create-account-icon">
+          <UserPlus size={17} />
+        </span>
+        <span className="flex-1">Create Account</span>
+        <span className="admin-create-account-arrow">+</span>
+      </Link>
+
       <style dangerouslySetInnerHTML={{ __html: `
         .admin-dashboard-shell {
           min-height: 100vh;
@@ -57,6 +72,58 @@ export default async function AdminDashboardLayout({
           border-color: rgba(201,169,110,.2);
           transform: translateX(2px);
         }
+        .admin-create-account-shortcut {
+          position: fixed;
+          z-index: 60;
+          left: 16px;
+          top: 382px;
+          width: 248px;
+          min-height: 46px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 11px 14px;
+          border: 1px solid rgba(96,165,250,.24);
+          border-radius: 12px;
+          color: #bfdbfe;
+          background: linear-gradient(135deg, rgba(37,99,235,.18), rgba(15,23,42,.32));
+          box-shadow: 0 10px 28px rgba(2,6,23,.22), inset 0 1px 0 rgba(255,255,255,.06);
+          font-size: 13px;
+          font-weight: 700;
+          text-decoration: none;
+          transition: transform 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease, color 220ms ease;
+        }
+        .admin-create-account-shortcut:hover {
+          transform: translateX(3px);
+          border-color: rgba(96,165,250,.48);
+          color: #fff;
+          background: linear-gradient(135deg, rgba(37,99,235,.34), rgba(15,23,42,.48));
+          box-shadow: 0 14px 34px rgba(2,6,23,.3), 0 0 0 1px rgba(96,165,250,.08);
+        }
+        .admin-create-account-icon {
+          display: flex;
+          width: 30px;
+          height: 30px;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border-radius: 9px;
+          color: #fff;
+          background: rgba(37,99,235,.82);
+          box-shadow: 0 5px 14px rgba(37,99,235,.24);
+        }
+        .admin-create-account-arrow {
+          display: flex;
+          width: 22px;
+          height: 22px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          color: #93c5fd;
+          background: rgba(255,255,255,.06);
+          font-size: 15px;
+          line-height: 1;
+        }
         .admin-dashboard-shell main > div:first-child h2 {
           color: #071936;
         }
@@ -98,6 +165,9 @@ export default async function AdminDashboardLayout({
           .admin-dashboard-shell main { padding-bottom: 2rem; }
           .admin-dashboard-shell aside { width: min(86vw,320px); }
           .admin-dashboard-shell main::before { width: 180px; height: 150px; right: 0; }
+        }
+        @media (max-width: 1023px) {
+          .admin-create-account-shortcut { display: none; }
         }
       ` }} />
     </div>
