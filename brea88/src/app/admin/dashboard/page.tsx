@@ -1310,14 +1310,6 @@ export default function AdminDashboardPage() {
                     activity from one place.
                   </p>
                 </div>
-
-                <button
-                  onClick={() => navigate('add')}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
-                >
-                  <PlusCircle size={18} />
-                  Add Property
-                </button>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
