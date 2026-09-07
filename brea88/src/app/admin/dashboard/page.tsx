@@ -377,40 +377,33 @@ export default function AdminDashboardPage() {
     );
 
   async function fetchProperties() {
-    try {
-      const response = await fetch(
-        '/api/properties',
-        {
+      try {
+        const response = await fetch('/admin/api/properties', {
           method: 'GET',
           cache: 'no-store',
           credentials: 'include',
-        },
-      );
+        });
 
-      if (!response.ok) {
-        throw new Error(
-          'Failed to fetch properties',
-        );
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || 'Failed to fetch properties.',
+          );
+        }
+
+        const propertyList = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.properties)
+            ? data.properties
+            : [];
+
+        setProperties(propertyList);
+      } catch (error) {
+        console.error('Fetch properties error:', error);
+        setProperties([]);
       }
-
-      const data = await response.json();
-
-      const propertyList = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.properties)
-          ? data.properties
-          : [];
-
-      setProperties(propertyList);
-    } catch (error) {
-      console.error(
-        'Fetch properties error:',
-        error,
-      );
-
-      setProperties([]);
     }
-  }
 
   async function fetchActiveAccounts() {
     try {
@@ -475,51 +468,50 @@ export default function AdminDashboardPage() {
   }, []);
 
   function handleInputChange(
-  event:
-    | ChangeEvent<HTMLInputElement>
-    | ChangeEvent<HTMLSelectElement>
-    | ChangeEvent<HTMLTextAreaElement>,
-) {
-    const { name, value } = event.target;
+      event:
+        | ChangeEvent<HTMLInputElement>
+        | ChangeEvent<HTMLSelectElement>
+        | ChangeEvent<HTMLTextAreaElement>,
+    ) {
+      const { name, value } = event.target;
 
-    if (name === 'category') {
-      setFormData((current) => ({
-        ...current,
-        category: value,
-        propertyType: '',
-        houseType: '',
-        storey: '',
-      }));
+      if (name === 'category') {
+        setFormData((current) => ({
+          ...current,
+          category: value,
+          propertyType: '',
+          houseType: '',
+          storey: '',
+        }));
 
-      return;
-    }
+        return;
+      }
 
-    if (name === 'propertyType') {
-      const shouldShowHouseDetails =
-        requiresHouseDetails(
+      if (name === 'propertyType') {
+        const shouldShowHouseDetails = requiresHouseDetails(
           formData.category,
           value,
         );
 
+        setFormData((current) => ({
+          ...current,
+          propertyType: value,
+          houseType: shouldShowHouseDetails
+            ? current.houseType
+            : '',
+          storey: shouldShowHouseDetails
+            ? current.storey
+            : '',
+        }));
+
+        return;
+      }
+
       setFormData((current) => ({
         ...current,
-        propertyType: value,
-        houseType: shouldShowHouseDetails
-          ? current.houseType
-          : '',
-        storey: shouldShowHouseDetails
-          ? current.storey
-          : '',
+        [name]: value,
       }));
-
-      return;
     }
-
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }));
-  }
 
   function handleImageUpload(
     event: ChangeEvent<HTMLInputElement>,
@@ -834,7 +826,7 @@ export default function AdminDashboardPage() {
 
     try {
       const response = await fetch(
-        `/admin/api/properties?id=${encodeURIComponent(
+        `/admin/properties?id=${encodeURIComponent(
           String(id),
         )}`,
         {
