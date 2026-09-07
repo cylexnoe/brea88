@@ -59,6 +59,10 @@ export type PropertyMinAggregateOutputType = {
   propertyType: string | null
   houseType: string | null
   storey: string | null
+  developer: string | null
+  description: string | null
+  videoUrl: string | null
+  totalcp: string | null
 }
 
 export type PropertyMaxAggregateOutputType = {
@@ -78,6 +82,10 @@ export type PropertyMaxAggregateOutputType = {
   propertyType: string | null
   houseType: string | null
   storey: string | null
+  developer: string | null
+  description: string | null
+  videoUrl: string | null
+  totalcp: string | null
 }
 
 export type PropertyCountAggregateOutputType = {
@@ -98,6 +106,11 @@ export type PropertyCountAggregateOutputType = {
   propertyType: number
   houseType: number
   storey: number
+  developer: number
+  bankFinancing: number
+  description: number
+  videoUrl: number
+  totalcp: number
   _all: number
 }
 
@@ -135,6 +148,10 @@ export type PropertyMinAggregateInputType = {
   propertyType?: true
   houseType?: true
   storey?: true
+  developer?: true
+  description?: true
+  videoUrl?: true
+  totalcp?: true
 }
 
 export type PropertyMaxAggregateInputType = {
@@ -154,6 +171,10 @@ export type PropertyMaxAggregateInputType = {
   propertyType?: true
   houseType?: true
   storey?: true
+  developer?: true
+  description?: true
+  videoUrl?: true
+  totalcp?: true
 }
 
 export type PropertyCountAggregateInputType = {
@@ -174,6 +195,11 @@ export type PropertyCountAggregateInputType = {
   propertyType?: true
   houseType?: true
   storey?: true
+  developer?: true
+  bankFinancing?: true
+  description?: true
+  videoUrl?: true
+  totalcp?: true
   _all?: true
 }
 
@@ -281,6 +307,11 @@ export type PropertyGroupByOutputType = {
   propertyType: string | null
   houseType: string | null
   storey: string | null
+  developer: string | null
+  bankFinancing: string[]
+  description: string | null
+  videoUrl: string | null
+  totalcp: string | null
   _count: PropertyCountAggregateOutputType | null
   _avg: PropertyAvgAggregateOutputType | null
   _sum: PropertySumAggregateOutputType | null
@@ -324,6 +355,11 @@ export type PropertyWhereInput = {
   propertyType?: Prisma.StringNullableFilter<"Property"> | string | null
   houseType?: Prisma.StringNullableFilter<"Property"> | string | null
   storey?: Prisma.StringNullableFilter<"Property"> | string | null
+  developer?: Prisma.StringNullableFilter<"Property"> | string | null
+  bankFinancing?: Prisma.StringNullableListFilter<"Property">
+  description?: Prisma.StringNullableFilter<"Property"> | string | null
+  videoUrl?: Prisma.StringNullableFilter<"Property"> | string | null
+  totalcp?: Prisma.StringNullableFilter<"Property"> | string | null
   inquiries?: Prisma.InquiryListRelationFilter
   agent?: Prisma.XOR<Prisma.AgentNullableScalarRelationFilter, Prisma.AgentWhereInput> | null
 }
@@ -346,6 +382,11 @@ export type PropertyOrderByWithRelationInput = {
   propertyType?: Prisma.SortOrderInput | Prisma.SortOrder
   houseType?: Prisma.SortOrderInput | Prisma.SortOrder
   storey?: Prisma.SortOrderInput | Prisma.SortOrder
+  developer?: Prisma.SortOrderInput | Prisma.SortOrder
+  bankFinancing?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  videoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalcp?: Prisma.SortOrderInput | Prisma.SortOrder
   inquiries?: Prisma.InquiryOrderByRelationAggregateInput
   agent?: Prisma.AgentOrderByWithRelationInput
 }
@@ -371,6 +412,11 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   propertyType?: Prisma.StringNullableFilter<"Property"> | string | null
   houseType?: Prisma.StringNullableFilter<"Property"> | string | null
   storey?: Prisma.StringNullableFilter<"Property"> | string | null
+  developer?: Prisma.StringNullableFilter<"Property"> | string | null
+  bankFinancing?: Prisma.StringNullableListFilter<"Property">
+  description?: Prisma.StringNullableFilter<"Property"> | string | null
+  videoUrl?: Prisma.StringNullableFilter<"Property"> | string | null
+  totalcp?: Prisma.StringNullableFilter<"Property"> | string | null
   inquiries?: Prisma.InquiryListRelationFilter
   agent?: Prisma.XOR<Prisma.AgentNullableScalarRelationFilter, Prisma.AgentWhereInput> | null
 }, "id">
@@ -393,6 +439,11 @@ export type PropertyOrderByWithAggregationInput = {
   propertyType?: Prisma.SortOrderInput | Prisma.SortOrder
   houseType?: Prisma.SortOrderInput | Prisma.SortOrder
   storey?: Prisma.SortOrderInput | Prisma.SortOrder
+  developer?: Prisma.SortOrderInput | Prisma.SortOrder
+  bankFinancing?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  videoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalcp?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PropertyCountOrderByAggregateInput
   _avg?: Prisma.PropertyAvgOrderByAggregateInput
   _max?: Prisma.PropertyMaxOrderByAggregateInput
@@ -421,6 +472,11 @@ export type PropertyScalarWhereWithAggregatesInput = {
   propertyType?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
   houseType?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
   storey?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
+  developer?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
+  bankFinancing?: Prisma.StringNullableListFilter<"Property">
+  description?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
+  videoUrl?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
+  totalcp?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
 }
 
 export type PropertyCreateInput = {
@@ -439,6 +495,11 @@ export type PropertyCreateInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
   agent?: Prisma.AgentCreateNestedOneWithoutPropertiesInput
 }
@@ -461,6 +522,11 @@ export type PropertyUncheckedCreateInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
 }
 
@@ -480,6 +546,11 @@ export type PropertyUpdateInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
   agent?: Prisma.AgentUpdateOneWithoutPropertiesNestedInput
 }
@@ -502,6 +573,11 @@ export type PropertyUncheckedUpdateInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
 }
 
@@ -523,6 +599,11 @@ export type PropertyCreateManyInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
 }
 
 export type PropertyUpdateManyMutationInput = {
@@ -541,6 +622,11 @@ export type PropertyUpdateManyMutationInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type PropertyUncheckedUpdateManyInput = {
@@ -561,6 +647,11 @@ export type PropertyUncheckedUpdateManyInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type PropertyListRelationFilter = {
@@ -599,6 +690,11 @@ export type PropertyCountOrderByAggregateInput = {
   propertyType?: Prisma.SortOrder
   houseType?: Prisma.SortOrder
   storey?: Prisma.SortOrder
+  developer?: Prisma.SortOrder
+  bankFinancing?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  videoUrl?: Prisma.SortOrder
+  totalcp?: Prisma.SortOrder
 }
 
 export type PropertyAvgOrderByAggregateInput = {
@@ -626,6 +722,10 @@ export type PropertyMaxOrderByAggregateInput = {
   propertyType?: Prisma.SortOrder
   houseType?: Prisma.SortOrder
   storey?: Prisma.SortOrder
+  developer?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  videoUrl?: Prisma.SortOrder
+  totalcp?: Prisma.SortOrder
 }
 
 export type PropertyMinOrderByAggregateInput = {
@@ -645,6 +745,10 @@ export type PropertyMinOrderByAggregateInput = {
   propertyType?: Prisma.SortOrder
   houseType?: Prisma.SortOrder
   storey?: Prisma.SortOrder
+  developer?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  videoUrl?: Prisma.SortOrder
+  totalcp?: Prisma.SortOrder
 }
 
 export type PropertySumOrderByAggregateInput = {
@@ -706,6 +810,10 @@ export type PropertyCreateimagesInput = {
   set: string[]
 }
 
+export type PropertyCreatebankFinancingInput = {
+  set: string[]
+}
+
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number
@@ -723,6 +831,11 @@ export type NullableFloatFieldUpdateOperationsInput = {
 }
 
 export type PropertyUpdateimagesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type PropertyUpdatebankFinancingInput = {
   set?: string[]
   push?: string | string[]
 }
@@ -759,6 +872,11 @@ export type PropertyCreateWithoutAgentInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
 }
 
@@ -779,6 +897,11 @@ export type PropertyUncheckedCreateWithoutAgentInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
 }
 
@@ -829,6 +952,11 @@ export type PropertyScalarWhereInput = {
   propertyType?: Prisma.StringNullableFilter<"Property"> | string | null
   houseType?: Prisma.StringNullableFilter<"Property"> | string | null
   storey?: Prisma.StringNullableFilter<"Property"> | string | null
+  developer?: Prisma.StringNullableFilter<"Property"> | string | null
+  bankFinancing?: Prisma.StringNullableListFilter<"Property">
+  description?: Prisma.StringNullableFilter<"Property"> | string | null
+  videoUrl?: Prisma.StringNullableFilter<"Property"> | string | null
+  totalcp?: Prisma.StringNullableFilter<"Property"> | string | null
 }
 
 export type PropertyCreateWithoutInquiriesInput = {
@@ -847,6 +975,11 @@ export type PropertyCreateWithoutInquiriesInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
   agent?: Prisma.AgentCreateNestedOneWithoutPropertiesInput
 }
 
@@ -868,6 +1001,11 @@ export type PropertyUncheckedCreateWithoutInquiriesInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
 }
 
 export type PropertyCreateOrConnectWithoutInquiriesInput = {
@@ -902,6 +1040,11 @@ export type PropertyUpdateWithoutInquiriesInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   agent?: Prisma.AgentUpdateOneWithoutPropertiesNestedInput
 }
 
@@ -923,6 +1066,11 @@ export type PropertyUncheckedUpdateWithoutInquiriesInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type PropertyCreateManyAgentInput = {
@@ -942,6 +1090,11 @@ export type PropertyCreateManyAgentInput = {
   propertyType?: string | null
   houseType?: string | null
   storey?: string | null
+  developer?: string | null
+  bankFinancing?: Prisma.PropertyCreatebankFinancingInput | string[]
+  description?: string | null
+  videoUrl?: string | null
+  totalcp?: string | null
 }
 
 export type PropertyUpdateWithoutAgentInput = {
@@ -960,6 +1113,11 @@ export type PropertyUpdateWithoutAgentInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
 }
 
@@ -980,6 +1138,11 @@ export type PropertyUncheckedUpdateWithoutAgentInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
 }
 
@@ -1000,6 +1163,11 @@ export type PropertyUncheckedUpdateManyWithoutAgentInput = {
   propertyType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   houseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   storey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  developer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankFinancing?: Prisma.PropertyUpdatebankFinancingInput | string[]
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -1051,6 +1219,11 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   propertyType?: boolean
   houseType?: boolean
   storey?: boolean
+  developer?: boolean
+  bankFinancing?: boolean
+  description?: boolean
+  videoUrl?: boolean
+  totalcp?: boolean
   inquiries?: boolean | Prisma.Property$inquiriesArgs<ExtArgs>
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
   _count?: boolean | Prisma.PropertyCountOutputTypeDefaultArgs<ExtArgs>
@@ -1074,6 +1247,11 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   propertyType?: boolean
   houseType?: boolean
   storey?: boolean
+  developer?: boolean
+  bankFinancing?: boolean
+  description?: boolean
+  videoUrl?: boolean
+  totalcp?: boolean
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
@@ -1095,6 +1273,11 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   propertyType?: boolean
   houseType?: boolean
   storey?: boolean
+  developer?: boolean
+  bankFinancing?: boolean
+  description?: boolean
+  videoUrl?: boolean
+  totalcp?: boolean
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
@@ -1116,9 +1299,14 @@ export type PropertySelectScalar = {
   propertyType?: boolean
   houseType?: boolean
   storey?: boolean
+  developer?: boolean
+  bankFinancing?: boolean
+  description?: boolean
+  videoUrl?: boolean
+  totalcp?: boolean
 }
 
-export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "beds" | "baths" | "sqft" | "createdAt" | "updatedAt" | "images" | "agentId" | "category" | "propertyType" | "houseType" | "storey", ExtArgs["result"]["property"]>
+export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "beds" | "baths" | "sqft" | "createdAt" | "updatedAt" | "images" | "agentId" | "category" | "propertyType" | "houseType" | "storey" | "developer" | "bankFinancing" | "description" | "videoUrl" | "totalcp", ExtArgs["result"]["property"]>
 export type PropertyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   inquiries?: boolean | Prisma.Property$inquiriesArgs<ExtArgs>
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
@@ -1155,6 +1343,11 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     propertyType: string | null
     houseType: string | null
     storey: string | null
+    developer: string | null
+    bankFinancing: string[]
+    description: string | null
+    videoUrl: string | null
+    totalcp: string | null
   }, ExtArgs["result"]["property"]>
   composites: {}
 }
@@ -1597,6 +1790,11 @@ export interface PropertyFieldRefs {
   readonly propertyType: Prisma.FieldRef<"Property", 'String'>
   readonly houseType: Prisma.FieldRef<"Property", 'String'>
   readonly storey: Prisma.FieldRef<"Property", 'String'>
+  readonly developer: Prisma.FieldRef<"Property", 'String'>
+  readonly bankFinancing: Prisma.FieldRef<"Property", 'String[]'>
+  readonly description: Prisma.FieldRef<"Property", 'String'>
+  readonly videoUrl: Prisma.FieldRef<"Property", 'String'>
+  readonly totalcp: Prisma.FieldRef<"Property", 'String'>
 }
     
 

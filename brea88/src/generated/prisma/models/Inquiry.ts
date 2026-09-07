@@ -46,6 +46,7 @@ export type InquiryMinAggregateOutputType = {
   message: string | null
   propertyId: number | null
   agentId: number | null
+  preferredViewingDate: Date | null
   status: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -59,6 +60,7 @@ export type InquiryMaxAggregateOutputType = {
   message: string | null
   propertyId: number | null
   agentId: number | null
+  preferredViewingDate: Date | null
   status: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -72,6 +74,7 @@ export type InquiryCountAggregateOutputType = {
   message: number
   propertyId: number
   agentId: number
+  preferredViewingDate: number
   status: number
   createdAt: number
   updatedAt: number
@@ -99,6 +102,7 @@ export type InquiryMinAggregateInputType = {
   message?: true
   propertyId?: true
   agentId?: true
+  preferredViewingDate?: true
   status?: true
   createdAt?: true
   updatedAt?: true
@@ -112,6 +116,7 @@ export type InquiryMaxAggregateInputType = {
   message?: true
   propertyId?: true
   agentId?: true
+  preferredViewingDate?: true
   status?: true
   createdAt?: true
   updatedAt?: true
@@ -125,6 +130,7 @@ export type InquiryCountAggregateInputType = {
   message?: true
   propertyId?: true
   agentId?: true
+  preferredViewingDate?: true
   status?: true
   createdAt?: true
   updatedAt?: true
@@ -225,6 +231,7 @@ export type InquiryGroupByOutputType = {
   message: string
   propertyId: number | null
   agentId: number | null
+  preferredViewingDate: Date | null
   status: string
   createdAt: Date
   updatedAt: Date
@@ -261,6 +268,7 @@ export type InquiryWhereInput = {
   message?: Prisma.StringFilter<"Inquiry"> | string
   propertyId?: Prisma.IntNullableFilter<"Inquiry"> | number | null
   agentId?: Prisma.IntNullableFilter<"Inquiry"> | number | null
+  preferredViewingDate?: Prisma.DateTimeNullableFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringFilter<"Inquiry"> | string
   createdAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
@@ -276,6 +284,7 @@ export type InquiryOrderByWithRelationInput = {
   message?: Prisma.SortOrder
   propertyId?: Prisma.SortOrderInput | Prisma.SortOrder
   agentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  preferredViewingDate?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -294,6 +303,7 @@ export type InquiryWhereUniqueInput = Prisma.AtLeast<{
   message?: Prisma.StringFilter<"Inquiry"> | string
   propertyId?: Prisma.IntNullableFilter<"Inquiry"> | number | null
   agentId?: Prisma.IntNullableFilter<"Inquiry"> | number | null
+  preferredViewingDate?: Prisma.DateTimeNullableFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringFilter<"Inquiry"> | string
   createdAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
@@ -309,6 +319,7 @@ export type InquiryOrderByWithAggregationInput = {
   message?: Prisma.SortOrder
   propertyId?: Prisma.SortOrderInput | Prisma.SortOrder
   agentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  preferredViewingDate?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -330,6 +341,7 @@ export type InquiryScalarWhereWithAggregatesInput = {
   message?: Prisma.StringWithAggregatesFilter<"Inquiry"> | string
   propertyId?: Prisma.IntNullableWithAggregatesFilter<"Inquiry"> | number | null
   agentId?: Prisma.IntNullableWithAggregatesFilter<"Inquiry"> | number | null
+  preferredViewingDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringWithAggregatesFilter<"Inquiry"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Inquiry"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Inquiry"> | Date | string
@@ -340,6 +352,7 @@ export type InquiryCreateInput = {
   email: string
   phone: string
   message: string
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -355,6 +368,7 @@ export type InquiryUncheckedCreateInput = {
   message: string
   propertyId?: number | null
   agentId?: number | null
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -365,6 +379,7 @@ export type InquiryUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -380,6 +395,7 @@ export type InquiryUncheckedUpdateInput = {
   message?: Prisma.StringFieldUpdateOperationsInput | string
   propertyId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -393,6 +409,7 @@ export type InquiryCreateManyInput = {
   message: string
   propertyId?: number | null
   agentId?: number | null
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -403,6 +420,7 @@ export type InquiryUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -416,6 +434,7 @@ export type InquiryUncheckedUpdateManyInput = {
   message?: Prisma.StringFieldUpdateOperationsInput | string
   propertyId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -439,6 +458,7 @@ export type InquiryCountOrderByAggregateInput = {
   message?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
+  preferredViewingDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -458,6 +478,7 @@ export type InquiryMaxOrderByAggregateInput = {
   message?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
+  preferredViewingDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -471,6 +492,7 @@ export type InquiryMinOrderByAggregateInput = {
   message?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
+  preferredViewingDate?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -571,6 +593,7 @@ export type InquiryCreateWithoutAgentInput = {
   email: string
   phone: string
   message: string
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -584,6 +607,7 @@ export type InquiryUncheckedCreateWithoutAgentInput = {
   phone: string
   message: string
   propertyId?: number | null
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -626,6 +650,7 @@ export type InquiryScalarWhereInput = {
   message?: Prisma.StringFilter<"Inquiry"> | string
   propertyId?: Prisma.IntNullableFilter<"Inquiry"> | number | null
   agentId?: Prisma.IntNullableFilter<"Inquiry"> | number | null
+  preferredViewingDate?: Prisma.DateTimeNullableFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringFilter<"Inquiry"> | string
   createdAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
@@ -636,6 +661,7 @@ export type InquiryCreateWithoutPropertyInput = {
   email: string
   phone: string
   message: string
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -649,6 +675,7 @@ export type InquiryUncheckedCreateWithoutPropertyInput = {
   phone: string
   message: string
   agentId?: number | null
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -687,6 +714,7 @@ export type InquiryCreateManyAgentInput = {
   phone: string
   message: string
   propertyId?: number | null
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -697,6 +725,7 @@ export type InquiryUpdateWithoutAgentInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -710,6 +739,7 @@ export type InquiryUncheckedUpdateWithoutAgentInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   propertyId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -722,6 +752,7 @@ export type InquiryUncheckedUpdateManyWithoutAgentInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   propertyId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -734,6 +765,7 @@ export type InquiryCreateManyPropertyInput = {
   phone: string
   message: string
   agentId?: number | null
+  preferredViewingDate?: Date | string | null
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -744,6 +776,7 @@ export type InquiryUpdateWithoutPropertyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -757,6 +790,7 @@ export type InquiryUncheckedUpdateWithoutPropertyInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -769,6 +803,7 @@ export type InquiryUncheckedUpdateManyWithoutPropertyInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
   agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  preferredViewingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -784,6 +819,7 @@ export type InquirySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   message?: boolean
   propertyId?: boolean
   agentId?: boolean
+  preferredViewingDate?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -799,6 +835,7 @@ export type InquirySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   message?: boolean
   propertyId?: boolean
   agentId?: boolean
+  preferredViewingDate?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -814,6 +851,7 @@ export type InquirySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   message?: boolean
   propertyId?: boolean
   agentId?: boolean
+  preferredViewingDate?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -829,12 +867,13 @@ export type InquirySelectScalar = {
   message?: boolean
   propertyId?: boolean
   agentId?: boolean
+  preferredViewingDate?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type InquiryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone" | "message" | "propertyId" | "agentId" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["inquiry"]>
+export type InquiryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone" | "message" | "propertyId" | "agentId" | "preferredViewingDate" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["inquiry"]>
 export type InquiryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   agent?: boolean | Prisma.Inquiry$agentArgs<ExtArgs>
   property?: boolean | Prisma.Inquiry$propertyArgs<ExtArgs>
@@ -862,6 +901,7 @@ export type $InquiryPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     message: string
     propertyId: number | null
     agentId: number | null
+    preferredViewingDate: Date | null
     status: string
     createdAt: Date
     updatedAt: Date
@@ -1297,6 +1337,7 @@ export interface InquiryFieldRefs {
   readonly message: Prisma.FieldRef<"Inquiry", 'String'>
   readonly propertyId: Prisma.FieldRef<"Inquiry", 'Int'>
   readonly agentId: Prisma.FieldRef<"Inquiry", 'Int'>
+  readonly preferredViewingDate: Prisma.FieldRef<"Inquiry", 'DateTime'>
   readonly status: Prisma.FieldRef<"Inquiry", 'String'>
   readonly createdAt: Prisma.FieldRef<"Inquiry", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Inquiry", 'DateTime'>

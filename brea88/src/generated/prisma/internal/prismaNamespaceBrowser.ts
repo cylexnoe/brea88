@@ -111,7 +111,12 @@ export const PropertyScalarFieldEnum = {
   category: 'category',
   propertyType: 'propertyType',
   houseType: 'houseType',
-  storey: 'storey'
+  storey: 'storey',
+  developer: 'developer',
+  bankFinancing: 'bankFinancing',
+  description: 'description',
+  videoUrl: 'videoUrl',
+  totalcp: 'totalcp'
 } as const
 
 export type PropertyScalarFieldEnum = (typeof PropertyScalarFieldEnum)[keyof typeof PropertyScalarFieldEnum]
@@ -125,6 +130,7 @@ export const InquiryScalarFieldEnum = {
   message: 'message',
   propertyId: 'propertyId',
   agentId: 'agentId',
+  preferredViewingDate: 'preferredViewingDate',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
