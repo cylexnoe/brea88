@@ -3,111 +3,495 @@ import { prisma } from '@/lib/prisma';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { isSafeHttpUrl } from '@/lib/security';
 
-const ALLOWED_TAGS = new Set(['Residential', 'Commercial', 'Investment', 'All']);
+const ALLOWED_TAGS = new Set([
+  'Residential',
+  'Commercial',
+  'Investment',
+  'All',
+]);
+
 const MAX_IMAGES = 10;
 
-function cleanString(value: unknown, max: number): string | null {
+function cleanString(
+  value: unknown,
+  max: number,
+): string | null {
   if (typeof value !== 'string') return null;
+
   const result = value.trim();
-  return result && result.length <= max ? result : null;
+
+  return result && result.length <= max
+    ? result
+    : null;
+}
+
+function cleanOptionalUrl(
+  value: unknown,
+): string | null {
+  const result = cleanString(value, 2048);
+
+  if (!result) return null;
+
+  return isSafeHttpUrl(result) ? result : null;
 }
 
 function cleanImages(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
+
   return value
-    .filter((item): item is string => typeof item === 'string')
+    .filter(
+      (item): item is string =>
+        typeof item === 'string',
+    )
     .map((item) => item.trim())
     .filter((item) => isSafeHttpUrl(item))
     .slice(0, MAX_IMAGES);
 }
 
-function optionalNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null;
+function cleanBankFinancing(
+  value: unknown,
+): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(
+      (item): item is string =>
+        typeof item === 'string',
+    )
+    .map((item) => item.trim())
+    .filter(
+      (item) => item.length > 0 && item.length <= 100,
+    )
+    .slice(0, 20);
+}
+
+function optionalNumber(
+  value: unknown,
+): number | null {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return null;
+  }
+
   const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : null;
+
+  return Number.isFinite(number) && number >= 0
+    ? number
+    : null;
+}
+
+function validateMeasurements(
+  data: Record<string, unknown>,
+  beds: number | null,
+  baths: number | null,
+  sqft: number | null,
+) {
+  return !(
+    (data.beds !== undefined &&
+      data.beds !== null &&
+      data.beds !== '' &&
+      beds === null) ||
+    (data.baths !== undefined &&
+      data.baths !== null &&
+      data.baths !== '' &&
+      baths === null) ||
+    (data.sqft !== undefined &&
+      data.sqft !== null &&
+      data.sqft !== '' &&
+      sqft === null)
+  );
+}
+
+function getPropertyData(data: Record<string, unknown>) {
+  const title = cleanString(data.title, 200);
+  const tag = cleanString(data.tag, 30);
+  const location = cleanString(data.location, 300);
+  const price = cleanString(data.price, 100);
+  const category = cleanString(data.category, 100);
+  const propertyType = cleanString(
+    data.propertyType,
+    100,
+  );
+  const houseType = cleanString(
+    data.houseType,
+    100,
+  );
+  const storey = cleanString(data.storey, 30);
+  const developer = cleanString(
+    data.developer,
+    200,
+  );
+  const description = cleanString(
+    data.description,
+    10000,
+  );
+  const totalcp = cleanString(
+    data.totalcp,
+    100,
+  );
+  const videoUrl = cleanOptionalUrl(
+    data.videoUrl,
+  );
+  const bankFinancing = cleanBankFinancing(
+    data.bankFinancing,
+  );
+  const images = cleanImages(data.images);
+  const singleImage = cleanString(
+    data.image,
+    2048,
+  );
+  const image =
+    singleImage && isSafeHttpUrl(singleImage)
+      ? singleImage
+      : '';
+  const beds = optionalNumber(data.beds);
+  const baths = optionalNumber(data.baths);
+  const sqft = optionalNumber(data.sqft);
+
+  return {
+    title,
+    tag,
+    location,
+    price,
+    category,
+    propertyType,
+    houseType,
+    storey,
+    developer,
+    description,
+    totalcp,
+    videoUrl,
+    bankFinancing,
+    images,
+    image,
+    beds,
+    baths,
+    sqft,
+  };
+}
+
+function validatePropertyData(
+  data: ReturnType<typeof getPropertyData>,
+  raw: Record<string, unknown>,
+) {
+  if (
+    !data.title ||
+    !data.tag ||
+    !data.location ||
+    !data.price
+  ) {
+    return 'Title, tag, price, and location are required.';
+  }
+
+  if (!ALLOWED_TAGS.has(data.tag)) {
+    return 'Invalid property tag.';
+  }
+
+  if (
+    !validateMeasurements(
+      raw,
+      data.beds,
+      data.baths,
+      data.sqft,
+    )
+  ) {
+    return 'Invalid property measurements.';
+  }
+
+  if (raw.videoUrl !== undefined &&
+      raw.videoUrl !== null &&
+      raw.videoUrl !== '' &&
+      !data.videoUrl) {
+    return 'Property video URL must be a valid HTTPS URL.';
+  }
+
+  return null;
 }
 
 export async function GET() {
   try {
     if (!(await isAdminAuthenticated())) {
-      return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unauthorized.',
+        },
+        { status: 401 },
+      );
     }
 
-    const properties = await prisma.property.findMany({ orderBy: { createdAt: 'desc' } });
-    return NextResponse.json({ success: true, properties });
+    const properties =
+      await prisma.property.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+
+    return NextResponse.json({
+      success: true,
+      properties,
+    });
   } catch (error) {
-    console.error('GET /admin/api/properties failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ success: false, message: 'Failed to fetch properties.' }, { status: 500 });
+    console.error(
+      'GET /admin/api/properties failed:',
+      error instanceof Error
+        ? error.message
+        : 'Unknown error',
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to fetch properties.',
+      },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: Request) {
   if (!(await isAdminAuthenticated())) {
-    return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 401 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Unauthorized.',
+      },
+      { status: 401 },
+    );
   }
 
   try {
-    const body: unknown = await request.json().catch(() => null);
-    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-      return NextResponse.json({ success: false, message: 'Invalid property data.' }, { status: 400 });
+    const body: unknown =
+      await request.json().catch(() => null);
+
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid property data.',
+        },
+        { status: 400 },
+      );
     }
 
-    const data = body as Record<string, unknown>;
-    const title = cleanString(data.title, 200);
-    const tag = cleanString(data.tag, 30);
-    const location = cleanString(data.location, 300);
-    const price = cleanString(data.price, 100);
-    const category = cleanString(data.category, 100);
-    const propertyType = cleanString(data.propertyType, 100);
-    const houseType = cleanString(data.houseType, 100);
-    const storey = cleanString(data.storey, 30);
-    const images = cleanImages(data.images);
-    const singleImage = cleanString(data.image, 2048);
-    const image = singleImage && isSafeHttpUrl(singleImage) ? singleImage : '';
-    const beds = optionalNumber(data.beds);
-    const baths = optionalNumber(data.baths);
-    const sqft = optionalNumber(data.sqft);
+    const raw = body as Record<string, unknown>;
+    const data = getPropertyData(raw);
+    const validationError =
+      validatePropertyData(data, raw);
 
-    if (!title || !tag || !location || !price) {
-      return NextResponse.json({ success: false, message: 'Title, tag, price, and location are required.' }, { status: 400 });
+    if (validationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: validationError,
+        },
+        { status: 400 },
+      );
     }
 
-    if (!ALLOWED_TAGS.has(tag)) {
-      return NextResponse.json({ success: false, message: 'Invalid property tag.' }, { status: 400 });
-    }
+    const finalImages =
+      data.images.length > 0
+        ? data.images
+        : data.image
+          ? [data.image]
+          : [];
 
-    if ((data.beds !== undefined && data.beds !== null && data.beds !== '' && beds === null) ||
-        (data.baths !== undefined && data.baths !== null && data.baths !== '' && baths === null) ||
-        (data.sqft !== undefined && data.sqft !== null && data.sqft !== '' && sqft === null)) {
-      return NextResponse.json({ success: false, message: 'Invalid property measurements.' }, { status: 400 });
-    }
-
-    const finalImages = images.length ? images : image ? [image] : [];
     if (!finalImages.length) {
-      return NextResponse.json({ success: false, message: 'At least one valid property image is required.' }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'At least one valid property image is required.',
+        },
+        { status: 400 },
+      );
     }
 
-    const property = await prisma.property.create({
-      data: {
-        title,
-        tag,
-        category,
-        propertyType,
-        houseType,
-        storey,
-        price,
-        location,
-        image: finalImages[0],
-        images: finalImages,
-        beds: beds === null ? null : Math.floor(beds),
-        baths: baths === null ? null : Math.floor(baths),
-        sqft,
-      },
-    });
+    const property =
+      await prisma.property.create({
+        data: {
+          title: data.title,
+          tag: data.tag,
+          category: data.category,
+          propertyType: data.propertyType,
+          houseType: data.houseType,
+          storey: data.storey,
+          price: data.price,
+          location: data.location,
+          image: finalImages[0],
+          images: finalImages,
+          beds:
+            data.beds === null
+              ? null
+              : Math.floor(data.beds),
+          baths:
+            data.baths === null
+              ? null
+              : Math.floor(data.baths),
+          sqft: data.sqft,
+          developer: data.developer,
+          bankFinancing: data.bankFinancing,
+          description: data.description,
+          videoUrl: data.videoUrl,
+          totalcp: data.totalcp,
+        },
+      });
 
-    return NextResponse.json({ success: true, message: 'Property saved successfully.', property }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Property saved successfully.',
+        property,
+      },
+      { status: 201 },
+    );
   } catch (error) {
-    console.error('POST /admin/api/properties failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ success: false, message: 'Failed to create property.' }, { status: 500 });
+    console.error(
+      'POST /admin/api/properties failed:',
+      error instanceof Error
+        ? error.message
+        : 'Unknown error',
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to create property.',
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Unauthorized.',
+      },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const body: unknown =
+      await request.json().catch(() => null);
+
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid property data.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const raw = body as Record<string, unknown>;
+    const id = Number(raw.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'A valid property ID is required.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const data = getPropertyData(raw);
+    const validationError =
+      validatePropertyData(data, raw);
+
+    if (validationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: validationError,
+        },
+        { status: 400 },
+      );
+    }
+
+    const finalImages =
+      data.images.length > 0
+        ? data.images
+        : data.image
+          ? [data.image]
+          : [];
+
+    if (!finalImages.length) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'At least one valid property image is required.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const property =
+      await prisma.property.update({
+        where: { id },
+        data: {
+          title: data.title,
+          tag: data.tag,
+          category: data.category,
+          propertyType: data.propertyType,
+          houseType: data.houseType,
+          storey: data.storey,
+          price: data.price,
+          location: data.location,
+          image: finalImages[0],
+          images: finalImages,
+          beds:
+            data.beds === null
+              ? null
+              : Math.floor(data.beds),
+          baths:
+            data.baths === null
+              ? null
+              : Math.floor(data.baths),
+          sqft: data.sqft,
+          developer: data.developer,
+          bankFinancing: data.bankFinancing,
+          description: data.description,
+          videoUrl: data.videoUrl,
+          totalcp: data.totalcp,
+        },
+      });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Property updated successfully.',
+      property,
+    });
+  } catch (error) {
+    console.error(
+      'PUT /admin/api/properties failed:',
+      error instanceof Error
+        ? error.message
+        : 'Unknown error',
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to update property.',
+      },
+      { status: 500 },
+    );
   }
 }
