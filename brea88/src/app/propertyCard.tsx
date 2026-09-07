@@ -215,13 +215,23 @@ function formatPrice(value?: string | null) {
 
   const trimmed = String(value).trim();
 
-  if (trimmed.includes('₱')) {
-    return trimmed;
+  // Remove peso sign and commas before formatting
+  const numericValue = trimmed
+    .replace(/₱/g, '')
+    .replace(/,/g, '')
+    .trim();
+
+  // Format pure numeric prices with commas
+  if (/^\d+(?:\.\d+)?$/.test(numericValue)) {
+    const amount = Number(numericValue);
+
+    if (Number.isFinite(amount)) {
+      return `₱${amount.toLocaleString('en-PH', {
+        maximumFractionDigits: 0,
+      })}`;
+    }
   }
 
-  if (/^\d[\d,.]*$/.test(trimmed)) {
-    return `₱${trimmed}`;
-  }
 
   return trimmed;
 }
