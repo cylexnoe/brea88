@@ -968,8 +968,7 @@ export default function PropertyCard({
       {/* ====================================================================== */}
 
       <article
-        onClick={openDetails}
-        className="group relative cursor-pointer overflow-hidden rounded-[1.35rem] border border-slate-200/70 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.07)] transition-all duration-500 hover:-translate-y-2 hover:border-slate-300 hover:shadow-[0_24px_60px_rgba(15,23,42,0.14)] active:scale-[0.99]"
+        className="group relative overflow-hidden rounded-[1.35rem] border border-slate-200/70 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.07)] transition-all duration-500 hover:-translate-y-2 hover:border-slate-300 hover:shadow-[0_24px_60px_rgba(15,23,42,0.14)]"
       >
         {/* Image */}
         <div className="relative h-52 overflow-hidden bg-slate-100 sm:h-60 md:h-64">
@@ -1020,142 +1019,254 @@ export default function PropertyCard({
         </div>
 
         {/* Card Content */}
-        <div className="p-4 sm:p-5 md:p-6">
-          <h3 className="line-clamp-2 text-base font-extrabold leading-snug text-slate-950 transition-colors duration-300 group-hover:text-[#071936] sm:text-lg">
-            {property.title}
-          </h3>
+      <div className="p-4 sm:p-5 md:p-6">
 
-          {property.developer && (
-            <p className="mt-1 text-xs font-medium text-slate-500">
-              by {property.developer}
+        {/* Title */}
+        <h3 className="line-clamp-2 text-base font-extrabold leading-snug text-slate-950 sm:text-lg">
+          {property.title}
+        </h3>
+
+        {/* Developer */}
+        <div className="mt-2 flex items-center gap-2">
+          <Building2 className="h-4 w-4 shrink-0 text-[#c9a96e]" />
+
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              Developer
+            </p>
+
+            <p className="truncate text-sm font-bold text-slate-700">
+              {property.developer?.trim() || 'BREA 88 REALTY'}
+            </p>
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="mt-4 flex items-start gap-2 border-t border-slate-100 pt-4">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#c9a96e]" />
+
+          <span className="line-clamp-2 text-sm leading-5 text-slate-600">
+            {property.location}
+          </span>
+        </div>
+
+        {/* Property Stats */}
+        {(property.beds != null ||
+          property.baths != null ||
+          property.sqft != null) && (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+
+            {property.beds != null && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <BedDouble className="mx-auto h-4 w-4 text-[#071936]" />
+
+                <p className="mt-1 text-sm font-black text-slate-900">
+                  {property.beds}
+                </p>
+
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Beds
+                </p>
+              </div>
+            )}
+
+            {property.baths != null && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <Bath className="mx-auto h-4 w-4 text-[#071936]" />
+
+                <p className="mt-1 text-sm font-black text-slate-900">
+                  {property.baths}
+                </p>
+
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Baths
+                </p>
+              </div>
+            )}
+
+            {property.sqft != null && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <Maximize className="mx-auto h-4 w-4 text-[#071936]" />
+
+                <p className="mt-1 text-sm font-black text-slate-900">
+                  {property.sqft}
+                </p>
+
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  SQM
+                </p>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* Property Details Preview */}
+        <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-[#ead9b8]">
+              <Building2 className="h-4 w-4" />
+            </div>
+
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Property Details
+              </p>
+
+              <p className="text-xs font-extrabold text-slate-800">
+                {property.propertyType ||
+                  property.category ||
+                  'Property Listing'}
+              </p>
+            </div>
+          </div>
+
+          {property.description ? (
+            <p className="mt-3 line-clamp-3 text-xs leading-5 text-slate-500">
+              {property.description}
+            </p>
+          ) : (
+            <p className="mt-3 text-xs leading-5 text-slate-400">
+              View the complete property information, specifications,
+              financing options, and other listing details.
             </p>
           )}
 
-          {/* Location */}
-          <div className="mt-4 flex items-start gap-2 border-t border-slate-100 pt-4">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#c9a96e]" />
+          {/* Additional Property Information */}
+          <div className="mt-3 flex flex-wrap gap-2">
 
-            <span className="line-clamp-2 text-sm leading-5 text-slate-600">
-              {property.location}
-            </span>
-          </div>
+            {property.houseType && (
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold text-slate-500">
+                {property.houseType}
+              </span>
+            )}
 
-          {/* Property Stats */}
-          {(property.beds != null ||
-            property.baths != null ||
-            property.sqft != null) && (
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-slate-500">
-              {property.beds != null && (
-                <span className="flex items-center gap-1.5">
-                  <BedDouble className="h-4 w-4 text-slate-400" />
-                  {property.beds} Beds
-                </span>
-              )}
+            {property.storey && (
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold text-slate-500">
+                {property.storey} Storey
+              </span>
+            )}
 
-              {property.baths != null && (
-                <span className="flex items-center gap-1.5">
-                  <Bath className="h-4 w-4 text-slate-400" />
-                  {property.baths} Baths
-                </span>
-              )}
+            {property.totalcp && (
+              <span className="rounded-full border border-[#c9a96e]/30 bg-[#faf7ef] px-2.5 py-1 text-[9px] font-bold text-[#071936]">
+                TCP: ₱{formatPrice(property.totalcp)}
+              </span>
+            )}
 
-              {property.sqft != null && (
-                <span className="flex items-center gap-1.5">
-                  <Maximize className="h-4 w-4 text-slate-400" />
-                  {property.sqft} sqm
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* ================================================================== */}
-          {/* PROPERTY VIDEO                                                      */}
-          {/* ================================================================== */}
-
-          {propertyVideoUrl && (
-            <div
-              className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="relative aspect-video w-full overflow-hidden bg-black">
-                {videoType === 'youtube' &&
-                youtubeEmbedUrl ? (
-                  <iframe
-                    src={youtubeEmbedUrl}
-                    title={`${property.title} video`}
-                    className="absolute inset-0 h-full w-full"
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
-                ) : videoType === 'vimeo' &&
-                  vimeoEmbedUrl ? (
-                  <iframe
-                    src={vimeoEmbedUrl}
-                    title={`${property.title} Vimeo video`}
-                    className="absolute inset-0 h-full w-full"
-                    loading="lazy"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : videoType === 'direct' ? (
-                  <video
-                    src={propertyVideoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    className="h-full w-full object-contain"
-                    onClick={(event) =>
-                      event.stopPropagation()
-                    }
-                  >
-                    Your browser does not support the video
-                    element.
-                  </video>
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center px-5 text-center text-white">
-                    <PlayCircle className="h-9 w-9 text-[#c9a96e]" />
-
-                    <p className="mt-2 text-xs font-bold">
-                      Property Video
-                    </p>
-
-                    <p className="mt-1 max-w-sm text-[10px] leading-5 text-white/50">
-                      Video format cannot be embedded directly.
-                      Please use a YouTube, Vimeo, or direct video
-                      file URL.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 border-t border-white/10 bg-[#071936] px-4 py-3">
-                <PlayCircle className="h-4 w-4 shrink-0 text-[#c9a96e]" />
-
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/70">
-                  Property Video
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* ONE MORE DETAILS BUTTON */}
-          <div className="mt-5">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                openDetails();
-              }}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-xs font-extrabold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-lg active:translate-y-0"
-            >
-              <Building2 className="h-4 w-4" />
-              More Details
-            </button>
           </div>
         </div>
+
+        {/* ====================================================================== */}
+        {/* PROPERTY VIDEO - VISIBLE DIRECTLY ON CARD                              */}
+        {/* ====================================================================== */}
+
+        {propertyVideoUrl ? (
+          <div
+            className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-[#071936] shadow-sm"
+            onClick={(event) => event.stopPropagation()}
+          >
+
+            {/* Video Header */}
+            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+              <PlayCircle className="h-4 w-4 text-[#ead9b8]" />
+
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">
+                  Property Video
+                </p>
+
+                <p className="text-xs font-bold text-white">
+                  Developer Property Video
+                </p>
+              </div>
+            </div>
+
+            {/* Video */}
+            <div className="relative aspect-video w-full bg-black">
+
+              {videoType === 'youtube' && youtubeEmbedUrl ? (
+                <iframe
+                  src={youtubeEmbedUrl}
+                  title={`${property.title} developer property video`}
+                  className="absolute inset-0 h-full w-full"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : videoType === 'vimeo' && vimeoEmbedUrl ? (
+                <iframe
+                  src={vimeoEmbedUrl}
+                  title={`${property.title} developer property video`}
+                  className="absolute inset-0 h-full w-full"
+                  loading="lazy"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : videoType === 'direct' ? (
+                <video
+                  src={propertyVideoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full object-contain"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  Your browser does not support the video element.
+                </video>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center px-5 text-center text-white">
+                  <PlayCircle className="h-9 w-9 text-[#c9a96e]" />
+
+                  <p className="mt-2 text-xs font-bold">
+                    Property Video
+                  </p>
+
+                  <p className="mt-1 text-[10px] leading-5 text-white/50">
+                    This video URL cannot be embedded.
+                    Use a YouTube, Vimeo, or direct video file URL.
+                  </p>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+        ) : (
+          /* No video */
+          <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-2 text-slate-400">
+              <PlayCircle className="h-4 w-4" />
+
+              <span className="text-[10px] font-semibold">
+                No property video available
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ====================================================================== */}
+        {/* MORE DETAILS - EXACTLY ONE BUTTON                                      */}
+        {/* ====================================================================== */}
+
+        <div className="mt-5">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              openDetails();
+            }}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-xs font-extrabold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl active:translate-y-0"
+          >
+            <Building2 className="h-4 w-4" />
+
+            <span>More Details</span>
+
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+      </div>
       </article>
 
       {/* ====================================================================== */}
@@ -1177,17 +1288,6 @@ export default function PropertyCard({
             }
             className="relative max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {/* Back */}
-            <button
-              type="button"
-              onClick={closeDetails}
-              aria-label="Back to properties"
-              className="absolute left-4 top-4 z-30 flex h-11 items-center gap-2 rounded-full border border-white/30 bg-slate-950/65 px-4 text-sm font-bold text-white shadow-lg backdrop-blur-md transition hover:bg-[#c9a96e] active:scale-95"
-            >
-              <ChevronLeft className="h-5 w-5" />
-              Back
-            </button>
-
             {/* Close */}
             <button
               type="button"
@@ -1589,7 +1689,7 @@ export default function PropertyCard({
       )}
 
       {/* ====================================================================== */}
-      {/* INQUIRY / SITE VIEWING MODAL                                             */}
+      {/* INQUIRY / SITE VIEWING MODAL                                           */}
       {/* ====================================================================== */}
 
       {showInquiry && (
