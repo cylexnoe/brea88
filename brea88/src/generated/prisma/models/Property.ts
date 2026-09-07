@@ -31,6 +31,7 @@ export type PropertyAvgAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  lotArea: number | null
   agentId: number | null
 }
 
@@ -39,6 +40,7 @@ export type PropertySumAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  lotArea: number | null
   agentId: number | null
 }
 
@@ -52,6 +54,7 @@ export type PropertyMinAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  lotArea: number | null
   createdAt: Date | null
   updatedAt: Date | null
   agentId: number | null
@@ -75,6 +78,7 @@ export type PropertyMaxAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  lotArea: number | null
   createdAt: Date | null
   updatedAt: Date | null
   agentId: number | null
@@ -98,6 +102,7 @@ export type PropertyCountAggregateOutputType = {
   beds: number
   baths: number
   sqft: number
+  lotArea: number
   createdAt: number
   updatedAt: number
   images: number
@@ -120,6 +125,7 @@ export type PropertyAvgAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  lotArea?: true
   agentId?: true
 }
 
@@ -128,6 +134,7 @@ export type PropertySumAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  lotArea?: true
   agentId?: true
 }
 
@@ -141,6 +148,7 @@ export type PropertyMinAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  lotArea?: true
   createdAt?: true
   updatedAt?: true
   agentId?: true
@@ -164,6 +172,7 @@ export type PropertyMaxAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  lotArea?: true
   createdAt?: true
   updatedAt?: true
   agentId?: true
@@ -187,6 +196,7 @@ export type PropertyCountAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
+  lotArea?: true
   createdAt?: true
   updatedAt?: true
   images?: true
@@ -299,6 +309,7 @@ export type PropertyGroupByOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
+  lotArea: number | null
   createdAt: Date
   updatedAt: Date
   images: string[]
@@ -347,6 +358,7 @@ export type PropertyWhereInput = {
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
+  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -374,6 +386,7 @@ export type PropertyOrderByWithRelationInput = {
   beds?: Prisma.SortOrderInput | Prisma.SortOrder
   baths?: Prisma.SortOrderInput | Prisma.SortOrder
   sqft?: Prisma.SortOrderInput | Prisma.SortOrder
+  lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   images?: Prisma.SortOrder
@@ -404,6 +417,7 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
+  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -431,6 +445,7 @@ export type PropertyOrderByWithAggregationInput = {
   beds?: Prisma.SortOrderInput | Prisma.SortOrder
   baths?: Prisma.SortOrderInput | Prisma.SortOrder
   sqft?: Prisma.SortOrderInput | Prisma.SortOrder
+  lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   images?: Prisma.SortOrder
@@ -464,6 +479,7 @@ export type PropertyScalarWhereWithAggregatesInput = {
   beds?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   baths?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
+  lotArea?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -488,6 +504,7 @@ export type PropertyCreateInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -514,6 +531,7 @@ export type PropertyUncheckedCreateInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -539,6 +557,7 @@ export type PropertyUpdateInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -565,6 +584,7 @@ export type PropertyUncheckedUpdateInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -591,6 +611,7 @@ export type PropertyCreateManyInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -615,6 +636,7 @@ export type PropertyUpdateManyMutationInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -639,6 +661,7 @@ export type PropertyUncheckedUpdateManyInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -682,6 +705,7 @@ export type PropertyCountOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   images?: Prisma.SortOrder
@@ -702,6 +726,7 @@ export type PropertyAvgOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
 }
 
@@ -715,6 +740,7 @@ export type PropertyMaxOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
@@ -738,6 +764,7 @@ export type PropertyMinOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
@@ -756,6 +783,7 @@ export type PropertySumOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
 }
 
@@ -865,6 +893,7 @@ export type PropertyCreateWithoutAgentInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -890,6 +919,7 @@ export type PropertyUncheckedCreateWithoutAgentInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -944,6 +974,7 @@ export type PropertyScalarWhereInput = {
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
+  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -968,6 +999,7 @@ export type PropertyCreateWithoutInquiriesInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -993,6 +1025,7 @@ export type PropertyUncheckedCreateWithoutInquiriesInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -1033,6 +1066,7 @@ export type PropertyUpdateWithoutInquiriesInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1058,6 +1092,7 @@ export type PropertyUncheckedUpdateWithoutInquiriesInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1083,6 +1118,7 @@ export type PropertyCreateManyAgentInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
+  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -1106,6 +1142,7 @@ export type PropertyUpdateWithoutAgentInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1131,6 +1168,7 @@ export type PropertyUncheckedUpdateWithoutAgentInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1156,6 +1194,7 @@ export type PropertyUncheckedUpdateManyWithoutAgentInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1211,6 +1250,7 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1239,6 +1279,7 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1265,6 +1306,7 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1291,6 +1333,7 @@ export type PropertySelectScalar = {
   beds?: boolean
   baths?: boolean
   sqft?: boolean
+  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1306,7 +1349,7 @@ export type PropertySelectScalar = {
   totalcp?: boolean
 }
 
-export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "beds" | "baths" | "sqft" | "createdAt" | "updatedAt" | "images" | "agentId" | "category" | "propertyType" | "houseType" | "storey" | "developer" | "bankFinancing" | "description" | "videoUrl" | "totalcp", ExtArgs["result"]["property"]>
+export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "beds" | "baths" | "sqft" | "lotArea" | "createdAt" | "updatedAt" | "images" | "agentId" | "category" | "propertyType" | "houseType" | "storey" | "developer" | "bankFinancing" | "description" | "videoUrl" | "totalcp", ExtArgs["result"]["property"]>
 export type PropertyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   inquiries?: boolean | Prisma.Property$inquiriesArgs<ExtArgs>
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
@@ -1335,6 +1378,7 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     beds: number | null
     baths: number | null
     sqft: number | null
+    lotArea: number | null
     createdAt: Date
     updatedAt: Date
     images: string[]
@@ -1782,6 +1826,7 @@ export interface PropertyFieldRefs {
   readonly beds: Prisma.FieldRef<"Property", 'Int'>
   readonly baths: Prisma.FieldRef<"Property", 'Int'>
   readonly sqft: Prisma.FieldRef<"Property", 'Float'>
+  readonly lotArea: Prisma.FieldRef<"Property", 'Float'>
   readonly createdAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly images: Prisma.FieldRef<"Property", 'String[]'>

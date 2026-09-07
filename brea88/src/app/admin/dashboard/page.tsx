@@ -120,6 +120,7 @@ interface Property {
   beds?: number | null;
   baths?: number | null;
   sqft?: number | null;
+  lotArea?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   developer?: string | null;
@@ -140,6 +141,7 @@ interface FormData {
   beds: string;
   baths: string;
   sqft: string;
+  lotArea: string;
   developer: string;
   bankFinancing: string[];
   customBank: string;
@@ -159,6 +161,7 @@ const INITIAL_FORM: FormData = {
   beds: '',
   baths: '',
   sqft: '',
+  lotArea: '',
   developer: '',
   bankFinancing: [],
   customBank: '',
@@ -770,6 +773,12 @@ export default function AdminDashboardPage() {
           ? String(property.sqft)
           : '',
 
+      lotArea:
+        property.lotArea !== null &&
+        property.lotArea !== undefined
+          ? String(property.lotArea)
+        : '',
+        
       developer: property.developer || '',
       bankFinancing: Array.isArray(property.bankFinancing)
         ? property.bankFinancing.filter(Boolean)
@@ -994,6 +1003,10 @@ export default function AdminDashboardPage() {
 
             sqft: formData.sqft
               ? Number(formData.sqft)
+              : null,
+
+            lotArea: formData.lotArea
+              ? Number(formData.lotArea)
               : null,
 
             image: uploadedImageUrls[0],
@@ -2628,57 +2641,58 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="space-y-4">
-  <div>
-    <label className="text-sm font-semibold text-slate-700">
-      Property Video
-    </label>
+                      <div>
+                        <label className="text-sm font-semibold text-slate-700">
+                          Property Video
+                        </label>
 
-    <p className="mt-1 text-xs text-slate-400">
-      Add a video using a URL or upload the actual video file.
-    </p>
-  </div>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Add a video using a URL or upload the actual video file.
+                        </p>
+                      </div>
 
-  {/* VIDEO URL */}
-  <div className="space-y-2">
-    <label
-      htmlFor="videoUrl"
-      className="text-xs font-bold uppercase tracking-wider text-slate-500"
-    >
-      Video URL
-    </label>
+                      {/* VIDEO URL */}
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="videoUrl"
+                          className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                        >
+                          Video URL
+                        </label>
 
-    <div className="relative">
-      <LinkIcon
-        size={17}
-        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-      />
+                        <div className="relative">
+                          <LinkIcon
+                            size={17}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          />
 
-      <input
-        id="videoUrl"
-        name="videoUrl"
-        type="url"
-        value={formData.videoUrl}
-        onChange={handleInputChange}
-        placeholder="https://youtube.com/watch?v=..."
-        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-      />
-    </div>
+                          <input
+                            id="videoUrl"
+                            name="videoUrl"
+                            type="url"
+                            value={formData.videoUrl}
+                            onChange={handleInputChange}
+                            placeholder="https://youtube.com/watch?v=..."
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                          />
+                        </div>
 
-    <p className="text-xs text-slate-400">
-      YouTube, Vimeo, or a direct HTTPS video URL.
-    </p>
-  </div>
+                        <p className="text-xs text-slate-400">
+                          YouTube, Vimeo, or a direct HTTPS video URL.
+                        </p>
+                      </div>
 
-  {/* OR */}
-  <div className="flex items-center gap-3">
-    <div className="h-px flex-1 bg-slate-200" />
-    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-      OR
-    </span>
-    <div className="h-px flex-1 bg-slate-200" />
-  </div>
+                      {/* OR */}
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                          OR
+                        </span>
+                        <div className="h-px flex-1 bg-slate-200" />
+                      </div>
+                    </div>
 
-  {/* VIDEO UPLOAD */}
+                   {/* VIDEO UPLOAD */}
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
@@ -2873,27 +2887,23 @@ export default function AdminDashboardPage() {
                         </>
                       )}
 
-                      <div
-                        className={
-                          showHouseDetails
-                            ? ''
-                            : 'sm:col-span-3'
-                        }
-                      >
-                        <label
-                          htmlFor="sqft"
-                          className="text-sm font-semibold text-slate-700"
-                        >
-                          Floor / Lot Area
-                        </label>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        {/* Sqm */}
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="sqft"
+                            className="text-sm font-semibold text-slate-700"
+                          >
+                            Sqm
+                          </label>
 
-                        <div className="relative mt-2">
-                          <Maximize
-                            size={17}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                          />
+                          <div className="relative">
+                            <Maximize
+                              size={17}
+                              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
 
-                          <input
+                            <input
                               id="sqft"
                               name="sqft"
                               type="number"
@@ -2904,11 +2914,47 @@ export default function AdminDashboardPage() {
                               placeholder="250.00"
                               className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                             />
+                          </div>
+
+                          <p className="text-xs text-slate-400">
+                            Floor area in square meters
+                          </p>
+                        </div>
+
+                        {/* Lot Area */}
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="lotArea"
+                            className="text-sm font-semibold text-slate-700"
+                          >
+                            Lot Area
+                          </label>
+
+                          <div className="relative">
+                            <Maximize
+                              size={17}
+                              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
+
+                            <input
+                              id="lotArea"
+                              name="lotArea"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={formData.lotArea}
+                              onChange={handleInputChange}
+                              placeholder="120.00"
+                              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                            />
+                          </div>
+
+                          <p className="text-xs text-slate-400">
+                            Lot area in square meters
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
                 {/* Images */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
@@ -2932,6 +2978,7 @@ export default function AdminDashboardPage() {
                             photos. The first image is the cover.
                           </p>
                         </div>
+                      </div>
                       </div>
 
                       <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">
@@ -3228,8 +3275,7 @@ export default function AdminDashboardPage() {
           )}
 
           {/* SETTINGS */}
-          {activeSection ===
-            'settings' && (
+          {activeSection === 'settings' && (
             <section className="mx-auto max-w-5xl space-y-6">
               <div>
                 <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
@@ -3416,6 +3462,7 @@ export default function AdminDashboardPage() {
             </section>
           )}
         </div>
+        
       </main>
     </div>
   );

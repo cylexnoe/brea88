@@ -20,10 +20,10 @@ model Agent {
   facebook     String?
   messenger    String?
   isActive     Boolean    @default(true)
-  lastSeen     DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   address      String?
+  lastSeen     DateTime?
   inquiries    Inquiry[]
   properties   Property[]
 
@@ -43,6 +43,7 @@ model Property {
   beds          Int?
   baths         Int?
   sqft          Float?
+  lotArea       Float?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   images        String[]  @default([])
@@ -56,7 +57,7 @@ model Property {
   description   String?
   videoUrl      String?
   totalcp       String?
-  inquiries    Inquiry[]
+  inquiries     Inquiry[]
   agent         Agent?    @relation(fields: [agentId], references: [id])
 
   @@index([tag])
@@ -76,13 +77,12 @@ model Inquiry {
   message              String
   propertyId           Int?
   agentId              Int?
-  preferredViewingDate DateTime?
   status               String    @default("New")
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
-
-  agent      Agent?    @relation(fields: [agentId], references: [id])
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  preferredViewingDate DateTime?
+  agent                Agent?    @relation(fields: [agentId], references: [id])
+  property             Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([agentId])

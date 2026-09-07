@@ -88,6 +88,7 @@ function validateMeasurements(
   beds: number | null,
   baths: number | null,
   sqft: number | null,
+  lotArea: number | null,
 ) {
   return !(
     (data.beds !== undefined &&
@@ -101,7 +102,11 @@ function validateMeasurements(
     (data.sqft !== undefined &&
       data.sqft !== null &&
       data.sqft !== '' &&
-      sqft === null)
+      sqft === null) ||
+    (data.lotArea !== undefined &&
+      data.lotArea !== null &&
+      data.lotArea !== '' &&
+      lotArea === null)
   );
 }
 
@@ -150,6 +155,7 @@ function getPropertyData(data: Record<string, unknown>) {
   const beds = optionalNumber(data.beds);
   const baths = optionalNumber(data.baths);
   const sqft = optionalNumber(data.sqft);
+  const lotArea = optionalNumber(data.lotArea);
 
   return {
     title,
@@ -170,6 +176,7 @@ function getPropertyData(data: Record<string, unknown>) {
     beds,
     baths,
     sqft,
+    lotArea,
   };
 }
 
@@ -196,6 +203,7 @@ function validatePropertyData(
       data.beds,
       data.baths,
       data.sqft,
+      data.lotArea
     )
   ) {
     return 'Invalid property measurements.';
@@ -334,6 +342,7 @@ export async function POST(request: Request) {
               ? null
               : Math.floor(data.baths),
           sqft: data.sqft,
+          lotArea: data.lotArea,
           developer: data.developer,
           bankFinancing: data.bankFinancing,
           description: data.description,
@@ -465,6 +474,7 @@ export async function PUT(request: Request) {
               ? null
               : Math.floor(data.baths),
           sqft: data.sqft,
+          lotArea: data.lotArea,
           developer: data.developer,
           bankFinancing: data.bankFinancing,
           description: data.description,

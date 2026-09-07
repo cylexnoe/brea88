@@ -693,10 +693,10 @@ export const AgentScalarFieldEnum = {
   facebook: 'facebook',
   messenger: 'messenger',
   isActive: 'isActive',
-  lastSeen: 'lastSeen',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  address: 'address'
+  address: 'address',
+  lastSeen: 'lastSeen'
 } as const
 
 export type AgentScalarFieldEnum = (typeof AgentScalarFieldEnum)[keyof typeof AgentScalarFieldEnum]
@@ -712,6 +712,7 @@ export const PropertyScalarFieldEnum = {
   beds: 'beds',
   baths: 'baths',
   sqft: 'sqft',
+  lotArea: 'lotArea',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   images: 'images',
@@ -738,10 +739,10 @@ export const InquiryScalarFieldEnum = {
   message: 'message',
   propertyId: 'propertyId',
   agentId: 'agentId',
-  preferredViewingDate: 'preferredViewingDate',
   status: 'status',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  preferredViewingDate: 'preferredViewingDate'
 } as const
 
 export type InquiryScalarFieldEnum = (typeof InquiryScalarFieldEnum)[keyof typeof InquiryScalarFieldEnum]
