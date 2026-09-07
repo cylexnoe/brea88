@@ -24,13 +24,116 @@ import {
   LogOut,
   ChevronRight,
   Home,
-  Check
+  Check,
 } from 'lucide-react';
 
-import { PROPERTIES } from '../data';
 import AgentPicker from '../../components/AgentPicker';
 
+interface Property {
+  id: number;
+  title: string;
+  tag: string;
+  price: string;
+  location: string;
+  image: string;
+  images?: string[];
+
+  beds?: number | null;
+  baths?: number | null;
+  sqft?: number | null;
+
+  category?: string | null;
+  propertyType?: string | null;
+  houseType?: string | null;
+  storey?: string | null;
+
+  developer?: string | null;
+  totalcp?: string | null;
+  bankFinancing?: string[] | null;
+  description?: string | null;
+  videoUrl?: string | null;
+
+  agent?: {
+    id: number;
+    fullName: string;
+    email: string;
+    phone?: string | null;
+    role?: string;
+    messenger?: string | null;
+    facebook?: string | null;
+    slug?: string | null;
+  } | null;
+}
+
 export default function HomePage() {
+  // =========================================================
+  // PROPERTIES
+  // =========================================================
+
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [propertiesLoading, setPropertiesLoading] = useState(true);
+  const [propertiesError, setPropertiesError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProperties = async () => {
+      try {
+        setPropertiesLoading(true);
+        setPropertiesError('');
+
+        const response = await fetch('/api/properties', {
+          method: 'GET',
+          cache: 'no-store',
+          credentials: 'include',
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || 'Failed to load properties.',
+          );
+        }
+
+        const propertyList = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.properties)
+            ? data.properties
+            : [];
+
+        if (mounted) {
+          setProperties(propertyList);
+        }
+      } catch (error) {
+        console.error('Failed fetching properties:', error);
+
+        if (mounted) {
+          setProperties([]);
+          setPropertiesError(
+            error instanceof Error
+              ? error.message
+              : 'Failed to load properties.',
+          );
+        }
+      } finally {
+        if (mounted) {
+          setPropertiesLoading(false);
+        }
+      }
+    };
+
+    loadProperties();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // =========================================================
+  // AGENT SESSION
+  // =========================================================
+
   const [agent, setAgent] = useState<{
     id: number;
     fullName: string;
@@ -47,6 +150,7 @@ export default function HomePage() {
 
   const [agentLoading, setAgentLoading] = useState(true);
   const [agentLoggingOut, setAgentLoggingOut] = useState(false);
+
   useEffect(() => {
     let mounted = true;
 
@@ -63,6 +167,7 @@ export default function HomePage() {
             setAgent(null);
             setAgentLoading(false);
           }
+
           return;
         }
 
@@ -98,7 +203,7 @@ export default function HomePage() {
     };
   }, []);
 
-    const handleAgentLogout = async () => {
+  const handleAgentLogout = async () => {
     if (agentLoggingOut) return;
 
     setAgentLoggingOut(true);
@@ -115,48 +220,75 @@ export default function HomePage() {
     }
   };
 
-const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // =========================================================
+  // MOBILE MENU
+  // =========================================================
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-const [agentSlug, setAgentSlug] = useState('');
+  // =========================================================
+  // AGENT LINK
+  // =========================================================
 
-const [selectedInquiryAgent, setSelectedInquiryAgent] =
-  useState<{
-    id: number;
-    fullName: string;
-    role: string;
-    slug: string;
-    profileImage?: string | null;
-    lastSeen?: string | null;
-  } | null>(null);
+  const [agentSlug, setAgentSlug] = useState('');
 
-const [showAgentPicker, setShowAgentPicker] =
-  useState(false);
+  const [selectedInquiryAgent, setSelectedInquiryAgent] =
+    useState<{
+      id: number;
+      fullName: string;
+      role: string;
+      slug: string;
+      profileImage?: string | null;
+      lastSeen?: string | null;
+    } | null>(null);
 
-const [pendingInquiry, setPendingInquiry] =
-  useState<{
-    name: string;
-    email: string;
-    phone: string;
-    message: string;
-    agentSlug?: string;
-  } | null>(null);
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const slug = params.get('agent') || '';
-  setAgentSlug(slug);
-}, []);
+  const [showAgentPicker, setShowAgentPicker] = useState(false);
 
-const [filter, setFilter] = useState<string>('All');
+  const [pendingInquiry, setPendingInquiry] =
+    useState<{
+      name: string;
+      email: string;
+      phone: string;
+      message: string;
+      agentSlug?: string;
+    } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('agent') || '';
+
+    setAgentSlug(slug);
+  }, []);
+
+  // =========================================================
+  // PROPERTY FILTER
+  // =========================================================
+
+  const [filter, setFilter] = useState<string>('All');
+
+  const filteredProperties =
+    filter === 'All'
+      ? properties
+      : properties.filter(
+          (property) => property.tag === filter,
+        );
+
+  // =========================================================
+  // FORM
+  // =========================================================
 
   const formRef = useRef<HTMLFormElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [submitStatus, setSubmitStatus] = useState<
     'idle' | 'success' | 'error'
   >('idle');
 
+  // =========================================================
   // ADMIN LOGIN
+  // =========================================================
+
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -164,141 +296,136 @@ const [filter, setFilter] = useState<string>('All');
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const filteredProperties =
-    filter === 'All'
-      ? PROPERTIES
-      : PROPERTIES.filter((property) => property.tag === filter);
-
   // =========================================================
   // EMAILJS
   // =========================================================
 
   // =========================================================
-// HOME INQUIRY
-// =========================================================
+  // HOME INQUIRY
+  // =========================================================
 
   const submitInquiry = async (payload: {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  agentSlug?: string;
-}) => {
-  try {
-    const response = await fetch('/api/inquiries', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    });
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+    agentSlug?: string;
+  }) => {
+    try {
+      const response = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.error || 'Failed to send inquiry'
-      );
+      if (!response.ok) {
+        throw new Error(
+          data.error || 'Failed to send inquiry',
+        );
+      }
+
+      setSubmitStatus('success');
+
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+
+      setSelectedInquiryAgent(null);
+      setPendingInquiry(null);
+      setShowAgentPicker(false);
+    } catch (error) {
+      console.error('Inquiry Error:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const sendEmail = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault();
+
+    if (!formRef.current || isSubmitting) {
+      return;
     }
 
-    setSubmitStatus('success');
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
 
-    if (formRef.current) {
-      formRef.current.reset();
+    const formData = new FormData(formRef.current);
+
+    const name = String(
+      formData.get('name') || '',
+    ).trim();
+
+    const email = String(
+      formData.get('email') || '',
+    ).trim();
+
+    const phone = String(
+      formData.get('contact_number') || '',
+    ).trim();
+
+    const message = String(
+      formData.get('message') || '',
+    ).trim();
+
+    const preferLocation = String(
+      formData.get('prefer_location') || '',
+    ).trim();
+
+    const fullMessage = preferLocation
+      ? `${message}\n\nPreferred Location: ${preferLocation}`
+      : message;
+
+    /*
+     * If this page was opened through a permanent
+     * agent link, use that agent automatically.
+     */
+    const resolvedAgentSlug =
+      agentSlug ||
+      selectedInquiryAgent?.slug ||
+      undefined;
+
+    /*
+     * Direct website:
+     * client must choose an agent first.
+     */
+    if (!resolvedAgentSlug) {
+      setPendingInquiry({
+        name,
+        email,
+        phone,
+        message: fullMessage,
+      });
+
+      setIsSubmitting(false);
+      setShowAgentPicker(true);
+
+      return;
     }
 
-    setSelectedInquiryAgent(null);
-    setPendingInquiry(null);
-    setShowAgentPicker(false);
-
-  } catch (error) {
-    console.error('Inquiry Error:', error);
-    setSubmitStatus('error');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-const sendEmail = async (
-  e: React.FormEvent<HTMLFormElement>
-) => {
-  e.preventDefault();
-
-  if (!formRef.current || isSubmitting) {
-    return;
-  }
-
-  setIsSubmitting(true);
-  setSubmitStatus('idle');
-
-  const formData = new FormData(formRef.current);
-
-  const name = String(
-    formData.get('name') || ''
-  ).trim();
-
-  const email = String(
-    formData.get('email') || ''
-  ).trim();
-
-  const phone = String(
-    formData.get('contact_number') || ''
-  ).trim();
-
-  const message = String(
-    formData.get('message') || ''
-  ).trim();
-
-  const preferLocation = String(
-    formData.get('prefer_location') || ''
-  ).trim();
-
-  const fullMessage = preferLocation
-    ? `${message}\n\nPreferred Location: ${preferLocation}`
-    : message;
-
-  /*
-   * If this page was opened through a permanent
-   * agent link, use that agent automatically.
-   */
-  const resolvedAgentSlug =
-    agentSlug ||
-    selectedInquiryAgent?.slug ||
-    undefined;
-
-  /*
-   * Direct website:
-   * client must choose an agent first.
-   */
-  if (!resolvedAgentSlug) {
-    setPendingInquiry({
+    await submitInquiry({
       name,
       email,
       phone,
       message: fullMessage,
+      agentSlug: resolvedAgentSlug,
     });
+  };
 
-    setIsSubmitting(false);
-    setShowAgentPicker(true);
-
-    return;
-  }
-
-  await submitInquiry({
-    name,
-    email,
-    phone,
-    message: fullMessage,
-    agentSlug: resolvedAgentSlug,
-  });
-};
   // =========================================================
   // ADMIN LOGIN
   // =========================================================
 
   const handleAdminLogin = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
 
@@ -325,13 +452,14 @@ const sendEmail = async (
       }
 
       setAuthError(
-        data.message || 'Access Denied. Check your credentials.'
+        data.message ||
+          'Access Denied. Check your credentials.',
       );
     } catch (error) {
       console.error(error);
 
       setAuthError(
-        'Network error. Connection failed. Please try again.'
+        'Network error. Connection failed. Please try again.',
       );
     } finally {
       setIsAuthenticating(false);
