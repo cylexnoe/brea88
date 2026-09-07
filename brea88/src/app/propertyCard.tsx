@@ -562,6 +562,53 @@ export default function PropertyCard({
     }
   }
 
+  const [isAgent, setIsAgent] = useState(false);
+  useEffect(() => {
+  let mounted = true;
+
+  async function checkAgent() {
+    try {
+      const response = await fetch(
+        '/api/agent/me',
+        {
+          credentials: 'include',
+          cache: 'no-store',
+        },
+      );
+
+      if (!response.ok) {
+        if (mounted) {
+          setIsAgent(false);
+        }
+
+        return;
+      }
+
+      const data = await response.json();
+
+      if (mounted) {
+        setIsAgent(
+          data?.success === true &&
+          data?.agent?.isActive === true &&
+          ['Agent', 'Broker'].includes(
+            data?.agent?.role,
+          ),
+        );
+      }
+    } catch {
+      if (mounted) {
+        setIsAgent(false);
+      }
+    }
+  }
+
+  checkAgent();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
+
   function renderAgentSelector() {
     return (
       <div>
@@ -1535,13 +1582,13 @@ export default function PropertyCard({
             </div>
           )}
 
-          {property.developer && (
-            <div className="mt-3.5">
-              <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-slate-400">
+          {isAgent && property.developer && (
+            <div className="rounded-2xl bg-slate-50 p-3.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Developer
               </p>
 
-              <p className="mt-0.5 truncate text-xs font-semibold text-slate-600">
+              <p className="mt-1.5 text-sm font-bold text-slate-800">
                 {property.developer}
               </p>
             </div>

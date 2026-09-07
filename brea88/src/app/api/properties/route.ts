@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
+import { getAgentFromSession } from '@/lib/agent-auth';
 import { hasValidContentLength, isSafeHttpUrl } from '@/lib/security';
 
 const ALLOWED_TAGS = new Set(['Residential', 'Commercial', 'Investment', 'All']);
@@ -148,19 +149,77 @@ const agentSelect = {
   messenger: true,
 } as const;
 
-export async function GET() {
-  try {
-    const properties = await prisma.property.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { agent: { select: agentSelect } },
-    });
+  export async function GET() {
+    try {
+      const properties = await prisma.property.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          agent: {
+            select: agentSelect,
+          },
+        },
+      });
 
-    return NextResponse.json(properties, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
-    console.error('GET /api/properties failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ success: false, message: 'Failed to load properties.' }, { status: 500 });
+      /*
+      * Only authenticated Agent/Broker accounts
+      * are allowed to receive developer information.
+      */
+
+      const agent = await getAgentFromSession();
+
+      const isAgentOrBroker =
+        !!agent &&
+        agent.isActive &&
+        ['Agent', 'Broker'].includes(agent.role);
+
+      if (isAgentOrBroker) {
+        return NextResponse.json(properties, {
+          headers: {
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
+      /*
+      * Public users:
+      * remove developer before sending the response.
+      */
+
+      const publicProperties = properties.map(
+        (property) => {
+          const {
+            developer: _developer,
+            ...publicProperty
+          } = property;
+
+          return publicProperty;
+        },
+      );
+
+      return NextResponse.json(publicProperties, {
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      });
+    } catch (error) {
+      console.error(
+        'GET /api/properties failed:',
+        error instanceof Error
+          ? error.message
+          : 'Unknown error',
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to load properties.',
+        },
+        {
+          status: 500,
+        },
+      );
+    }
   }
-}
 
 export async function POST(request: Request) {
   if (!(await isAdminAuthenticated())) return NextResponse.json({ success: false, message: 'Unauthorized.' }, { status: 401 });
