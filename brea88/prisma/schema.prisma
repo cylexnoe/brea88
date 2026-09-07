@@ -43,7 +43,6 @@ model Property {
   beds          Int?
   baths         Int?
   sqft          Float?
-  lotArea       Float?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   images        String[]  @default([])
@@ -57,6 +56,7 @@ model Property {
   description   String?
   videoUrl      String?
   totalcp       String?
+  lotArea       Float?
   inquiries     Inquiry[]
   agent         Agent?    @relation(fields: [agentId], references: [id])
 

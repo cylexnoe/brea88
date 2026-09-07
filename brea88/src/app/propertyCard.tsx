@@ -39,6 +39,7 @@ interface Property {
   beds?: number | null;
   baths?: number | null;
   sqft?: number | null;
+  lotArea?: number | null;
 
   category?: string | null;
   propertyType?: string | null;
@@ -1190,61 +1191,59 @@ export default function PropertyCard({
 
                 {/* QUICK DETAILS */}
                 {(property.beds != null ||
-                  property.baths != null ||
-                  property.sqft != null) && (
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {property.beds != null && (
-                      <div className="rounded-2xl bg-slate-50 p-3.5 text-center">
-                        <BedDouble
-                          size={19}
-                          className="mx-auto text-[#b08b4f]"
-                        />
+                    property.baths != null ||
+                    property.sqft != null ||
+                    property.lotArea != null) && (
+                    <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3.5 sm:flex sm:items-center sm:gap-4">
+                      {property.beds != null && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                          <BedDouble
+                            size={14}
+                            className="shrink-0 text-slate-400"
+                          />
+                          <span>{property.beds}</span>
+                          <span className="text-slate-400">Beds</span>
+                        </span>
+                      )}
 
-                        <p className="mt-1.5 text-sm font-bold text-slate-800">
-                          {property.beds}
-                        </p>
+                      {property.baths != null && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                          <Bath
+                            size={14}
+                            className="shrink-0 text-slate-400"
+                          />
+                          <span>{property.baths}</span>
+                          <span className="text-slate-400">Baths</span>
+                        </span>
+                      )}
 
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Beds
-                        </p>
-                      </div>
-                    )}
+                      {property.sqft != null && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                          <Maximize
+                            size={14}
+                            className="shrink-0 text-slate-400"
+                          />
+                          <span>
+                            {Number(property.sqft).toFixed(2)}
+                          </span>
+                          <span className="text-slate-400">Sqm</span>
+                        </span>
+                      )}
 
-                    {property.baths != null && (
-                      <div className="rounded-2xl bg-slate-50 p-3.5 text-center">
-                        <Bath
-                          size={19}
-                          className="mx-auto text-[#b08b4f]"
-                        />
-
-                        <p className="mt-1.5 text-sm font-bold text-slate-800">
-                          {property.baths}
-                        </p>
-
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Baths
-                        </p>
-                      </div>
-                    )}
-
-                    {property.sqft != null && (
-                      <div className="rounded-2xl bg-slate-50 p-3.5 text-center">
-                        <Maximize
-                          size={19}
-                          className="mx-auto text-[#b08b4f]"
-                        />
-
-                        <p className="mt-1.5 text-sm font-bold text-slate-800">
-                          {Number(property.sqft).toFixed(2)}
-                        </p>
-
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                          Area
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      {property.lotArea != null && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                          <Maximize
+                            size={14}
+                            className="shrink-0 text-slate-400"
+                          />
+                          <span>
+                            {Number(property.lotArea).toFixed(2)}
+                          </span>
+                          <span className="text-slate-400">Lot Area</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                 {/* PROPERTY DETAILS */}
                 <section>

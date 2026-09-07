@@ -31,8 +31,8 @@ export type PropertyAvgAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
-  lotArea: number | null
   agentId: number | null
+  lotArea: number | null
 }
 
 export type PropertySumAggregateOutputType = {
@@ -40,8 +40,8 @@ export type PropertySumAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
-  lotArea: number | null
   agentId: number | null
+  lotArea: number | null
 }
 
 export type PropertyMinAggregateOutputType = {
@@ -54,7 +54,6 @@ export type PropertyMinAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
-  lotArea: number | null
   createdAt: Date | null
   updatedAt: Date | null
   agentId: number | null
@@ -66,6 +65,7 @@ export type PropertyMinAggregateOutputType = {
   description: string | null
   videoUrl: string | null
   totalcp: string | null
+  lotArea: number | null
 }
 
 export type PropertyMaxAggregateOutputType = {
@@ -78,7 +78,6 @@ export type PropertyMaxAggregateOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
-  lotArea: number | null
   createdAt: Date | null
   updatedAt: Date | null
   agentId: number | null
@@ -90,6 +89,7 @@ export type PropertyMaxAggregateOutputType = {
   description: string | null
   videoUrl: string | null
   totalcp: string | null
+  lotArea: number | null
 }
 
 export type PropertyCountAggregateOutputType = {
@@ -102,7 +102,6 @@ export type PropertyCountAggregateOutputType = {
   beds: number
   baths: number
   sqft: number
-  lotArea: number
   createdAt: number
   updatedAt: number
   images: number
@@ -116,6 +115,7 @@ export type PropertyCountAggregateOutputType = {
   description: number
   videoUrl: number
   totalcp: number
+  lotArea: number
   _all: number
 }
 
@@ -125,8 +125,8 @@ export type PropertyAvgAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
-  lotArea?: true
   agentId?: true
+  lotArea?: true
 }
 
 export type PropertySumAggregateInputType = {
@@ -134,8 +134,8 @@ export type PropertySumAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
-  lotArea?: true
   agentId?: true
+  lotArea?: true
 }
 
 export type PropertyMinAggregateInputType = {
@@ -148,7 +148,6 @@ export type PropertyMinAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
-  lotArea?: true
   createdAt?: true
   updatedAt?: true
   agentId?: true
@@ -160,6 +159,7 @@ export type PropertyMinAggregateInputType = {
   description?: true
   videoUrl?: true
   totalcp?: true
+  lotArea?: true
 }
 
 export type PropertyMaxAggregateInputType = {
@@ -172,7 +172,6 @@ export type PropertyMaxAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
-  lotArea?: true
   createdAt?: true
   updatedAt?: true
   agentId?: true
@@ -184,6 +183,7 @@ export type PropertyMaxAggregateInputType = {
   description?: true
   videoUrl?: true
   totalcp?: true
+  lotArea?: true
 }
 
 export type PropertyCountAggregateInputType = {
@@ -196,7 +196,6 @@ export type PropertyCountAggregateInputType = {
   beds?: true
   baths?: true
   sqft?: true
-  lotArea?: true
   createdAt?: true
   updatedAt?: true
   images?: true
@@ -210,6 +209,7 @@ export type PropertyCountAggregateInputType = {
   description?: true
   videoUrl?: true
   totalcp?: true
+  lotArea?: true
   _all?: true
 }
 
@@ -309,7 +309,6 @@ export type PropertyGroupByOutputType = {
   beds: number | null
   baths: number | null
   sqft: number | null
-  lotArea: number | null
   createdAt: Date
   updatedAt: Date
   images: string[]
@@ -323,6 +322,7 @@ export type PropertyGroupByOutputType = {
   description: string | null
   videoUrl: string | null
   totalcp: string | null
+  lotArea: number | null
   _count: PropertyCountAggregateOutputType | null
   _avg: PropertyAvgAggregateOutputType | null
   _sum: PropertySumAggregateOutputType | null
@@ -358,7 +358,6 @@ export type PropertyWhereInput = {
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
-  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -372,6 +371,7 @@ export type PropertyWhereInput = {
   description?: Prisma.StringNullableFilter<"Property"> | string | null
   videoUrl?: Prisma.StringNullableFilter<"Property"> | string | null
   totalcp?: Prisma.StringNullableFilter<"Property"> | string | null
+  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   inquiries?: Prisma.InquiryListRelationFilter
   agent?: Prisma.XOR<Prisma.AgentNullableScalarRelationFilter, Prisma.AgentWhereInput> | null
 }
@@ -386,7 +386,6 @@ export type PropertyOrderByWithRelationInput = {
   beds?: Prisma.SortOrderInput | Prisma.SortOrder
   baths?: Prisma.SortOrderInput | Prisma.SortOrder
   sqft?: Prisma.SortOrderInput | Prisma.SortOrder
-  lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   images?: Prisma.SortOrder
@@ -400,6 +399,7 @@ export type PropertyOrderByWithRelationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   videoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   totalcp?: Prisma.SortOrderInput | Prisma.SortOrder
+  lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   inquiries?: Prisma.InquiryOrderByRelationAggregateInput
   agent?: Prisma.AgentOrderByWithRelationInput
 }
@@ -417,7 +417,6 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
-  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -431,6 +430,7 @@ export type PropertyWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringNullableFilter<"Property"> | string | null
   videoUrl?: Prisma.StringNullableFilter<"Property"> | string | null
   totalcp?: Prisma.StringNullableFilter<"Property"> | string | null
+  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   inquiries?: Prisma.InquiryListRelationFilter
   agent?: Prisma.XOR<Prisma.AgentNullableScalarRelationFilter, Prisma.AgentWhereInput> | null
 }, "id">
@@ -445,7 +445,6 @@ export type PropertyOrderByWithAggregationInput = {
   beds?: Prisma.SortOrderInput | Prisma.SortOrder
   baths?: Prisma.SortOrderInput | Prisma.SortOrder
   sqft?: Prisma.SortOrderInput | Prisma.SortOrder
-  lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   images?: Prisma.SortOrder
@@ -459,6 +458,7 @@ export type PropertyOrderByWithAggregationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   videoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   totalcp?: Prisma.SortOrderInput | Prisma.SortOrder
+  lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PropertyCountOrderByAggregateInput
   _avg?: Prisma.PropertyAvgOrderByAggregateInput
   _max?: Prisma.PropertyMaxOrderByAggregateInput
@@ -479,7 +479,6 @@ export type PropertyScalarWhereWithAggregatesInput = {
   beds?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   baths?: Prisma.IntNullableWithAggregatesFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
-  lotArea?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -493,6 +492,7 @@ export type PropertyScalarWhereWithAggregatesInput = {
   description?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
   videoUrl?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
   totalcp?: Prisma.StringNullableWithAggregatesFilter<"Property"> | string | null
+  lotArea?: Prisma.FloatNullableWithAggregatesFilter<"Property"> | number | null
 }
 
 export type PropertyCreateInput = {
@@ -504,7 +504,6 @@ export type PropertyCreateInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -517,6 +516,7 @@ export type PropertyCreateInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
   agent?: Prisma.AgentCreateNestedOneWithoutPropertiesInput
 }
@@ -531,7 +531,6 @@ export type PropertyUncheckedCreateInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -545,6 +544,7 @@ export type PropertyUncheckedCreateInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
 }
 
@@ -557,7 +557,6 @@ export type PropertyUpdateInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -570,6 +569,7 @@ export type PropertyUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
   agent?: Prisma.AgentUpdateOneWithoutPropertiesNestedInput
 }
@@ -584,7 +584,6 @@ export type PropertyUncheckedUpdateInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -598,6 +597,7 @@ export type PropertyUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
 }
 
@@ -611,7 +611,6 @@ export type PropertyCreateManyInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -625,6 +624,7 @@ export type PropertyCreateManyInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
 }
 
 export type PropertyUpdateManyMutationInput = {
@@ -636,7 +636,6 @@ export type PropertyUpdateManyMutationInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -649,6 +648,7 @@ export type PropertyUpdateManyMutationInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
 }
 
 export type PropertyUncheckedUpdateManyInput = {
@@ -661,7 +661,6 @@ export type PropertyUncheckedUpdateManyInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -675,6 +674,7 @@ export type PropertyUncheckedUpdateManyInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
 }
 
 export type PropertyListRelationFilter = {
@@ -705,7 +705,6 @@ export type PropertyCountOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
-  lotArea?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   images?: Prisma.SortOrder
@@ -719,6 +718,7 @@ export type PropertyCountOrderByAggregateInput = {
   description?: Prisma.SortOrder
   videoUrl?: Prisma.SortOrder
   totalcp?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
 }
 
 export type PropertyAvgOrderByAggregateInput = {
@@ -726,8 +726,8 @@ export type PropertyAvgOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
-  lotArea?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
 }
 
 export type PropertyMaxOrderByAggregateInput = {
@@ -740,7 +740,6 @@ export type PropertyMaxOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
-  lotArea?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
@@ -752,6 +751,7 @@ export type PropertyMaxOrderByAggregateInput = {
   description?: Prisma.SortOrder
   videoUrl?: Prisma.SortOrder
   totalcp?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
 }
 
 export type PropertyMinOrderByAggregateInput = {
@@ -764,7 +764,6 @@ export type PropertyMinOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
-  lotArea?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
@@ -776,6 +775,7 @@ export type PropertyMinOrderByAggregateInput = {
   description?: Prisma.SortOrder
   videoUrl?: Prisma.SortOrder
   totalcp?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
 }
 
 export type PropertySumOrderByAggregateInput = {
@@ -783,8 +783,8 @@ export type PropertySumOrderByAggregateInput = {
   beds?: Prisma.SortOrder
   baths?: Prisma.SortOrder
   sqft?: Prisma.SortOrder
-  lotArea?: Prisma.SortOrder
   agentId?: Prisma.SortOrder
+  lotArea?: Prisma.SortOrder
 }
 
 export type PropertyNullableScalarRelationFilter = {
@@ -893,7 +893,6 @@ export type PropertyCreateWithoutAgentInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -906,6 +905,7 @@ export type PropertyCreateWithoutAgentInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
   inquiries?: Prisma.InquiryCreateNestedManyWithoutPropertyInput
 }
 
@@ -919,7 +919,6 @@ export type PropertyUncheckedCreateWithoutAgentInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -932,6 +931,7 @@ export type PropertyUncheckedCreateWithoutAgentInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
   inquiries?: Prisma.InquiryUncheckedCreateNestedManyWithoutPropertyInput
 }
 
@@ -974,7 +974,6 @@ export type PropertyScalarWhereInput = {
   beds?: Prisma.IntNullableFilter<"Property"> | number | null
   baths?: Prisma.IntNullableFilter<"Property"> | number | null
   sqft?: Prisma.FloatNullableFilter<"Property"> | number | null
-  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Property"> | Date | string
   images?: Prisma.StringNullableListFilter<"Property">
@@ -988,6 +987,7 @@ export type PropertyScalarWhereInput = {
   description?: Prisma.StringNullableFilter<"Property"> | string | null
   videoUrl?: Prisma.StringNullableFilter<"Property"> | string | null
   totalcp?: Prisma.StringNullableFilter<"Property"> | string | null
+  lotArea?: Prisma.FloatNullableFilter<"Property"> | number | null
 }
 
 export type PropertyCreateWithoutInquiriesInput = {
@@ -999,7 +999,6 @@ export type PropertyCreateWithoutInquiriesInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -1012,6 +1011,7 @@ export type PropertyCreateWithoutInquiriesInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
   agent?: Prisma.AgentCreateNestedOneWithoutPropertiesInput
 }
 
@@ -1025,7 +1025,6 @@ export type PropertyUncheckedCreateWithoutInquiriesInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -1039,6 +1038,7 @@ export type PropertyUncheckedCreateWithoutInquiriesInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
 }
 
 export type PropertyCreateOrConnectWithoutInquiriesInput = {
@@ -1066,7 +1066,6 @@ export type PropertyUpdateWithoutInquiriesInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1079,6 +1078,7 @@ export type PropertyUpdateWithoutInquiriesInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   agent?: Prisma.AgentUpdateOneWithoutPropertiesNestedInput
 }
 
@@ -1092,7 +1092,6 @@ export type PropertyUncheckedUpdateWithoutInquiriesInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1106,6 +1105,7 @@ export type PropertyUncheckedUpdateWithoutInquiriesInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
 }
 
 export type PropertyCreateManyAgentInput = {
@@ -1118,7 +1118,6 @@ export type PropertyCreateManyAgentInput = {
   beds?: number | null
   baths?: number | null
   sqft?: number | null
-  lotArea?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.PropertyCreateimagesInput | string[]
@@ -1131,6 +1130,7 @@ export type PropertyCreateManyAgentInput = {
   description?: string | null
   videoUrl?: string | null
   totalcp?: string | null
+  lotArea?: number | null
 }
 
 export type PropertyUpdateWithoutAgentInput = {
@@ -1142,7 +1142,6 @@ export type PropertyUpdateWithoutAgentInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1155,6 +1154,7 @@ export type PropertyUpdateWithoutAgentInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   inquiries?: Prisma.InquiryUpdateManyWithoutPropertyNestedInput
 }
 
@@ -1168,7 +1168,6 @@ export type PropertyUncheckedUpdateWithoutAgentInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1181,6 +1180,7 @@ export type PropertyUncheckedUpdateWithoutAgentInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   inquiries?: Prisma.InquiryUncheckedUpdateManyWithoutPropertyNestedInput
 }
 
@@ -1194,7 +1194,6 @@ export type PropertyUncheckedUpdateManyWithoutAgentInput = {
   beds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   baths?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sqft?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.PropertyUpdateimagesInput | string[]
@@ -1207,6 +1206,7 @@ export type PropertyUncheckedUpdateManyWithoutAgentInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   videoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totalcp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
 }
 
 
@@ -1250,7 +1250,6 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   beds?: boolean
   baths?: boolean
   sqft?: boolean
-  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1264,6 +1263,7 @@ export type PropertySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   description?: boolean
   videoUrl?: boolean
   totalcp?: boolean
+  lotArea?: boolean
   inquiries?: boolean | Prisma.Property$inquiriesArgs<ExtArgs>
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
   _count?: boolean | Prisma.PropertyCountOutputTypeDefaultArgs<ExtArgs>
@@ -1279,7 +1279,6 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   beds?: boolean
   baths?: boolean
   sqft?: boolean
-  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1293,6 +1292,7 @@ export type PropertySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   description?: boolean
   videoUrl?: boolean
   totalcp?: boolean
+  lotArea?: boolean
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
@@ -1306,7 +1306,6 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   beds?: boolean
   baths?: boolean
   sqft?: boolean
-  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1320,6 +1319,7 @@ export type PropertySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   description?: boolean
   videoUrl?: boolean
   totalcp?: boolean
+  lotArea?: boolean
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
 }, ExtArgs["result"]["property"]>
 
@@ -1333,7 +1333,6 @@ export type PropertySelectScalar = {
   beds?: boolean
   baths?: boolean
   sqft?: boolean
-  lotArea?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   images?: boolean
@@ -1347,9 +1346,10 @@ export type PropertySelectScalar = {
   description?: boolean
   videoUrl?: boolean
   totalcp?: boolean
+  lotArea?: boolean
 }
 
-export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "beds" | "baths" | "sqft" | "lotArea" | "createdAt" | "updatedAt" | "images" | "agentId" | "category" | "propertyType" | "houseType" | "storey" | "developer" | "bankFinancing" | "description" | "videoUrl" | "totalcp", ExtArgs["result"]["property"]>
+export type PropertyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "tag" | "price" | "location" | "image" | "beds" | "baths" | "sqft" | "createdAt" | "updatedAt" | "images" | "agentId" | "category" | "propertyType" | "houseType" | "storey" | "developer" | "bankFinancing" | "description" | "videoUrl" | "totalcp" | "lotArea", ExtArgs["result"]["property"]>
 export type PropertyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   inquiries?: boolean | Prisma.Property$inquiriesArgs<ExtArgs>
   agent?: boolean | Prisma.Property$agentArgs<ExtArgs>
@@ -1378,7 +1378,6 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     beds: number | null
     baths: number | null
     sqft: number | null
-    lotArea: number | null
     createdAt: Date
     updatedAt: Date
     images: string[]
@@ -1392,6 +1391,7 @@ export type $PropertyPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     description: string | null
     videoUrl: string | null
     totalcp: string | null
+    lotArea: number | null
   }, ExtArgs["result"]["property"]>
   composites: {}
 }
@@ -1826,7 +1826,6 @@ export interface PropertyFieldRefs {
   readonly beds: Prisma.FieldRef<"Property", 'Int'>
   readonly baths: Prisma.FieldRef<"Property", 'Int'>
   readonly sqft: Prisma.FieldRef<"Property", 'Float'>
-  readonly lotArea: Prisma.FieldRef<"Property", 'Float'>
   readonly createdAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Property", 'DateTime'>
   readonly images: Prisma.FieldRef<"Property", 'String[]'>
@@ -1840,6 +1839,7 @@ export interface PropertyFieldRefs {
   readonly description: Prisma.FieldRef<"Property", 'String'>
   readonly videoUrl: Prisma.FieldRef<"Property", 'String'>
   readonly totalcp: Prisma.FieldRef<"Property", 'String'>
+  readonly lotArea: Prisma.FieldRef<"Property", 'Float'>
 }
     
 
