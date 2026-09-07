@@ -717,12 +717,6 @@ export default function AgentDashboardPage() {
     }
   };
 
-  /*
-   * =========================================================
-   * DELETE INQUIRY
-   * =========================================================
-   */
-
   const deleteInquiry = async (
     inquiryId: number
   ) => {
