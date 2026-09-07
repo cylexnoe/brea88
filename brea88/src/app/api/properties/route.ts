@@ -7,7 +7,6 @@ const ALLOWED_TAGS = new Set(['Residential', 'Commercial', 'Investment', 'All'])
 const MAX_IMAGES = 10;
 const MAX_JSON_BYTES = 256 * 1024;
 const MAX_BANK_FINANCING = 20;
-const DEFAULT_BANK_FINANCING = ['BDO', 'China Bank', 'Metrobank', 'Pag-IBIG'];
 
 function cleanString(value: unknown, maxLength: number): string | null {
   if (typeof value !== 'string') return null;
