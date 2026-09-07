@@ -34,31 +34,37 @@ model Agent {
 }
 
 model Property {
-  id           Int       @id @default(autoincrement())
-  title        String
-  tag          String
-  price        String
-  location     String
-  image        String
-  beds         Int?
-  baths        Int?
-  sqft         Float?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  images       String[]  @default([])
-  agentId      Int?
-  category     String?
-  propertyType String?
-  houseType    String?
-  storey       String?
+  id            Int       @id @default(autoincrement())
+  title         String
+  tag           String
+  price         String
+  location      String
+  image         String
+  beds          Int?
+  baths         Int?
+  sqft          Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  images        String[]  @default([])
+  agentId       Int?
+  category      String?
+  propertyType  String?
+  houseType     String?
+  storey        String?
+  developer     String?
+  bankFinancing String[]  @default([])
+  description   String?
+  videoUrl      String?
+  totalcp       String?
   inquiries    Inquiry[]
-  agent        Agent?    @relation(fields: [agentId], references: [id])
+  agent         Agent?    @relation(fields: [agentId], references: [id])
 
   @@index([tag])
   @@index([category])
   @@index([propertyType])
   @@index([location])
   @@index([agentId])
+  @@index([developer])
   @@map("properties")
 }
 
