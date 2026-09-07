@@ -22,7 +22,6 @@ import {
   Sparkles,
   LockKeyhole,
   PlayCircle,
-  ExternalLink,
   Building2,
   Landmark,
 } from 'lucide-react';
@@ -82,7 +81,8 @@ export default function PropertyCard({
   agentSlug = '',
 }: PropertyCardProps) {
   const linkedAgentSlug = agentSlug.trim();
-  const defaultAgentSlug = linkedAgentSlug || property.agent?.slug || '';
+  const defaultAgentSlug =
+    linkedAgentSlug || property.agent?.slug || '';
 
   const [showDetails, setShowDetails] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
@@ -107,8 +107,10 @@ export default function PropertyCard({
     preferredViewingDate: '',
   });
 
-  const [inquirySubmitting, setInquirySubmitting] = useState(false);
-  const [inquirySuccess, setInquirySuccess] = useState(false);
+  const [inquirySubmitting, setInquirySubmitting] =
+    useState(false);
+  const [inquirySuccess, setInquirySuccess] =
+    useState(false);
   const [inquiryError, setInquiryError] = useState('');
 
   /* -------------------------------------------------------------------------- */
@@ -170,6 +172,10 @@ export default function PropertyCard({
       .map((bank) => bank.trim());
   }, [property.bankFinancing]);
 
+  /* -------------------------------------------------------------------------- */
+  /* Property Video                                                             */
+  /* -------------------------------------------------------------------------- */
+
   const propertyVideoUrl = useMemo(() => {
     const value =
       typeof property.videoUrl === 'string'
@@ -195,6 +201,67 @@ export default function PropertyCard({
       return '';
     }
   }, [property.videoUrl]);
+
+  const youtubeEmbedUrl = useMemo(() => {
+    if (!propertyVideoUrl) {
+      return '';
+    }
+
+    try {
+      const url = new URL(propertyVideoUrl);
+      const hostname = url.hostname.toLowerCase();
+
+      let videoId = '';
+
+      if (
+        hostname === 'youtu.be' ||
+        hostname === 'www.youtu.be'
+      ) {
+        videoId = url.pathname.replace(/^\/+/, '').split('/')[0];
+      }
+
+      if (
+        hostname === 'youtube.com' ||
+        hostname === 'www.youtube.com' ||
+        hostname === 'm.youtube.com'
+      ) {
+        if (url.pathname === '/watch') {
+          videoId = url.searchParams.get('v') || '';
+        } else if (url.pathname.startsWith('/shorts/')) {
+          videoId =
+            url.pathname.split('/shorts/')[1]?.split('/')[0] || '';
+        } else if (url.pathname.startsWith('/embed/')) {
+          videoId =
+            url.pathname.split('/embed/')[1]?.split('/')[0] || '';
+        }
+      }
+
+      if (!videoId) {
+        return '';
+      }
+
+      return `https://www.youtube.com/embed/${encodeURIComponent(
+        videoId
+      )}?rel=0&modestbranding=1`;
+    } catch {
+      return '';
+    }
+  }, [propertyVideoUrl]);
+
+  const isDirectVideo = useMemo(() => {
+    if (!propertyVideoUrl || youtubeEmbedUrl) {
+      return false;
+    }
+
+    try {
+      const url = new URL(propertyVideoUrl);
+      const pathname = url.pathname.toLowerCase();
+
+      return /\.(mp4|webm|ogg|mov|m4v)$/i.test(pathname);
+    } catch {
+      return false;
+    }
+  }, [propertyVideoUrl, youtubeEmbedUrl]);
 
   const selectedAgent = useMemo(
     () =>
@@ -353,7 +420,7 @@ export default function PropertyCard({
   };
 
   /* -------------------------------------------------------------------------- */
-  /* Viewing Date                                                                */
+  /* Viewing Date                                                               */
   /* -------------------------------------------------------------------------- */
 
   const today = new Date();
@@ -410,27 +477,14 @@ export default function PropertyCard({
           )}
 
           {/* Price */}
-          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/65">
-                Property Price
-              </p>
+          <div className="absolute bottom-4 left-4 right-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/65">
+              Property Price
+            </p>
 
-              <p className="mt-0.5 text-xl font-black tracking-tight text-white sm:text-2xl">
-                ₱{formatPrice(property.price)}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                openDetails();
-              }}
-              className="rounded-full border border-white/25 bg-white/95 px-3 py-2 text-xs font-bold text-slate-900 shadow-lg transition-all duration-300 hover:bg-[#c9a96e] hover:text-white active:scale-95"
-            >
-              More Details
-            </button>
+            <p className="mt-0.5 text-xl font-black tracking-tight text-white sm:text-2xl">
+              ₱{formatPrice(property.price)}
+            </p>
           </div>
         </div>
 
@@ -483,33 +537,80 @@ export default function PropertyCard({
             </div>
           )}
 
-          {/* Card Actions */}
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          {/* ================================================================== */}
+          {/* PROPERTY VIDEO                                                      */}
+          {/* ================================================================== */}
+
+          {propertyVideoUrl && (
+            <div
+              className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="relative aspect-video w-full overflow-hidden bg-black">
+                {youtubeEmbedUrl ? (
+                  <iframe
+                    src={youtubeEmbedUrl}
+                    title={`${property.title} video`}
+                    className="absolute inset-0 h-full w-full"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : isDirectVideo ? (
+                  <video
+                    src={propertyVideoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full object-contain"
+                    onClick={(event) =>
+                      event.stopPropagation()
+                    }
+                  >
+                    Your browser does not support the video
+                    element.
+                  </video>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center px-5 text-center text-white">
+                    <PlayCircle className="h-9 w-9 text-[#c9a96e]" />
+
+                    <p className="mt-2 text-xs font-bold">
+                      Property Video
+                    </p>
+
+                    <p className="mt-1 text-[10px] text-white/50">
+                      Video format cannot be embedded directly.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 border-t border-white/10 bg-[#071936] px-4 py-3">
+                <PlayCircle className="h-4 w-4 shrink-0 text-[#c9a96e]" />
+
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/70">
+                  Property Video
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================== */}
+          {/* ONE MORE DETAILS BUTTON                                            */}
+          {/* ================================================================== */}
+
+          <div className="mt-5">
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 openDetails();
               }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-xs font-extrabold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-xs font-extrabold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-lg active:translate-y-0"
             >
               <Building2 className="h-4 w-4" />
               More Details
             </button>
-
-            {propertyVideoUrl && (
-              <a
-                href={propertyVideoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(event) => event.stopPropagation()}
-                className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#c9a96e] bg-[#faf7ef] px-4 py-3 text-xs font-extrabold text-[#071936] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#c9a96e] hover:text-white active:translate-y-0"
-              >
-                <PlayCircle className="h-4 w-4" />
-                View Video
-                <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-              </a>
-            )}
           </div>
         </div>
       </article>
@@ -678,7 +779,7 @@ export default function PropertyCard({
               )}
 
               {/* ================================================================= */}
-              {/* PROPERTY DETAILS                                                   */}
+              {/* PROPERTY DETAILS                                                  */}
               {/* ================================================================= */}
 
               {property.description && (
@@ -706,7 +807,7 @@ export default function PropertyCard({
               )}
 
               {/* ================================================================= */}
-              {/* PROPERTY INFORMATION                                               */}
+              {/* PROPERTY INFORMATION                                              */}
               {/* ================================================================= */}
 
               {(property.developer ||
@@ -790,7 +891,7 @@ export default function PropertyCard({
               )}
 
               {/* ================================================================= */}
-              {/* BANK FINANCING                                                     */}
+              {/* BANK FINANCING                                                    */}
               {/* ================================================================= */}
 
               {financingOptions.length > 0 && (
@@ -825,12 +926,12 @@ export default function PropertyCard({
               )}
 
               {/* ================================================================= */}
-              {/* PROPERTY VIDEO                                                     */}
+              {/* PROPERTY VIDEO                                                    */}
               {/* ================================================================= */}
 
               {propertyVideoUrl && (
                 <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-[#071936]">
-                  <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                  <div className="border-b border-white/10 px-5 py-5 sm:px-6">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#ead9b8]">
                         <PlayCircle className="h-6 w-6" />
@@ -846,23 +947,50 @@ export default function PropertyCard({
                         </p>
                       </div>
                     </div>
+                  </div>
 
-                    <a
-                      href={propertyVideoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#c9a96e] px-5 py-3 text-xs font-extrabold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#b8955b]"
-                    >
-                      <PlayCircle className="h-4 w-4" />
-                      View Video
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                  <div className="relative aspect-video w-full bg-black">
+                    {youtubeEmbedUrl ? (
+                      <iframe
+                        src={youtubeEmbedUrl}
+                        title={`${property.title} property video`}
+                        className="absolute inset-0 h-full w-full"
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    ) : isDirectVideo ? (
+                      <video
+                        src={propertyVideoUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full object-contain"
+                      >
+                        Your browser does not support the video
+                        element.
+                      </video>
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center px-5 text-center text-white">
+                        <PlayCircle className="h-10 w-10 text-[#c9a96e]" />
+
+                        <p className="mt-3 text-sm font-bold">
+                          Property Video
+                        </p>
+
+                        <p className="mt-1 max-w-md text-xs text-white/50">
+                          This video URL cannot be embedded directly.
+                          Please use a YouTube link or direct video
+                          file URL.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* ================================================================= */}
-              {/* LOCATION                                                           */}
+              {/* LOCATION                                                          */}
               {/* ================================================================= */}
 
               <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-5">
@@ -877,7 +1005,7 @@ export default function PropertyCard({
               </div>
 
               {/* ================================================================= */}
-              {/* PROPERTY ACTIONS                                                   */}
+              {/* PROPERTY ACTIONS                                                  */}
               {/* ================================================================= */}
 
               <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1728,3 +1856,4 @@ export default function PropertyCard({
     </>
   );
 }
+
