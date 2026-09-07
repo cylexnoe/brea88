@@ -1,6 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   MapPin,
   BedDouble,
@@ -106,7 +111,8 @@ export default function PropertyCard({
   const [selectedAgentSlug, setSelectedAgentSlug] =
     useState(defaultAgentSlug);
 
-  const [showAgentPicker, setShowAgentPicker] = useState(false);
+  const [showAgentPicker, setShowAgentPicker] =
+    useState(false);
 
   const [inquiryForm, setInquiryForm] = useState({
     name: '',
@@ -151,6 +157,35 @@ export default function PropertyCard({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+
+  const isSafeExternalUrl = (
+    value: string | null | undefined
+  ) => {
+    if (!value) {
+      return false;
+    }
+
+    try {
+      const url = new URL(value.trim());
+
+      return (
+        url.protocol === 'http:' ||
+        url.protocol === 'https:'
+      );
+    } catch {
+      return false;
+    }
   };
 
   const propertyImages = useMemo(() => {
@@ -397,7 +432,7 @@ export default function PropertyCard({
     [agents, selectedAgentSlug]
   );
 
-  const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
     if (agentsLoading) {
       return;
     }
@@ -495,14 +530,19 @@ export default function PropertyCard({
           ? error.message
           : 'Unable to load available Agents and Brokers.'
       );
+
       setAgents([]);
     } finally {
       setAgentsLoading(false);
     }
-  };
+  }, [
+    agentsLoading,
+    linkedAgentSlug,
+    property.agent?.slug,
+  ]);
 
   /* -------------------------------------------------------------------------- */
-  /* Modal / Keyboard / Scroll Controls                                         */
+  /* Modal State                                                                */
   /* -------------------------------------------------------------------------- */
 
   const hasOpenModal =
@@ -593,9 +633,9 @@ export default function PropertyCard({
 
   useEffect(() => {
     if (showInquiry) {
-      loadAgents();
+      void loadAgents();
     }
-  }, [showInquiry]);
+  }, [showInquiry, loadAgents]);
 
   useEffect(() => {
     if (!showInquiry) {
@@ -609,6 +649,10 @@ export default function PropertyCard({
 
   const openDetails = () => {
     setSelectedImage(0);
+    setShowContact(false);
+    setShowInquiry(false);
+    setShowGallery(false);
+    setShowAgentPicker(false);
     setShowDetails(true);
   };
 
@@ -636,7 +680,9 @@ export default function PropertyCard({
   };
 
   const openInquiry = (message = '') => {
+    setShowDetails(false);
     setShowContact(false);
+    setShowGallery(false);
 
     resetInquiryState();
 
@@ -653,7 +699,9 @@ export default function PropertyCard({
   };
 
   const openSiteViewing = () => {
+    setShowDetails(false);
     setShowContact(false);
+    setShowGallery(false);
 
     resetInquiryState();
 
@@ -669,6 +717,18 @@ export default function PropertyCard({
     });
 
     setShowInquiry(true);
+  };
+
+  const openContact = () => {
+    setShowDetails(false);
+    setShowGallery(false);
+    setShowInquiry(false);
+    setShowAgentPicker(false);
+    setShowContact(true);
+  };
+
+  const closeContact = () => {
+    setShowContact(false);
   };
 
   const closeInquiry = () => {
@@ -919,6 +979,10 @@ export default function PropertyCard({
               alt={property.title}
               loading="lazy"
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              onError={(event) => {
+                event.currentTarget.style.display =
+                  'none';
+              }}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-slate-400">
@@ -1077,10 +1141,7 @@ export default function PropertyCard({
             </div>
           )}
 
-          {/* ================================================================== */}
-          {/* ONE MORE DETAILS BUTTON                                            */}
-          {/* ================================================================== */}
-
+          {/* ONE MORE DETAILS BUTTON */}
           <div className="mt-5">
             <button
               type="button"
@@ -1144,6 +1205,10 @@ export default function PropertyCard({
                   src={propertyImages[0]}
                   alt={property.title}
                   className="h-full w-full object-cover"
+                  onError={(event) => {
+                    event.currentTarget.style.display =
+                      'none';
+                  }}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-white">
@@ -1153,12 +1218,10 @@ export default function PropertyCard({
 
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/10 to-transparent" />
 
-              {/* Tag */}
               <span className="absolute left-5 top-5 rounded-full bg-[#071936]/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md sm:left-7 sm:top-7">
                 {property.tag}
               </span>
 
-              {/* Hero Text */}
               <div className="absolute bottom-5 left-5 right-5 sm:bottom-7 sm:left-7 sm:right-7">
                 <p className="flex items-center gap-1.5 text-sm text-white/75">
                   <MapPin className="h-4 w-4 text-[#ead9b8]" />
@@ -1173,7 +1236,6 @@ export default function PropertyCard({
                 </h2>
               </div>
 
-              {/* Desktop Gallery */}
               {propertyImages.length > 1 && (
                 <button
                   type="button"
@@ -1207,7 +1269,6 @@ export default function PropertyCard({
                   )}
                 </div>
 
-                {/* Mobile Gallery */}
                 {propertyImages.length > 1 && (
                   <button
                     type="button"
@@ -1491,10 +1552,7 @@ export default function PropertyCard({
                 </p>
               </div>
 
-              {/* ================================================================= */}
-              {/* PROPERTY ACTIONS                                                   */}
-              {/* ================================================================= */}
-
+              {/* Property Actions */}
               <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <button
                   type="button"
@@ -1518,7 +1576,7 @@ export default function PropertyCard({
 
                 <button
                   type="button"
-                  onClick={() => setShowContact(true)}
+                  onClick={openContact}
                   className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:shadow-lg active:translate-y-0"
                 >
                   <Phone className="h-5 w-5" />
@@ -1530,9 +1588,9 @@ export default function PropertyCard({
         </div>
       )}
 
-      {/* ======================================================================== */}
+      {/* ====================================================================== */}
       {/* INQUIRY / SITE VIEWING MODAL                                             */}
-      {/* ======================================================================== */}
+      {/* ====================================================================== */}
 
       {showInquiry && (
         <div
@@ -1802,19 +1860,16 @@ export default function PropertyCard({
                                       }
                                       loading="lazy"
                                       className="h-full w-full object-cover"
+                                      onError={(event) => {
+                                        event.currentTarget.style.display =
+                                          'none';
+                                      }}
                                     />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center text-sm font-black text-cyan-200">
-                                      {agent.fullName
-                                        .split(' ')
-                                        .filter(Boolean)
-                                        .map(
-                                          (name) =>
-                                            name[0]
-                                        )
-                                        .slice(0, 2)
-                                        .join('')
-                                        .toUpperCase()}
+                                      {getInitials(
+                                        agent.fullName
+                                      )}
                                     </div>
                                   )}
 
@@ -2149,6 +2204,10 @@ export default function PropertyCard({
                     selectedImage + 1
                   }`}
                   className="h-full w-full object-contain"
+                  onError={(event) => {
+                    event.currentTarget.style.opacity =
+                      '0.2';
+                  }}
                 />
               )}
 
@@ -2216,6 +2275,10 @@ export default function PropertyCard({
                         }`}
                         loading="lazy"
                         className="h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.opacity =
+                            '0.2';
+                        }}
                       />
                     </button>
                   )
@@ -2233,7 +2296,7 @@ export default function PropertyCard({
       {showContact && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
-          onClick={() => setShowContact(false)}
+          onClick={closeContact}
           role="presentation"
         >
           <div
@@ -2248,9 +2311,7 @@ export default function PropertyCard({
             {/* Close */}
             <button
               type="button"
-              onClick={() =>
-                setShowContact(false)
-              }
+              onClick={closeContact}
               aria-label="Close contact panel"
               className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"
             >
@@ -2325,9 +2386,13 @@ export default function PropertyCard({
                       </a>
                     )}
 
-                    {property.agent.messenger && (
+                    {isSafeExternalUrl(
+                      property.agent.messenger
+                    ) && (
                       <a
-                        href={property.agent.messenger}
+                        href={
+                          property.agent.messenger as string
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
@@ -2340,9 +2405,13 @@ export default function PropertyCard({
                       </a>
                     )}
 
-                    {property.agent.facebook && (
+                    {isSafeExternalUrl(
+                      property.agent.facebook
+                    ) && (
                       <a
-                        href={property.agent.facebook}
+                        href={
+                          property.agent.facebook as string
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
