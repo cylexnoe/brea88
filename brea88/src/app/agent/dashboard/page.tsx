@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import ButterflyLoader from '@/components/ButterflyLoader';
-import {Calculator} from 'lucide-react';
 import {
   Building2,
   Home,
@@ -33,6 +32,7 @@ import {
   Image as ImageIcon,
   PhilippinePeso,
   Sparkles,
+  Calculator
 } from 'lucide-react';
 
 type Agent = {
@@ -856,7 +856,7 @@ export default function AgentDashboardPage() {
       icon: LayoutDashboard,
     },
     {
-      label: 'Mortgage Calculator',
+      name: 'Mortgage Calculator',
       href: '/agent/dashboard/mortgage-calculator',
       icon: Calculator,
     },
