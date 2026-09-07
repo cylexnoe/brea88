@@ -187,18 +187,24 @@ export default function MortgageCalculatorPage() {
         ? (loanAmount / price) * 100
         : 0;
 
+    const estimatedRequiredIncome =
+    monthlyPayment > 0
+        ? monthlyPayment / 0.30
+        : 0;
+
     return {
-      price,
-      down,
-      annualRate,
-      years,
-      loanAmount,
-      monthlyPayment,
-      totalPayment,
-      totalInterest,
-      downPaymentPercentage,
-      loanPercentage,
-    };
+        price,
+        down,
+        annualRate,
+        years,
+        loanAmount,
+        monthlyPayment,
+        estimatedRequiredIncome,
+        totalPayment,
+        totalInterest,
+        downPaymentPercentage,
+        loanPercentage,
+        };
   }, [
     propertyPrice,
     downPayment,
@@ -576,6 +582,22 @@ export default function MortgageCalculatorPage() {
                 </p>
               </div>
 
+                <div className="mt-3 rounded-3xl border border-white/10 bg-white/5 p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Estimated Monthly Required Income
+                </p>
+
+                <p className="mt-2 break-words text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    {formatCurrency(
+                    calculation.estimatedRequiredIncome,
+                    )}
+                </p>
+
+                <p className="mt-2 text-xs font-medium leading-5 text-slate-500">
+                    Based on an estimated 30% monthly payment-to-income ratio
+                </p>
+                </div>
+                
               {/* Loan Summary */}
               <div className="mt-5 space-y-2">
                 <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-4">
