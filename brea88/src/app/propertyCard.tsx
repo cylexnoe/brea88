@@ -1188,7 +1188,7 @@ export default function PropertyCard({
                         />
 
                         <p className="mt-1.5 text-sm font-bold text-slate-800">
-                          {property.sqft}
+                          {Number(property.sqft).toFixed(2)}
                         </p>
 
                         <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
@@ -1526,7 +1526,7 @@ export default function PropertyCard({
                     size={13}
                     className="text-slate-400"
                   />
-                  {property.sqft}
+                  {Number(property.sqft).toFixed(2)}
                   <span className="hidden sm:inline">
                     m²
                   </span>

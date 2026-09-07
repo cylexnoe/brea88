@@ -310,8 +310,8 @@ function StatCard({
 
 export default function AdminDashboardPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
-const [videoUploading, setVideoUploading] = useState(false);
-const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const router = useRouter();
 
   const [activeAccounts, setActiveAccounts] =
@@ -2894,19 +2894,16 @@ const [videoUploadProgress, setVideoUploadProgress] = useState(0);
                           />
 
                           <input
-                            id="sqft"
-                            name="sqft"
-                            type="number"
-                            min="0"
-                            value={
-                              formData.sqft
-                            }
-                            onChange={
-                              handleInputChange
-                            }
-                            placeholder="250"
-                            className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                          />
+                              id="sqft"
+                              name="sqft"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={formData.sqft}
+                              onChange={handleInputChange}
+                              placeholder="250.00"
+                              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                            />
                         </div>
                       </div>
                     </div>
