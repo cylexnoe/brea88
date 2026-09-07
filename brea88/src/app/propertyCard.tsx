@@ -76,7 +76,11 @@ interface PropertyCardProps {
   agentSlug?: string;
 }
 
-type VideoType = 'youtube' | 'vimeo' | 'direct' | 'unsupported';
+type VideoType =
+  | 'youtube'
+  | 'vimeo'
+  | 'direct'
+  | 'unsupported';
 
 export default function PropertyCard({
   property,
@@ -127,7 +131,11 @@ export default function PropertyCard({
   const formatPrice = (
     value: string | number | null | undefined
   ): string => {
-    if (value === null || value === undefined || value === '') {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ''
+    ) {
       return '0';
     }
 
@@ -135,7 +143,7 @@ export default function PropertyCard({
       String(value).replace(/[^0-9.-]/g, '')
     );
 
-    if (Number.isNaN(numericValue)) {
+    if (!Number.isFinite(numericValue)) {
       return '0';
     }
 
@@ -148,8 +156,9 @@ export default function PropertyCard({
   const propertyImages = useMemo(() => {
     const validImages =
       property.images?.filter(
-        (image) =>
-          typeof image === 'string' && image.trim().length > 0
+        (image): image is string =>
+          typeof image === 'string' &&
+          image.trim().length > 0
       ) ?? [];
 
     if (validImages.length > 0) {
@@ -160,7 +169,7 @@ export default function PropertyCard({
       typeof property.image === 'string' &&
       property.image.trim()
     ) {
-      return [property.image];
+      return [property.image.trim()];
     }
 
     return [];
@@ -171,12 +180,17 @@ export default function PropertyCard({
       return [];
     }
 
-    return property.bankFinancing
-      .filter(
-        (bank) =>
-          typeof bank === 'string' && bank.trim().length > 0
+    return Array.from(
+      new Set(
+        property.bankFinancing
+          .filter(
+            (bank): bank is string =>
+              typeof bank === 'string' &&
+              bank.trim().length > 0
+          )
+          .map((bank) => bank.trim())
       )
-      .map((bank) => bank.trim());
+    );
   }, [property.bankFinancing]);
 
   /* -------------------------------------------------------------------------- */
@@ -224,9 +238,10 @@ export default function PropertyCard({
         hostname === 'youtu.be' ||
         hostname === 'www.youtu.be'
       ) {
-        videoId = url.pathname
-          .replace(/^\/+/, '')
-          .split('/')[0];
+        videoId =
+          url.pathname
+            .replace(/^\/+/, '')
+            .split('/')[0] || '';
       }
 
       if (
@@ -236,15 +251,26 @@ export default function PropertyCard({
       ) {
         if (url.pathname === '/watch') {
           videoId = url.searchParams.get('v') || '';
-        } else if (url.pathname.startsWith('/shorts/')) {
+        } else if (
+          url.pathname.startsWith('/shorts/')
+        ) {
           videoId =
             url.pathname
               .split('/shorts/')[1]
               ?.split('/')[0] || '';
-        } else if (url.pathname.startsWith('/embed/')) {
+        } else if (
+          url.pathname.startsWith('/embed/')
+        ) {
           videoId =
             url.pathname
               .split('/embed/')[1]
+              ?.split('/')[0] || '';
+        } else if (
+          url.pathname.startsWith('/live/')
+        ) {
+          videoId =
+            url.pathname
+              .split('/live/')[1]
               ?.split('/')[0] || '';
         }
       }
@@ -281,9 +307,8 @@ export default function PropertyCard({
       let videoId = '';
 
       if (hostname === 'player.vimeo.com') {
-        const match = url.pathname.match(
-          /\/video\/(\d+)/
-        );
+        const match =
+          url.pathname.match(/\/video\/(\d+)/);
 
         videoId = match?.[1] || '';
       } else {
@@ -323,7 +348,9 @@ export default function PropertyCard({
       const url = new URL(propertyVideoUrl);
       const pathname = url.pathname.toLowerCase();
 
-      return /\.(mp4|webm|ogg|mov|m4v)$/i.test(pathname);
+      return /\.(mp4|webm|ogg|mov|m4v)$/i.test(
+        pathname
+      );
     } catch {
       return false;
     }
@@ -358,6 +385,10 @@ export default function PropertyCard({
     isDirectVideo,
   ]);
 
+  /* -------------------------------------------------------------------------- */
+  /* Agent                                                                      */
+  /* -------------------------------------------------------------------------- */
+
   const selectedAgent = useMemo(
     () =>
       agents.find(
@@ -365,10 +396,6 @@ export default function PropertyCard({
       ) ?? null,
     [agents, selectedAgentSlug]
   );
-
-  /* -------------------------------------------------------------------------- */
-  /* Agents                                                                     */
-  /* -------------------------------------------------------------------------- */
 
   const loadAgents = async () => {
     if (agentsLoading) {
@@ -380,43 +407,185 @@ export default function PropertyCard({
 
     try {
       const response = await fetch('/api/agents', {
+        method: 'GET',
         cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+        },
       });
 
-      const data = await response.json();
+      let data: unknown = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          'Unable to load available Agents and Brokers.'
+        );
+      }
 
       if (!response.ok) {
-        throw new Error(
-          data.error ||
-            'Unable to load available Agents and Brokers.'
-        );
+        const message =
+          typeof data === 'object' &&
+          data !== null &&
+          'message' in data &&
+          typeof data.message === 'string'
+            ? data.message
+            : typeof data === 'object' &&
+                data !== null &&
+                'error' in data &&
+                typeof data.error === 'string'
+              ? data.error
+              : 'Unable to load available Agents and Brokers.';
+
+        throw new Error(message);
       }
 
       const list = Array.isArray(data)
         ? data
-        : Array.isArray(data.agents)
+        : typeof data === 'object' &&
+            data !== null &&
+            'agents' in data &&
+            Array.isArray(data.agents)
           ? data.agents
           : [];
 
-      setAgents(list);
+      const normalizedAgents =
+        list.filter(
+          (agent): agent is AvailableAgent =>
+            typeof agent === 'object' &&
+            agent !== null &&
+            typeof agent.id === 'number' &&
+            typeof agent.fullName === 'string' &&
+            typeof agent.role === 'string' &&
+            typeof agent.slug === 'string'
+        );
 
-      setSelectedAgentSlug(
-        (current) =>
-          linkedAgentSlug ||
-          current ||
-          property.agent?.slug ||
-          ''
-      );
+      setAgents(normalizedAgents);
+
+      setSelectedAgentSlug((current) => {
+        if (linkedAgentSlug) {
+          return linkedAgentSlug;
+        }
+
+        if (
+          current &&
+          normalizedAgents.some(
+            (agent) => agent.slug === current
+          )
+        ) {
+          return current;
+        }
+
+        if (
+          property.agent?.slug &&
+          normalizedAgents.some(
+            (agent) =>
+              agent.slug === property.agent?.slug
+          )
+        ) {
+          return property.agent.slug;
+        }
+
+        return normalizedAgents[0]?.slug || '';
+      });
     } catch (error) {
       setAgentsError(
         error instanceof Error
           ? error.message
           : 'Unable to load available Agents and Brokers.'
       );
+      setAgents([]);
     } finally {
       setAgentsLoading(false);
     }
   };
+
+  /* -------------------------------------------------------------------------- */
+  /* Modal / Keyboard / Scroll Controls                                         */
+  /* -------------------------------------------------------------------------- */
+
+  const hasOpenModal =
+    showDetails ||
+    showGallery ||
+    showContact ||
+    showInquiry;
+
+  useEffect(() => {
+    if (!hasOpenModal) {
+      return;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+    };
+  }, [hasOpenModal]);
+
+  useEffect(() => {
+    if (!hasOpenModal) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      if (inquirySubmitting) {
+        return;
+      }
+
+      if (showAgentPicker) {
+        setShowAgentPicker(false);
+        return;
+      }
+
+      if (showGallery) {
+        setShowGallery(false);
+        return;
+      }
+
+      if (showInquiry) {
+        setShowInquiry(false);
+        return;
+      }
+
+      if (showContact) {
+        setShowContact(false);
+        return;
+      }
+
+      if (showDetails) {
+        setShowDetails(false);
+      }
+    };
+
+    window.addEventListener(
+      'keydown',
+      handleKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown
+      );
+    };
+  }, [
+    hasOpenModal,
+    inquirySubmitting,
+    showAgentPicker,
+    showGallery,
+    showInquiry,
+    showContact,
+    showDetails,
+  ]);
 
   useEffect(() => {
     setSelectedAgentSlug(defaultAgentSlug);
@@ -435,7 +604,7 @@ export default function PropertyCard({
   }, [showInquiry]);
 
   /* -------------------------------------------------------------------------- */
-  /* Modal Controls                                                             */
+  /* Modal Actions                                                              */
   /* -------------------------------------------------------------------------- */
 
   const openDetails = () => {
@@ -448,7 +617,11 @@ export default function PropertyCard({
   };
 
   const openGallery = () => {
-    setSelectedImage(0);
+    if (propertyImages.length === 0) {
+      return;
+    }
+
+    setShowAgentPicker(false);
     setShowGallery(true);
   };
 
@@ -456,13 +629,19 @@ export default function PropertyCard({
     setShowGallery(false);
   };
 
-  const openInquiry = (message = '') => {
-    setShowContact(false);
+  const resetInquiryState = () => {
     setInquiryError('');
     setInquirySuccess(false);
+    setShowAgentPicker(false);
+  };
+
+  const openInquiry = (message = '') => {
+    setShowContact(false);
+
+    resetInquiryState();
+
     setIsSiteViewing(false);
     setSelectedAgentSlug(defaultAgentSlug);
-    setShowAgentPicker(false);
 
     setInquiryForm((current) => ({
       ...current,
@@ -475,11 +654,11 @@ export default function PropertyCard({
 
   const openSiteViewing = () => {
     setShowContact(false);
-    setInquiryError('');
-    setInquirySuccess(false);
+
+    resetInquiryState();
+
     setIsSiteViewing(true);
     setSelectedAgentSlug(defaultAgentSlug);
-    setShowAgentPicker(false);
 
     setInquiryForm({
       name: '',
@@ -492,26 +671,41 @@ export default function PropertyCard({
     setShowInquiry(true);
   };
 
+  const closeInquiry = () => {
+    if (inquirySubmitting) {
+      return;
+    }
+
+    setShowInquiry(false);
+    setShowAgentPicker(false);
+    setInquiryError('');
+  };
+
   /* -------------------------------------------------------------------------- */
   /* Gallery                                                                    */
   /* -------------------------------------------------------------------------- */
 
   const nextImage = () => {
-    if (propertyImages.length > 1) {
-      setSelectedImage(
-        (current) => (current + 1) % propertyImages.length
-      );
+    if (propertyImages.length <= 1) {
+      return;
     }
+
+    setSelectedImage(
+      (current) =>
+        (current + 1) % propertyImages.length
+    );
   };
 
   const previousImage = () => {
-    if (propertyImages.length > 1) {
-      setSelectedImage(
-        (current) =>
-          (current - 1 + propertyImages.length) %
-          propertyImages.length
-      );
+    if (propertyImages.length <= 1) {
+      return;
     }
+
+    setSelectedImage(
+      (current) =>
+        (current - 1 + propertyImages.length) %
+        propertyImages.length
+    );
   };
 
   /* -------------------------------------------------------------------------- */
@@ -525,6 +719,183 @@ export default function PropertyCard({
     String(today.getMonth() + 1).padStart(2, '0'),
     String(today.getDate()).padStart(2, '0'),
   ].join('-');
+
+  /* -------------------------------------------------------------------------- */
+  /* Inquiry Validation                                                         */
+  /* -------------------------------------------------------------------------- */
+
+  const validateInquiry = (): string => {
+    const name = inquiryForm.name.trim();
+    const email = inquiryForm.email.trim();
+    const phone = inquiryForm.phone.trim();
+    const message = inquiryForm.message.trim();
+
+    if (name.length < 2) {
+      return 'Please enter your full name.';
+    }
+
+    if (name.length > 100) {
+      return 'Your name is too long.';
+    }
+
+    if (!email) {
+      return 'Please enter your email address.';
+    }
+
+    if (email.length > 150) {
+      return 'Your email address is too long.';
+    }
+
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+      return 'Please enter a valid email address.';
+    }
+
+    if (phone.length < 7) {
+      return 'Please enter a valid contact number.';
+    }
+
+    if (phone.length > 30) {
+      return 'Your contact number is too long.';
+    }
+
+    if (!selectedAgentSlug) {
+      return 'Please select an Agent or Broker before submitting.';
+    }
+
+    if (
+      isSiteViewing &&
+      !inquiryForm.preferredViewingDate
+    ) {
+      return 'Please select your preferred site viewing date.';
+    }
+
+    if (
+      isSiteViewing &&
+      inquiryForm.preferredViewingDate < minViewingDate
+    ) {
+      return 'Please select a valid future viewing date.';
+    }
+
+    if (!isSiteViewing && message.length < 5) {
+      return 'Please enter a short message.';
+    }
+
+    if (!isSiteViewing && message.length > 2000) {
+      return 'Your message is too long.';
+    }
+
+    return '';
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* Inquiry Submit                                                             */
+  /* -------------------------------------------------------------------------- */
+
+  const submitInquiry = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (inquirySubmitting) {
+      return;
+    }
+
+    setInquiryError('');
+
+    const validationError = validateInquiry();
+
+    if (validationError) {
+      setInquiryError(validationError);
+      return;
+    }
+
+    setInquirySubmitting(true);
+
+    try {
+      const name = inquiryForm.name.trim();
+      const email = inquiryForm.email.trim();
+      const phone = inquiryForm.phone.trim();
+      const message = inquiryForm.message.trim();
+
+      const requestMessage = isSiteViewing
+        ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`
+        : message;
+
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            propertyId: property.id,
+            name,
+            email,
+            phone,
+            message: requestMessage,
+            preferredViewingDate: isSiteViewing
+              ? inquiryForm.preferredViewingDate
+              : undefined,
+            agentSlug: selectedAgentSlug,
+          }),
+        }
+      );
+
+      let data: unknown = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        const message =
+          typeof data === 'object' &&
+          data !== null &&
+          'message' in data &&
+          typeof data.message === 'string'
+            ? data.message
+            : typeof data === 'object' &&
+                data !== null &&
+                'error' in data &&
+                typeof data.error === 'string'
+              ? data.error
+              : 'Failed to submit inquiry.';
+
+        throw new Error(message);
+      }
+
+      setInquirySuccess(true);
+
+      setInquiryForm({
+        name: '',
+        email: '',
+        phone: '',
+        message: '',
+        preferredViewingDate: '',
+      });
+    } catch (error) {
+      setInquiryError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to submit inquiry.'
+      );
+    } finally {
+      setInquirySubmitting(false);
+    }
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /* Shared Inquiry Message                                                     */
+  /* -------------------------------------------------------------------------- */
+
+  const defaultInquiryMessage = `Hello, I am interested in ${property.title}. Please contact me with more information.`;
 
   /* -------------------------------------------------------------------------- */
   /* Render                                                                     */
@@ -546,6 +917,7 @@ export default function PropertyCard({
             <img
               src={propertyImages[0]}
               alt={property.title}
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
           ) : (
@@ -639,7 +1011,9 @@ export default function PropertyCard({
           {propertyVideoUrl && (
             <div
               className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-sm"
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) =>
+                event.stopPropagation()
+              }
             >
               <div className="relative aspect-video w-full overflow-hidden bg-black">
                 {videoType === 'youtube' &&
@@ -731,9 +1105,15 @@ export default function PropertyCard({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md"
           onClick={closeDetails}
+          role="presentation"
         >
           <div
-            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`property-title-${property.id}`}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             className="relative max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {/* Back */}
@@ -785,7 +1165,10 @@ export default function PropertyCard({
                   {property.location}
                 </p>
 
-                <h2 className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">
+                <h2
+                  id={`property-title-${property.id}`}
+                  className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl"
+                >
                   {property.title}
                 </h2>
               </div>
@@ -886,10 +1269,7 @@ export default function PropertyCard({
                 </div>
               )}
 
-              {/* ================================================================= */}
-              {/* PROPERTY DETAILS                                                  */}
-              {/* ================================================================= */}
-
+              {/* Property Details */}
               {property.description && (
                 <div className="mt-8 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
                   <div className="flex items-center gap-3">
@@ -914,10 +1294,7 @@ export default function PropertyCard({
                 </div>
               )}
 
-              {/* ================================================================= */}
-              {/* PROPERTY INFORMATION                                              */}
-              {/* ================================================================= */}
-
+              {/* Property Information */}
               {(property.developer ||
                 property.category ||
                 property.propertyType ||
@@ -998,10 +1375,7 @@ export default function PropertyCard({
                 </div>
               )}
 
-              {/* ================================================================= */}
-              {/* BANK FINANCING                                                    */}
-              {/* ================================================================= */}
-
+              {/* Bank Financing */}
               {financingOptions.length > 0 && (
                 <div className="mt-8 rounded-2xl border border-slate-100 bg-gradient-to-br from-[#faf7ef] to-white p-5 sm:p-6">
                   <div className="flex items-start gap-3">
@@ -1033,10 +1407,7 @@ export default function PropertyCard({
                 </div>
               )}
 
-              {/* ================================================================= */}
-              {/* PROPERTY VIDEO                                                    */}
-              {/* ================================================================= */}
-
+              {/* Property Video */}
               {propertyVideoUrl && (
                 <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-[#071936]">
                   <div className="border-b border-white/10 px-5 py-5 sm:px-6">
@@ -1108,10 +1479,7 @@ export default function PropertyCard({
                 </div>
               )}
 
-              {/* ================================================================= */}
-              {/* LOCATION                                                          */}
-              {/* ================================================================= */}
-
+              {/* Location */}
               <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   Location
@@ -1124,7 +1492,7 @@ export default function PropertyCard({
               </div>
 
               {/* ================================================================= */}
-              {/* PROPERTY ACTIONS                                                  */}
+              {/* PROPERTY ACTIONS                                                   */}
               {/* ================================================================= */}
 
               <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1140,9 +1508,7 @@ export default function PropertyCard({
                 <button
                   type="button"
                   onClick={() =>
-                    openInquiry(
-                      `Hello, I am interested in ${property.title}. Please contact me with more information.`
-                    )
+                    openInquiry(defaultInquiryMessage)
                   }
                   className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#071936] bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:bg-[#faf7ef] hover:shadow-lg active:translate-y-0"
                 >
@@ -1171,22 +1537,25 @@ export default function PropertyCard({
       {showInquiry && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
-          onClick={() =>
-            !inquirySubmitting && setShowInquiry(false)
-          }
+          onClick={closeInquiry}
+          role="presentation"
         >
           <div
-            onClick={(event) => event.stopPropagation()}
-            className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`inquiry-title-${property.id}`}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+            className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {/* Close */}
             <button
               type="button"
-              onClick={() =>
-                !inquirySubmitting && setShowInquiry(false)
-              }
+              onClick={closeInquiry}
+              disabled={inquirySubmitting}
               aria-label="Close inquiry form"
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X className="h-5 w-5" />
             </button>
@@ -1209,7 +1578,10 @@ export default function PropertyCard({
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-black">
+                  <h2
+                    id={`inquiry-title-${property.id}`}
+                    className="text-2xl font-black"
+                  >
                     {isSiteViewing
                       ? 'Schedule Site Viewing'
                       : 'Send an Inquiry'}
@@ -1243,7 +1615,9 @@ export default function PropertyCard({
 
                 <button
                   type="button"
-                  onClick={() => setShowInquiry(false)}
+                  onClick={() =>
+                    setShowInquiry(false)
+                  }
                   className="mt-6 min-h-11 rounded-xl bg-[#071936] px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
                 >
                   Done
@@ -1251,84 +1625,7 @@ export default function PropertyCard({
               </div>
             ) : (
               <form
-                onSubmit={async (event) => {
-                  event.preventDefault();
-
-                  setInquirySubmitting(true);
-                  setInquiryError('');
-
-                  if (!selectedAgentSlug) {
-                    setInquiryError(
-                      'Please select an Agent or Broker before submitting.'
-                    );
-                    setInquirySubmitting(false);
-                    return;
-                  }
-
-                  if (
-                    isSiteViewing &&
-                    !inquiryForm.preferredViewingDate
-                  ) {
-                    setInquiryError(
-                      'Please select your preferred site viewing date.'
-                    );
-                    setInquirySubmitting(false);
-                    return;
-                  }
-
-                  try {
-                    const response = await fetch(
-                      '/api/inquiries',
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          propertyId: property.id,
-                          name: inquiryForm.name.trim(),
-                          email: inquiryForm.email.trim(),
-                          phone: inquiryForm.phone.trim(),
-                          message: isSiteViewing
-                            ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`
-                            : inquiryForm.message.trim(),
-                          preferredViewingDate: isSiteViewing
-                            ? inquiryForm.preferredViewingDate
-                            : undefined,
-                          agentSlug: selectedAgentSlug,
-                        }),
-                      }
-                    );
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                      throw new Error(
-                        data.message ||
-                          data.error ||
-                          'Failed to submit inquiry.'
-                      );
-                    }
-
-                    setInquirySuccess(true);
-
-                    setInquiryForm({
-                      name: '',
-                      email: '',
-                      phone: '',
-                      message: '',
-                      preferredViewingDate: '',
-                    });
-                  } catch (error) {
-                    setInquiryError(
-                      error instanceof Error
-                        ? error.message
-                        : 'Unable to submit inquiry.'
-                    );
-                  } finally {
-                    setInquirySubmitting(false);
-                  }
-                }}
+                onSubmit={submitInquiry}
                 className="space-y-4 p-6 sm:p-7"
               >
                 {/* Notice */}
@@ -1432,11 +1729,15 @@ export default function PropertyCard({
                     )}
                   </button>
 
-                  {/* Hologram Agent Picker */}
+                  {/* Agent Picker */}
                   {showAgentPicker &&
                     !linkedAgentSlug &&
                     agents.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full z-[100] mt-3 origin-top animate-in overflow-hidden rounded-[1.35rem] border border-cyan-300/30 bg-[#020b1d]/95 shadow-[0_25px_80px_rgba(2,11,29,0.45),0_0_45px_rgba(34,211,238,0.12)] backdrop-blur-2xl duration-300">
+                      <div
+                        className="absolute left-0 right-0 top-full z-[100] mt-3 origin-top animate-in overflow-hidden rounded-[1.35rem] border border-cyan-300/30 bg-[#020b1d]/95 shadow-[0_25px_80px_rgba(2,11,29,0.45),0_0_45px_rgba(34,211,238,0.12)] backdrop-blur-2xl duration-300"
+                        role="listbox"
+                        aria-label="Available Agents and Brokers"
+                      >
                         <div className="relative overflow-hidden border-b border-cyan-300/15 px-4 py-3">
                           <div className="absolute -right-10 -top-16 h-32 w-32 animate-pulse rounded-full bg-cyan-400/15 blur-2xl" />
 
@@ -1461,13 +1762,14 @@ export default function PropertyCard({
                               selectedAgentSlug ===
                               agent.slug;
 
-                            const isOnline = agent.lastSeen
-                              ? Date.now() -
-                                  new Date(
-                                    agent.lastSeen
-                                  ).getTime() <
-                                15 * 60 * 1000
-                              : false;
+                            const isOnline =
+                              agent.lastSeen
+                                ? Date.now() -
+                                    new Date(
+                                      agent.lastSeen
+                                    ).getTime() <
+                                  15 * 60 * 1000
+                                : false;
 
                             return (
                               <button
@@ -1492,19 +1794,27 @@ export default function PropertyCard({
                                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-cyan-200/20 bg-gradient-to-br from-blue-500/20 to-cyan-300/10">
                                   {agent.profileImage ? (
                                     <img
-                                      src={agent.profileImage}
-                                      alt={agent.fullName}
+                                      src={
+                                        agent.profileImage
+                                      }
+                                      alt={
+                                        agent.fullName
+                                      }
+                                      loading="lazy"
                                       className="h-full w-full object-cover"
                                     />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center text-sm font-black text-cyan-200">
                                       {agent.fullName
                                         .split(' ')
+                                        .filter(Boolean)
                                         .map(
-                                          (name) => name[0]
+                                          (name) =>
+                                            name[0]
                                         )
                                         .slice(0, 2)
-                                        .join('')}
+                                        .join('')
+                                        .toUpperCase()}
                                     </div>
                                   )}
 
@@ -1555,7 +1865,7 @@ export default function PropertyCard({
                       </div>
                     )}
 
-                  {/* Agent Status Messages */}
+                  {/* Linked Agent Notice */}
                   {linkedAgentSlug && (
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#071936]">
                       <LockKeyhole className="h-3.5 w-3.5" />
@@ -1564,6 +1874,7 @@ export default function PropertyCard({
                     </p>
                   )}
 
+                  {/* Assigned Property Agent */}
                   {!linkedAgentSlug &&
                     property.agent &&
                     selectedAgentSlug ===
@@ -1576,6 +1887,7 @@ export default function PropertyCard({
                       </p>
                     )}
 
+                  {/* Direct Client */}
                   {!linkedAgentSlug &&
                     !property.agent &&
                     !agentsLoading &&
@@ -1587,7 +1899,10 @@ export default function PropertyCard({
                     )}
 
                   {agentsError && (
-                    <p className="mt-1.5 text-xs text-red-600">
+                    <p
+                      role="alert"
+                      className="mt-1.5 text-xs text-red-600"
+                    >
                       {agentsError}
                     </p>
                   )}
@@ -1602,50 +1917,86 @@ export default function PropertyCard({
                     )}
                 </div>
 
-                {/* Name / Email / Phone */}
-                {(
-                  ['name', 'email', 'phone'] as const
-                ).map((field) => (
-                  <div key={field}>
-                    <label
-                      htmlFor={`inquiry-${field}-${property.id}`}
-                      className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                    >
-                      {field === 'name'
-                        ? 'Full Name'
-                        : field === 'email'
-                          ? 'Email Address'
-                          : 'Contact Number'}
-                    </label>
+                {/* Name */}
+                <div>
+                  <label
+                    htmlFor={`inquiry-name-${property.id}`}
+                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                  >
+                    Full Name
+                  </label>
 
-                    <input
-                      id={`inquiry-${field}-${property.id}`}
-                      required
-                      type={
-                        field === 'email'
-                          ? 'email'
-                          : field === 'phone'
-                            ? 'tel'
-                            : 'text'
-                      }
-                      value={inquiryForm[field]}
-                      onChange={(event) =>
-                        setInquiryForm({
-                          ...inquiryForm,
-                          [field]: event.target.value,
-                        })
-                      }
-                      placeholder={
-                        field === 'phone'
-                          ? '09XXXXXXXXX'
-                          : field === 'email'
-                            ? 'you@example.com'
-                            : 'Enter your full name'
-                      }
-                      className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                    />
-                  </div>
-                ))}
+                  <input
+                    id={`inquiry-name-${property.id}`}
+                    required
+                    type="text"
+                    autoComplete="name"
+                    maxLength={100}
+                    value={inquiryForm.name}
+                    onChange={(event) =>
+                      setInquiryForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Enter your full name"
+                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label
+                    htmlFor={`inquiry-email-${property.id}`}
+                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                  >
+                    Email Address
+                  </label>
+
+                  <input
+                    id={`inquiry-email-${property.id}`}
+                    required
+                    type="email"
+                    autoComplete="email"
+                    maxLength={150}
+                    value={inquiryForm.email}
+                    onChange={(event) =>
+                      setInquiryForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    placeholder="you@example.com"
+                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label
+                    htmlFor={`inquiry-phone-${property.id}`}
+                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                  >
+                    Contact Number
+                  </label>
+
+                  <input
+                    id={`inquiry-phone-${property.id}`}
+                    required
+                    type="tel"
+                    autoComplete="tel"
+                    maxLength={30}
+                    value={inquiryForm.phone}
+                    onChange={(event) =>
+                      setInquiryForm((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
+                    placeholder="09XXXXXXXXX"
+                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                  />
+                </div>
 
                 {/* Viewing Date */}
                 {isSiteViewing && (
@@ -1669,11 +2020,11 @@ export default function PropertyCard({
                           inquiryForm.preferredViewingDate
                         }
                         onChange={(event) =>
-                          setInquiryForm({
-                            ...inquiryForm,
+                          setInquiryForm((current) => ({
+                            ...current,
                             preferredViewingDate:
                               event.target.value,
-                          })
+                          }))
                         }
                         className="min-h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
                       />
@@ -1695,16 +2046,21 @@ export default function PropertyCard({
                       id={`inquiry-message-${property.id}`}
                       required
                       rows={4}
+                      maxLength={2000}
                       value={inquiryForm.message}
                       onChange={(event) =>
-                        setInquiryForm({
-                          ...inquiryForm,
+                        setInquiryForm((current) => ({
+                          ...current,
                           message: event.target.value,
-                        })
+                        }))
                       }
                       placeholder="I'm interested in this property..."
                       className="mt-2 w-full resize-none rounded-xl border border-slate-200 p-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
                     />
+
+                    <p className="mt-1 text-right text-[10px] text-slate-400">
+                      {inquiryForm.message.length}/2000
+                    </p>
                   </div>
                 )}
 
@@ -1748,25 +2104,31 @@ export default function PropertyCard({
         </div>
       )}
 
-      {/* ======================================================================== */}
-      {/* IMAGE GALLERY                                                            */}
-      {/* ======================================================================== */}
+      {/* ====================================================================== */}
+      {/* IMAGE GALLERY                                                          */}
+      {/* ====================================================================== */}
 
       {showGallery && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-3 sm:p-5"
           onClick={closeGallery}
+          role="presentation"
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${property.title} photo gallery`}
             className="relative w-full max-w-6xl"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             {/* Close */}
             <button
               type="button"
               onClick={closeGallery}
               aria-label="Close gallery"
-              className="absolute right-0 top-[-3.2rem] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-[#c9a96e]"
+              className="absolute right-0 top-[-3.2rem] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"
             >
               <X className="h-5 w-5" />
             </button>
@@ -1775,7 +2137,14 @@ export default function PropertyCard({
             <div className="relative h-[60vh] overflow-hidden rounded-2xl bg-black sm:h-[70vh]">
               {propertyImages.length > 0 && (
                 <img
-                  src={propertyImages[selectedImage]}
+                  src={
+                    propertyImages[
+                      Math.min(
+                        selectedImage,
+                        propertyImages.length - 1
+                      )
+                    ]
+                  }
                   alt={`${property.title} - Photo ${
                     selectedImage + 1
                   }`}
@@ -1790,7 +2159,7 @@ export default function PropertyCard({
                     type="button"
                     onClick={previousImage}
                     aria-label="Previous photo"
-                    className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white hover:text-black"
+                    className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white hover:text-black"
                   >
                     <ChevronLeft />
                   </button>
@@ -1799,7 +2168,7 @@ export default function PropertyCard({
                     type="button"
                     onClick={nextImage}
                     aria-label="Next photo"
-                    className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white hover:text-black"
+                    className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white hover:text-black"
                   >
                     <ChevronRight />
                   </button>
@@ -1809,7 +2178,8 @@ export default function PropertyCard({
               {/* Counter */}
               {propertyImages.length > 0 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white">
-                  {selectedImage + 1} / {propertyImages.length}
+                  {selectedImage + 1} /{' '}
+                  {propertyImages.length}
                 </div>
               )}
             </div>
@@ -1817,52 +2187,72 @@ export default function PropertyCard({
             {/* Thumbnails */}
             {propertyImages.length > 1 && (
               <div className="mt-3 flex justify-center gap-2 overflow-x-auto pb-2">
-                {propertyImages.map((image, index) => (
-                  <button
-                    type="button"
-                    key={`${image}-${index}`}
-                    onClick={() =>
-                      setSelectedImage(index)
-                    }
-                    aria-label={`View photo ${index + 1}`}
-                    className={`h-16 w-20 shrink-0 overflow-hidden rounded-lg transition ${
-                      selectedImage === index
-                        ? 'ring-2 ring-[#c9a96e]'
-                        : 'opacity-55 hover:opacity-100'
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
+                {propertyImages.map(
+                  (image, index) => (
+                    <button
+                      type="button"
+                      key={`${image}-${index}`}
+                      onClick={() =>
+                        setSelectedImage(index)
+                      }
+                      aria-label={`View photo ${
+                        index + 1
+                      }`}
+                      aria-current={
+                        selectedImage === index
+                          ? 'true'
+                          : undefined
+                      }
+                      className={`h-16 w-20 shrink-0 overflow-hidden rounded-lg transition ${
+                        selectedImage === index
+                          ? 'ring-2 ring-[#c9a96e]'
+                          : 'opacity-55 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`Thumbnail ${
+                          index + 1
+                        }`}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ======================================================================== */}
-      {/* CONTACT AGENT                                                            */}
-      {/* ======================================================================== */}
+      {/* ====================================================================== */}
+      {/* CONTACT AGENT                                                          */}
+      {/* ====================================================================== */}
 
       {showContact && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
           onClick={() => setShowContact(false)}
+          role="presentation"
         >
           <div
-            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`contact-title-${property.id}`}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             className="relative w-full max-w-md overflow-hidden rounded-[1.5rem] bg-white shadow-2xl"
           >
             {/* Close */}
             <button
               type="button"
-              onClick={() => setShowContact(false)}
+              onClick={() =>
+                setShowContact(false)
+              }
               aria-label="Close contact panel"
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-[#c9a96e]"
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"
             >
               <X className="h-5 w-5" />
             </button>
@@ -1873,7 +2263,10 @@ export default function PropertyCard({
                 BREA 88 REALTY
               </p>
 
-              <h2 className="mt-2 text-2xl font-black">
+              <h2
+                id={`contact-title-${property.id}`}
+                className="mt-2 text-2xl font-black"
+              >
                 Contact Agent
               </h2>
 
@@ -1946,6 +2339,21 @@ export default function PropertyCard({
                         </span>
                       </a>
                     )}
+
+                    {property.agent.facebook && (
+                      <a
+                        href={property.agent.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
+                      >
+                        <MessageCircle className="h-5 w-5 text-[#071936]" />
+
+                        <span className="text-sm font-bold">
+                          Facebook
+                        </span>
+                      </a>
+                    )}
                   </div>
 
                   {/* Inquiry */}
@@ -1953,7 +2361,7 @@ export default function PropertyCard({
                     type="button"
                     onClick={() =>
                       openInquiry(
-                        `Hello, I am interested in ${property.title}. Please contact me with more information.`
+                        defaultInquiryMessage
                       )
                     }
                     className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800"

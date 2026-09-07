@@ -15,7 +15,6 @@ import {
   X,
 } from 'lucide-react';
 import PropertyCard from '../propertyCard';
-import PropertyListingActions from './PropertyListingActions';
 
 interface Agent {
   id: number;
@@ -220,9 +219,6 @@ export default function MarketplacePage() {
             {filteredProperties.map((property) => (
               <div key={property.id} className="min-w-0">
                 <PropertyCard property={property} agentSlug={agentSlug} />
-                <div className="mt-3 px-0.5">
-                  <PropertyListingActions property={property} />
-                </div>
               </div>
             ))}
           </div>
