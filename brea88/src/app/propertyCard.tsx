@@ -24,11 +24,13 @@ import {
   CheckCircle2,
   Users,
   ChevronDown,
+  ChevronUp,
   Sparkles,
   LockKeyhole,
   PlayCircle,
   Building2,
   Landmark,
+  ExternalLink,
 } from 'lucide-react';
 
 interface Property {
@@ -82,20 +84,163 @@ interface PropertyCardProps {
 }
 
 type VideoType =
-  | 'youtube'
-  | 'vimeo'
-  | 'direct'
-  | 'unsupported';
+  | {
+      type: 'youtube';
+      src: string;
+    }
+  | {
+      type: 'vimeo';
+      src: string;
+    }
+  | {
+      type: 'direct';
+      src: string;
+    }
+  | {
+      type: 'unsupported';
+      src: string;
+    }
+  | null;
+
+interface InquiryForm {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  preferredViewingDate: string;
+}
+
+const MAX_GALLERY_IMAGES = 12;
+
+function isSafeHttpUrl(value?: string | null): boolean {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function parseVideoUrl(value?: string | null): VideoType {
+  if (!value || !isSafeHttpUrl(value)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const pathname = url.pathname.toLowerCase();
+
+    if (
+      host === 'youtube.com' ||
+      host === 'www.youtube.com' ||
+      host === 'm.youtube.com'
+    ) {
+      let videoId = '';
+
+      if (pathname === '/watch') {
+        videoId = url.searchParams.get('v') || '';
+      } else if (pathname.startsWith('/shorts/')) {
+        videoId = pathname.split('/shorts/')[1]?.split('/')[0] || '';
+      } else if (pathname.startsWith('/embed/')) {
+        videoId = pathname.split('/embed/')[1]?.split('/')[0] || '';
+      } else if (pathname.startsWith('/live/')) {
+        videoId = pathname.split('/live/')[1]?.split('/')[0] || '';
+      }
+
+      if (videoId) {
+        return {
+          type: 'youtube',
+          src: `https://www.youtube.com/embed/${videoId}`,
+        };
+      }
+    }
+
+    if (host === 'youtu.be') {
+      const videoId = pathname.replace(/^\/+/, '').split('/')[0];
+
+      if (videoId) {
+        return {
+          type: 'youtube',
+          src: `https://www.youtube.com/embed/${videoId}`,
+        };
+      }
+    }
+
+    if (
+      host === 'vimeo.com' ||
+      host === 'www.vimeo.com' ||
+      host === 'player.vimeo.com'
+    ) {
+      let videoId = '';
+
+      if (host === 'player.vimeo.com') {
+        const match = pathname.match(/\/video\/(\d+)/);
+        videoId = match?.[1] || '';
+      } else {
+        const match = pathname.match(/\/(\d+)/);
+        videoId = match?.[1] || '';
+      }
+
+      if (videoId) {
+        return {
+          type: 'vimeo',
+          src: `https://player.vimeo.com/video/${videoId}`,
+        };
+      }
+    }
+
+    if (
+      pathname.endsWith('.mp4') ||
+      pathname.endsWith('.webm') ||
+      pathname.endsWith('.ogg') ||
+      pathname.endsWith('.mov') ||
+      pathname.endsWith('.m4v')
+    ) {
+      return {
+        type: 'direct',
+        src: value,
+      };
+    }
+
+    return {
+      type: 'unsupported',
+      src: value,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function formatDateTimeLocalMin(): string {
+  const date = new Date();
+
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function isAgentOnline(lastSeen?: string | null): boolean {
+  if (!lastSeen) return false;
+
+  const timestamp = new Date(lastSeen).getTime();
+
+  if (Number.isNaN(timestamp)) return false;
+
+  const fifteenMinutes = 15 * 60 * 1000;
+
+  return Date.now() - timestamp <= fifteenMinutes;
+}
 
 export default function PropertyCard({
   property,
-  agentSlug = '',
+  agentSlug,
 }: PropertyCardProps) {
-  const linkedAgentSlug = agentSlug.trim();
-
-  const defaultAgentSlug =
-    linkedAgentSlug || property.agent?.slug || '';
-
   const [showDetails, setShowDetails] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -104,17 +249,14 @@ export default function PropertyCard({
   const [showInquiry, setShowInquiry] = useState(false);
   const [isSiteViewing, setIsSiteViewing] = useState(false);
 
-  const [agents, setAgents] = useState<AvailableAgent[]>([]);
-  const [agentsLoading, setAgentsLoading] = useState(false);
-  const [agentsError, setAgentsError] = useState('');
+  const [availableAgents, setAvailableAgents] = useState<AvailableAgent[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
 
-  const [selectedAgentSlug, setSelectedAgentSlug] =
-    useState(defaultAgentSlug);
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [inquirySuccess, setInquirySuccess] = useState(false);
+  const [inquiryError, setInquiryError] = useState('');
 
-  const [showAgentPicker, setShowAgentPicker] =
-    useState(false);
-
-  const [inquiryForm, setInquiryForm] = useState({
+  const [inquiryForm, setInquiryForm] = useState<InquiryForm>({
     name: '',
     email: '',
     phone: '',
@@ -122,477 +264,172 @@ export default function PropertyCard({
     preferredViewingDate: '',
   });
 
-  const [inquirySubmitting, setInquirySubmitting] =
-    useState(false);
-
-  const [inquirySuccess, setInquirySuccess] =
-    useState(false);
-
-  const [inquiryError, setInquiryError] = useState('');
-
-  /* -------------------------------------------------------------------------- */
-  /* Helpers                                                                    */
-  /* -------------------------------------------------------------------------- */
-
-  const formatPrice = (
-    value: string | number | null | undefined
-  ): string => {
-    if (
-      value === null ||
-      value === undefined ||
-      value === ''
-    ) {
-      return '0';
-    }
-
-    const numericValue = Number(
-      String(value).replace(/[^0-9.-]/g, '')
-    );
-
-    if (!Number.isFinite(numericValue)) {
-      return '0';
-    }
-
-    return numericValue.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  };
-
-  const isSafeExternalUrl = (
-    value: string | null | undefined
-  ) => {
-    if (!value) {
-      return false;
-    }
-
-    try {
-      const url = new URL(value.trim());
-
-      return (
-        url.protocol === 'http:' ||
-        url.protocol === 'https:'
-      );
-    } catch {
-      return false;
-    }
-  };
-
   const propertyImages = useMemo(() => {
-    const validImages =
-      property.images?.filter(
-        (image): image is string =>
-          typeof image === 'string' &&
-          image.trim().length > 0
-      ) ?? [];
+    const images: string[] = [];
 
-    if (validImages.length > 0) {
-      return validImages;
+    if (property.image) {
+      images.push(property.image);
     }
 
-    if (
-      typeof property.image === 'string' &&
-      property.image.trim()
-    ) {
-      return [property.image.trim()];
+    if (Array.isArray(property.images)) {
+      property.images.forEach((image) => {
+        if (
+          image &&
+          !images.includes(image) &&
+          images.length < MAX_GALLERY_IMAGES
+        ) {
+          images.push(image);
+        }
+      });
     }
 
-    return [];
-  }, [property.images, property.image]);
+    return images;
+  }, [property.image, property.images]);
 
   const financingOptions = useMemo(() => {
     if (!Array.isArray(property.bankFinancing)) {
       return [];
     }
 
-    return Array.from(
-      new Set(
-        property.bankFinancing
-          .filter(
-            (bank): bank is string =>
-              typeof bank === 'string' &&
-              bank.trim().length > 0
-          )
-          .map((bank) => bank.trim())
-      )
-    );
+    return property.bankFinancing.filter(Boolean);
   }, [property.bankFinancing]);
 
-  /* -------------------------------------------------------------------------- */
-  /* Property Video                                                             */
-  /* -------------------------------------------------------------------------- */
-
-  const propertyVideoUrl = useMemo(() => {
-    const value =
-      typeof property.videoUrl === 'string'
-        ? property.videoUrl.trim()
-        : '';
-
-    if (!value) {
-      return '';
-    }
-
-    try {
-      const url = new URL(value);
-
-      if (
-        url.protocol !== 'http:' &&
-        url.protocol !== 'https:'
-      ) {
-        return '';
-      }
-
-      return url.toString();
-    } catch {
-      return '';
-    }
-  }, [property.videoUrl]);
-
-  const youtubeEmbedUrl = useMemo(() => {
-    if (!propertyVideoUrl) {
-      return '';
-    }
-
-    try {
-      const url = new URL(propertyVideoUrl);
-      const hostname = url.hostname.toLowerCase();
-
-      let videoId = '';
-
-      if (
-        hostname === 'youtu.be' ||
-        hostname === 'www.youtu.be'
-      ) {
-        videoId =
-          url.pathname
-            .replace(/^\/+/, '')
-            .split('/')[0] || '';
-      }
-
-      if (
-        hostname === 'youtube.com' ||
-        hostname === 'www.youtube.com' ||
-        hostname === 'm.youtube.com'
-      ) {
-        if (url.pathname === '/watch') {
-          videoId = url.searchParams.get('v') || '';
-        } else if (
-          url.pathname.startsWith('/shorts/')
-        ) {
-          videoId =
-            url.pathname
-              .split('/shorts/')[1]
-              ?.split('/')[0] || '';
-        } else if (
-          url.pathname.startsWith('/embed/')
-        ) {
-          videoId =
-            url.pathname
-              .split('/embed/')[1]
-              ?.split('/')[0] || '';
-        } else if (
-          url.pathname.startsWith('/live/')
-        ) {
-          videoId =
-            url.pathname
-              .split('/live/')[1]
-              ?.split('/')[0] || '';
-        }
-      }
-
-      if (!videoId) {
-        return '';
-      }
-
-      return `https://www.youtube.com/embed/${encodeURIComponent(
-        videoId
-      )}?rel=0&modestbranding=1`;
-    } catch {
-      return '';
-    }
-  }, [propertyVideoUrl]);
-
-  const vimeoEmbedUrl = useMemo(() => {
-    if (!propertyVideoUrl) {
-      return '';
-    }
-
-    try {
-      const url = new URL(propertyVideoUrl);
-      const hostname = url.hostname.toLowerCase();
-
-      if (
-        hostname !== 'vimeo.com' &&
-        hostname !== 'www.vimeo.com' &&
-        hostname !== 'player.vimeo.com'
-      ) {
-        return '';
-      }
-
-      let videoId = '';
-
-      if (hostname === 'player.vimeo.com') {
-        const match =
-          url.pathname.match(/\/video\/(\d+)/);
-
-        videoId = match?.[1] || '';
-      } else {
-        const parts = url.pathname
-          .split('/')
-          .filter(Boolean);
-
-        const numericPart = parts.find((part) =>
-          /^\d+$/.test(part)
-        );
-
-        videoId = numericPart || '';
-      }
-
-      if (!videoId) {
-        return '';
-      }
-
-      return `https://player.vimeo.com/video/${encodeURIComponent(
-        videoId
-      )}`;
-    } catch {
-      return '';
-    }
-  }, [propertyVideoUrl]);
-
-  const isDirectVideo = useMemo(() => {
-    if (
-      !propertyVideoUrl ||
-      youtubeEmbedUrl ||
-      vimeoEmbedUrl
-    ) {
-      return false;
-    }
-
-    try {
-      const url = new URL(propertyVideoUrl);
-      const pathname = url.pathname.toLowerCase();
-
-      return /\.(mp4|webm|ogg|mov|m4v)$/i.test(
-        pathname
-      );
-    } catch {
-      return false;
-    }
-  }, [
-    propertyVideoUrl,
-    youtubeEmbedUrl,
-    vimeoEmbedUrl,
-  ]);
-
-  const videoType = useMemo<VideoType>(() => {
-    if (!propertyVideoUrl) {
-      return 'unsupported';
-    }
-
-    if (youtubeEmbedUrl) {
-      return 'youtube';
-    }
-
-    if (vimeoEmbedUrl) {
-      return 'vimeo';
-    }
-
-    if (isDirectVideo) {
-      return 'direct';
-    }
-
-    return 'unsupported';
-  }, [
-    propertyVideoUrl,
-    youtubeEmbedUrl,
-    vimeoEmbedUrl,
-    isDirectVideo,
-  ]);
-
-  /* -------------------------------------------------------------------------- */
-  /* Agent                                                                      */
-  /* -------------------------------------------------------------------------- */
-
-  const selectedAgent = useMemo(
-    () =>
-      agents.find(
-        (agent) => agent.slug === selectedAgentSlug
-      ) ?? null,
-    [agents, selectedAgentSlug]
+  const parsedVideo = useMemo(
+    () => parseVideoUrl(property.videoUrl),
+    [property.videoUrl],
   );
 
+  const selectedAgent = useMemo(() => {
+    if (!availableAgents.length) {
+      return property.agent || null;
+    }
+
+    if (agentSlug) {
+      const matchingAgent = availableAgents.find(
+        (agent) => agent.slug === agentSlug,
+      );
+
+      if (matchingAgent) {
+        return {
+          id: matchingAgent.id,
+          fullName: matchingAgent.fullName,
+          email: '',
+          phone: null,
+          role: matchingAgent.role,
+          messenger: null,
+          facebook: null,
+          slug: matchingAgent.slug,
+        };
+      }
+    }
+
+    if (property.agent?.slug) {
+      const matchingAgent = availableAgents.find(
+        (agent) => agent.slug === property.agent?.slug,
+      );
+
+      if (matchingAgent) {
+        return {
+          id: matchingAgent.id,
+          fullName: matchingAgent.fullName,
+          email: property.agent?.email || '',
+          phone: property.agent?.phone || null,
+          role: matchingAgent.role,
+          messenger: property.agent?.messenger || null,
+          facebook: property.agent?.facebook || null,
+          slug: matchingAgent.slug,
+        };
+      }
+    }
+
+    return property.agent || availableAgents[0] || null;
+  }, [agentSlug, availableAgents, property.agent]);
+
+  const selectedAgentSlug = useMemo(() => {
+    return selectedAgent?.slug || agentSlug || '';
+  }, [agentSlug, selectedAgent]);
+
+  const selectedAgentOnline = useMemo(() => {
+    if (!selectedAgent?.id) return false;
+
+    const availableAgent = availableAgents.find(
+      (agent) => agent.id === selectedAgent.id,
+    );
+
+    return isAgentOnline(availableAgent?.lastSeen);
+  }, [availableAgents, selectedAgent]);
+
   const loadAgents = useCallback(async () => {
-    if (agentsLoading) {
+    if (availableAgents.length > 0) {
       return;
     }
 
-    setAgentsLoading(true);
-    setAgentsError('');
+    setLoadingAgents(true);
 
     try {
       const response = await fetch('/api/agents', {
         method: 'GET',
         cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-        },
       });
 
-      let data: unknown = null;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          'Unable to load available Agents and Brokers.'
-        );
-      }
-
       if (!response.ok) {
-        const message =
-          typeof data === 'object' &&
-          data !== null &&
-          'message' in data &&
-          typeof data.message === 'string'
-            ? data.message
-            : typeof data === 'object' &&
-                data !== null &&
-                'error' in data &&
-                typeof data.error === 'string'
-              ? data.error
-              : 'Unable to load available Agents and Brokers.';
-
-        throw new Error(message);
+        return;
       }
 
-      const list = Array.isArray(data)
+      const data = await response.json();
+
+      const agents: AvailableAgent[] = Array.isArray(data)
         ? data
-        : typeof data === 'object' &&
-            data !== null &&
-            'agents' in data &&
-            Array.isArray(data.agents)
+        : Array.isArray(data?.agents)
           ? data.agents
           : [];
 
-      const normalizedAgents =
-        list.filter(
-          (agent): agent is AvailableAgent =>
-            typeof agent === 'object' &&
-            agent !== null &&
-            typeof agent.id === 'number' &&
-            typeof agent.fullName === 'string' &&
-            typeof agent.role === 'string' &&
-            typeof agent.slug === 'string'
-        );
-
-      setAgents(normalizedAgents);
-
-      setSelectedAgentSlug((current) => {
-        if (linkedAgentSlug) {
-          return linkedAgentSlug;
-        }
-
-        if (
-          current &&
-          normalizedAgents.some(
-            (agent) => agent.slug === current
-          )
-        ) {
-          return current;
-        }
-
-        if (
-          property.agent?.slug &&
-          normalizedAgents.some(
-            (agent) =>
-              agent.slug === property.agent?.slug
-          )
-        ) {
-          return property.agent.slug;
-        }
-
-        return normalizedAgents[0]?.slug || '';
-      });
-    } catch (error) {
-      setAgentsError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to load available Agents and Brokers.'
-      );
-
-      setAgents([]);
+      setAvailableAgents(agents);
+    } catch {
+      // Keep the property agent as fallback.
     } finally {
-      setAgentsLoading(false);
+      setLoadingAgents(false);
     }
-  }, [
-    agentsLoading,
-    linkedAgentSlug,
-    property.agent?.slug,
-  ]);
-
-  /* -------------------------------------------------------------------------- */
-  /* Modal State                                                                */
-  /* -------------------------------------------------------------------------- */
-
-  const hasOpenModal =
-    showDetails ||
-    showGallery ||
-    showContact ||
-    showInquiry;
+  }, [availableAgents.length]);
 
   useEffect(() => {
-    if (!hasOpenModal) {
+    if (!showDetails && !showInquiry && !showContact) {
       return;
     }
 
-    const previousOverflow =
-      document.body.style.overflow;
+    void loadAgents();
+  }, [
+    loadAgents,
+    showContact,
+    showDetails,
+    showInquiry,
+  ]);
 
+  useEffect(() => {
+    const hasOpenOverlay =
+      showGallery ||
+      showContact ||
+      showInquiry;
+
+    if (!hasOpenOverlay) {
+      document.body.style.overflow = '';
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     return () => {
-      document.body.style.overflow =
-        previousOverflow;
+      document.body.style.overflow = previousOverflow;
     };
-  }, [hasOpenModal]);
+  }, [showGallery, showContact, showInquiry]);
 
   useEffect(() => {
-    if (!hasOpenModal) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return;
-      }
-
-      if (inquirySubmitting) {
-        return;
-      }
-
-      if (showAgentPicker) {
-        setShowAgentPicker(false);
-        return;
-      }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
 
       if (showGallery) {
         setShowGallery(false);
-        return;
-      }
-
-      if (showInquiry) {
-        setShowInquiry(false);
         return;
       }
 
@@ -601,71 +438,52 @@ export default function PropertyCard({
         return;
       }
 
+      if (showInquiry) {
+        setShowInquiry(false);
+        return;
+      }
+
       if (showDetails) {
         setShowDetails(false);
       }
     };
 
-    window.addEventListener(
-      'keydown',
-      handleKeyDown
-    );
+    window.addEventListener('keydown', handleEscape);
 
     return () => {
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown
-      );
+      window.removeEventListener('keydown', handleEscape);
     };
   }, [
-    hasOpenModal,
-    inquirySubmitting,
-    showAgentPicker,
-    showGallery,
-    showInquiry,
     showContact,
     showDetails,
+    showGallery,
+    showInquiry,
   ]);
 
-  useEffect(() => {
-    setSelectedAgentSlug(defaultAgentSlug);
-  }, [defaultAgentSlug]);
-
-  useEffect(() => {
-    if (showInquiry) {
-      void loadAgents();
-    }
-  }, [showInquiry, loadAgents]);
-
-  useEffect(() => {
-    if (!showInquiry) {
-      setShowAgentPicker(false);
-    }
-  }, [showInquiry]);
-
-  /* -------------------------------------------------------------------------- */
-  /* Modal Actions                                                              */
-  /* -------------------------------------------------------------------------- */
-
   const openDetails = () => {
-    setSelectedImage(0);
-    setShowContact(false);
-    setShowInquiry(false);
-    setShowGallery(false);
-    setShowAgentPicker(false);
     setShowDetails(true);
+    void loadAgents();
   };
 
   const closeDetails = () => {
     setShowDetails(false);
   };
 
-  const openGallery = () => {
-    if (propertyImages.length === 0) {
-      return;
+  const handleCardClick = () => {
+    if (showDetails) {
+      setShowDetails(false);
+    } else {
+      openDetails();
     }
+  };
 
-    setShowAgentPicker(false);
+  const openGallery = (
+    event?: React.MouseEvent<HTMLButtonElement>,
+    index = 0,
+  ) => {
+    event?.stopPropagation();
+
+    setSelectedImage(index);
     setShowGallery(true);
   };
 
@@ -673,262 +491,165 @@ export default function PropertyCard({
     setShowGallery(false);
   };
 
-  const resetInquiryState = () => {
-    setInquiryError('');
+  const previousImage = (
+    event?: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event?.stopPropagation();
+
+    if (propertyImages.length <= 1) return;
+
+    setSelectedImage((current) =>
+      current === 0
+        ? propertyImages.length - 1
+        : current - 1,
+    );
+  };
+
+  const nextImage = (
+    event?: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event?.stopPropagation();
+
+    if (propertyImages.length <= 1) return;
+
+    setSelectedImage((current) =>
+      current === propertyImages.length - 1
+        ? 0
+        : current + 1,
+    );
+  };
+
+  const openInquiry = (
+    event?: React.MouseEvent<HTMLButtonElement>,
+    siteViewing = false,
+  ) => {
+    event?.stopPropagation();
+
+    setIsSiteViewing(siteViewing);
     setInquirySuccess(false);
-    setShowAgentPicker(false);
-  };
-
-  const openInquiry = (message = '') => {
-    setShowDetails(false);
-    setShowContact(false);
-    setShowGallery(false);
-
-    resetInquiryState();
-
-    setIsSiteViewing(false);
-    setSelectedAgentSlug(defaultAgentSlug);
-
-    setInquiryForm((current) => ({
-      ...current,
-      message,
-      preferredViewingDate: '',
-    }));
-
+    setInquiryError('');
     setShowInquiry(true);
+
+    if (siteViewing) {
+      setInquiryForm((current) => ({
+        ...current,
+        message: '',
+      }));
+    }
+
+    void loadAgents();
   };
 
-  const openSiteViewing = () => {
-    setShowDetails(false);
-    setShowContact(false);
-    setShowGallery(false);
+  const closeInquiry = () => {
+    if (inquirySubmitting) return;
 
-    resetInquiryState();
-
-    setIsSiteViewing(true);
-    setSelectedAgentSlug(defaultAgentSlug);
-
-    setInquiryForm({
-      name: '',
-      email: '',
-      phone: '',
-      message: '',
-      preferredViewingDate: '',
-    });
-
-    setShowInquiry(true);
-  };
-
-  const openContact = () => {
-    setShowDetails(false);
-    setShowGallery(false);
     setShowInquiry(false);
-    setShowAgentPicker(false);
+    setInquiryError('');
+  };
+
+  const openContact = (
+    event?: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event?.stopPropagation();
+
     setShowContact(true);
+    void loadAgents();
   };
 
   const closeContact = () => {
     setShowContact(false);
   };
 
-  const closeInquiry = () => {
-    if (inquirySubmitting) {
-      return;
-    }
+  const updateInquiryField = (
+    field: keyof InquiryForm,
+    value: string,
+  ) => {
+    setInquiryForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
 
-    setShowInquiry(false);
-    setShowAgentPicker(false);
+  const submitInquiry = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    if (inquirySubmitting) return;
+
     setInquiryError('');
-  };
+    setInquirySuccess(false);
 
-  /* -------------------------------------------------------------------------- */
-  /* Gallery                                                                    */
-  /* -------------------------------------------------------------------------- */
-
-  const nextImage = () => {
-    if (propertyImages.length <= 1) {
+    if (!inquiryForm.name.trim()) {
+      setInquiryError('Please enter your name.');
       return;
     }
 
-    setSelectedImage(
-      (current) =>
-        (current + 1) % propertyImages.length
-    );
-  };
-
-  const previousImage = () => {
-    if (propertyImages.length <= 1) {
+    if (!inquiryForm.email.trim()) {
+      setInquiryError('Please enter your email.');
       return;
     }
 
-    setSelectedImage(
-      (current) =>
-        (current - 1 + propertyImages.length) %
-        propertyImages.length
-    );
-  };
-
-  /* -------------------------------------------------------------------------- */
-  /* Viewing Date                                                               */
-  /* -------------------------------------------------------------------------- */
-
-  const today = new Date();
-
-  const minViewingDate = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
-
-  /* -------------------------------------------------------------------------- */
-  /* Inquiry Validation                                                         */
-  /* -------------------------------------------------------------------------- */
-
-  const validateInquiry = (): string => {
-    const name = inquiryForm.name.trim();
-    const email = inquiryForm.email.trim();
-    const phone = inquiryForm.phone.trim();
-    const message = inquiryForm.message.trim();
-
-    if (name.length < 2) {
-      return 'Please enter your full name.';
-    }
-
-    if (name.length > 100) {
-      return 'Your name is too long.';
-    }
-
-    if (!email) {
-      return 'Please enter your email address.';
-    }
-
-    if (email.length > 150) {
-      return 'Your email address is too long.';
-    }
-
-    const emailPattern =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailPattern.test(email)) {
-      return 'Please enter a valid email address.';
-    }
-
-    if (phone.length < 7) {
-      return 'Please enter a valid contact number.';
-    }
-
-    if (phone.length > 30) {
-      return 'Your contact number is too long.';
+    if (!inquiryForm.phone.trim()) {
+      setInquiryError('Please enter your phone number.');
+      return;
     }
 
     if (!selectedAgentSlug) {
-      return 'Please select an Agent or Broker before submitting.';
+      setInquiryError(
+        'Please select an Agent or Broker before sending your inquiry.',
+      );
+      return;
     }
 
     if (
       isSiteViewing &&
       !inquiryForm.preferredViewingDate
     ) {
-      return 'Please select your preferred site viewing date.';
-    }
-
-    if (
-      isSiteViewing &&
-      inquiryForm.preferredViewingDate < minViewingDate
-    ) {
-      return 'Please select a valid future viewing date.';
-    }
-
-    if (!isSiteViewing && message.length < 5) {
-      return 'Please enter a short message.';
-    }
-
-    if (!isSiteViewing && message.length > 2000) {
-      return 'Your message is too long.';
-    }
-
-    return '';
-  };
-
-  /* -------------------------------------------------------------------------- */
-  /* Inquiry Submit                                                             */
-  /* -------------------------------------------------------------------------- */
-
-  const submitInquiry = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
-
-    if (inquirySubmitting) {
+      setInquiryError(
+        'Please select your preferred viewing date.',
+      );
       return;
     }
 
-    setInquiryError('');
-
-    const validationError = validateInquiry();
-
-    if (validationError) {
-      setInquiryError(validationError);
+    if (
+      !isSiteViewing &&
+      !inquiryForm.message.trim()
+    ) {
+      setInquiryError('Please enter your message.');
       return;
     }
 
     setInquirySubmitting(true);
 
     try {
-      const name = inquiryForm.name.trim();
-      const email = inquiryForm.email.trim();
-      const phone = inquiryForm.phone.trim();
-      const message = inquiryForm.message.trim();
+      const response = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          propertyId: property.id,
+          name: inquiryForm.name.trim(),
+          email: inquiryForm.email.trim(),
+          phone: inquiryForm.phone.trim(),
+          message: isSiteViewing
+            ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`
+            : inquiryForm.message.trim(),
+          preferredViewingDate: isSiteViewing
+            ? inquiryForm.preferredViewingDate
+            : undefined,
+          agentSlug: selectedAgentSlug,
+        }),
+      });
 
-      const requestMessage = isSiteViewing
-        ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`
-        : message;
-
-      const response = await fetch(
-        '/api/inquiries',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            propertyId: property.id,
-            name,
-            email,
-            phone,
-            message: requestMessage,
-            preferredViewingDate: isSiteViewing
-              ? inquiryForm.preferredViewingDate
-              : undefined,
-            agentSlug: selectedAgentSlug,
-          }),
-        }
-      );
-
-      let data: unknown = null;
-
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const message =
-          typeof data === 'object' &&
-          data !== null &&
-          'message' in data &&
-          typeof data.message === 'string'
-            ? data.message
-            : typeof data === 'object' &&
-                data !== null &&
-                'error' in data &&
-                typeof data.error === 'string'
-              ? data.error
-              : 'Failed to submit inquiry.';
-
-        throw new Error(message);
+        throw new Error(
+          data?.error ||
+            'Unable to send your inquiry right now.',
+        );
       }
 
       setInquirySuccess(true);
@@ -944,839 +665,897 @@ export default function PropertyCard({
       setInquiryError(
         error instanceof Error
           ? error.message
-          : 'Unable to submit inquiry.'
+          : 'Unable to send your inquiry right now.',
       );
     } finally {
       setInquirySubmitting(false);
     }
   };
 
-  /* -------------------------------------------------------------------------- */
-  /* Shared Inquiry Message                                                     */
-  /* -------------------------------------------------------------------------- */
+  const getRoleLabel = (role?: string | null) => {
+    if (!role) return 'Agent';
 
-  const defaultInquiryMessage = `Hello, I am interested in ${property.title}. Please contact me with more information.`;
+    const normalized = role.toLowerCase();
 
-  /* -------------------------------------------------------------------------- */
-  /* Render                                                                     */
-  /* -------------------------------------------------------------------------- */
+    if (normalized === 'broker') {
+      return 'Broker';
+    }
+
+    if (normalized === 'agent') {
+      return 'Agent';
+    }
+
+    return role;
+  };
+
+  const formatPrice = (value: string) => {
+    if (!value) return 'Price upon request';
+
+    return value;
+  };
 
   return (
     <>
-      {/* ====================================================================== */}
-      {/* PROPERTY CARD                                                          */}
-      {/* ====================================================================== */}
-
       <article
-        className="group relative overflow-hidden rounded-[1.35rem] border border-slate-200/70 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.07)] transition-all duration-500 hover:-translate-y-2 hover:border-slate-300 hover:shadow-[0_24px_60px_rgba(15,23,42,0.14)]"
+        role="button"
+        tabIndex={0}
+        aria-expanded={showDetails}
+        onClick={handleCardClick}
+        onKeyDown={(event) => {
+          if (
+            event.key === 'Enter' ||
+            event.key === ' '
+          ) {
+            event.preventDefault();
+            handleCardClick();
+          }
+        }}
+        className={[
+          'group relative w-full overflow-hidden rounded-2xl',
+          'border border-slate-200/80 bg-white',
+          'shadow-[0_8px_30px_rgba(15,23,42,0.07)]',
+          'transition-all duration-300 ease-out',
+          'hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.12)]',
+          'focus:outline-none focus:ring-2 focus:ring-[#c9a96e]/60',
+          showDetails
+            ? 'ring-1 ring-[#c9a96e]/40'
+            : '',
+        ].join(' ')}
       >
-        {/* Image */}
-        <div className="relative h-52 overflow-hidden bg-slate-100 sm:h-60 md:h-64">
-          {propertyImages.length > 0 ? (
+        {/* IMAGE */}
+        <div
+          className={[
+            'relative w-full overflow-hidden bg-slate-100',
+            showDetails
+              ? 'h-64 sm:h-72'
+              : 'h-48 sm:h-52',
+          ].join(' ')}
+        >
+          {property.image ? (
             <img
-              src={propertyImages[0]}
+              src={property.image}
               alt={property.title}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              onError={(event) => {
-                event.currentTarget.style.display =
-                  'none';
-              }}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
-              No Image
+            <div className="flex h-full items-center justify-center bg-slate-100 text-slate-400">
+              <Building2 size={42} />
             </div>
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
 
-          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/35 to-transparent" />
-
-          {/* Tag */}
-          <span className="absolute left-4 top-4 rounded-full border border-white/20 bg-slate-950/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-lg backdrop-blur-md">
-            {property.tag}
-          </span>
-
-          {/* Image Count */}
-          {propertyImages.length > 1 && (
-            <span className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
-              <Images className="h-3.5 w-3.5" />
-              {propertyImages.length}
-            </span>
+          {/* TAG */}
+          {property.tag && (
+            <div className="absolute left-4 top-4">
+              <span className="rounded-full border border-white/20 bg-slate-950/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+                {property.tag}
+              </span>
+            </div>
           )}
 
-          {/* Price */}
-          <div className="absolute bottom-4 left-4 right-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/65">
-              Property Price
-            </p>
+          {/* IMAGE COUNT */}
+          {propertyImages.length > 1 && (
+            <button
+              type="button"
+              onClick={(event) =>
+                openGallery(event, 0)
+              }
+              className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition hover:bg-slate-950"
+            >
+              <Images size={14} />
+              {propertyImages.length}
+            </button>
+          )}
 
-            <p className="mt-0.5 text-xl font-black tracking-tight text-white sm:text-2xl">
-              ₱{formatPrice(property.price)}
-            </p>
+          {/* COMPACT IMAGE TITLE */}
+          {!showDetails && (
+            <div className="absolute bottom-4 left-4 right-16">
+              <p className="line-clamp-2 text-lg font-bold leading-tight text-white drop-shadow-sm">
+                {property.title}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* COMPACT CARD CONTENT */}
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xl font-extrabold tracking-tight text-[#071936]">
+                {formatPrice(property.price)}
+              </p>
+
+              {!showDetails && (
+                <h2 className="mt-1 line-clamp-1 text-sm font-semibold text-slate-700">
+                  {property.title}
+                </h2>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#071936]/5 px-2.5 py-1 text-[#071936]">
+              <Sparkles size={13} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">
+                View
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Card Content */}
-      <div className="p-4 sm:p-5 md:p-6">
-
-        {/* Title */}
-        <h3 className="line-clamp-2 text-base font-extrabold leading-snug text-slate-950 sm:text-lg">
-          {property.title}
-        </h3>
-
-        {/* Developer */}
-        <div className="mt-2 flex items-center gap-2">
-          <Building2 className="h-4 w-4 shrink-0 text-[#c9a96e]" />
-
-          <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
-              Developer
-            </p>
-
-            <p className="truncate text-sm font-bold text-slate-700">
-              {property.developer?.trim() || 'BREA 88 REALTY'}
-            </p>
+          <div className="mt-3 flex items-start gap-2 text-sm text-slate-500">
+            <MapPin
+              size={16}
+              className="mt-0.5 shrink-0 text-[#c9a96e]"
+            />
+            <span className="line-clamp-2">
+              {property.location}
+            </span>
           </div>
-        </div>
 
-        {/* Location */}
-        <div className="mt-4 flex items-start gap-2 border-t border-slate-100 pt-4">
-          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#c9a96e]" />
-
-          <span className="line-clamp-2 text-sm leading-5 text-slate-600">
-            {property.location}
-          </span>
-        </div>
-
-        {/* Property Stats */}
-        {(property.beds != null ||
-          property.baths != null ||
-          property.sqft != null) && (
-          <div className="mt-4 grid grid-cols-3 gap-2">
-
+          {/* QUICK STATS */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-4">
             {property.beds != null && (
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-                <BedDouble className="mx-auto h-4 w-4 text-[#071936]" />
-
-                <p className="mt-1 text-sm font-black text-slate-900">
-                  {property.beds}
-                </p>
-
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                <BedDouble
+                  size={16}
+                  className="text-[#c9a96e]"
+                />
+                <span>{property.beds}</span>
+                <span className="text-slate-400">
                   Beds
-                </p>
+                </span>
               </div>
             )}
 
             {property.baths != null && (
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-                <Bath className="mx-auto h-4 w-4 text-[#071936]" />
-
-                <p className="mt-1 text-sm font-black text-slate-900">
-                  {property.baths}
-                </p>
-
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                <Bath
+                  size={16}
+                  className="text-[#c9a96e]"
+                />
+                <span>{property.baths}</span>
+                <span className="text-slate-400">
                   Baths
-                </p>
+                </span>
               </div>
             )}
 
             {property.sqft != null && (
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-                <Maximize className="mx-auto h-4 w-4 text-[#071936]" />
-
-                <p className="mt-1 text-sm font-black text-slate-900">
-                  {property.sqft}
-                </p>
-
-                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  SQM
-                </p>
+              <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                <Maximize
+                  size={16}
+                  className="text-[#c9a96e]"
+                />
+                <span>{property.sqft}</span>
+                <span className="text-slate-400">
+                  sqm
+                </span>
               </div>
             )}
-
-          </div>
-        )}
-
-        {/* Property Details Preview */}
-        <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
-
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-[#ead9b8]">
-              <Building2 className="h-4 w-4" />
-            </div>
-
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                Property Details
-              </p>
-
-              <p className="text-xs font-extrabold text-slate-800">
-                {property.propertyType ||
-                  property.category ||
-                  'Property Listing'}
-              </p>
-            </div>
           </div>
 
-          {property.description ? (
-            <p className="mt-3 line-clamp-3 text-xs leading-5 text-slate-500">
-              {property.description}
-            </p>
-          ) : (
-            <p className="mt-3 text-xs leading-5 text-slate-400">
-              View the complete property information, specifications,
-              financing options, and other listing details.
-            </p>
+          {/* COMPACT DEVELOPER */}
+          {property.developer && (
+            <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Landmark
+                  size={15}
+                  className="text-[#c9a96e]"
+                />
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                  Developer
+                </span>
+              </div>
+
+              <p className="mt-1 truncate text-sm font-semibold text-[#071936]">
+                {property.developer}
+              </p>
+            </div>
           )}
 
-          {/* Additional Property Information */}
-          <div className="mt-3 flex flex-wrap gap-2">
-
-            {property.houseType && (
-              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold text-slate-500">
-                {property.houseType}
-              </span>
+          {/* EXPAND INDICATOR */}
+          <div className="mt-4 flex items-center justify-center gap-2 border-t border-slate-100 pt-4 text-xs font-semibold uppercase tracking-wider text-[#071936]">
+            {showDetails ? (
+              <>
+                <ChevronUp size={16} />
+                Hide Details
+              </>
+            ) : (
+              <>
+                <ChevronDown size={16} />
+                View Details
+              </>
             )}
-
-            {property.storey && (
-              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-bold text-slate-500">
-                {property.storey} Storey
-              </span>
-            )}
-
-            {property.totalcp && (
-              <span className="rounded-full border border-[#c9a96e]/30 bg-[#faf7ef] px-2.5 py-1 text-[9px] font-bold text-[#071936]">
-                TCP: ₱{formatPrice(property.totalcp)}
-              </span>
-            )}
-
           </div>
-        </div>
 
-        {/* ====================================================================== */}
-        {/* PROPERTY VIDEO - VISIBLE DIRECTLY ON CARD                              */}
-        {/* ====================================================================== */}
-
-        {propertyVideoUrl ? (
-          <div
-            className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-[#071936] shadow-sm"
-            onClick={(event) => event.stopPropagation()}
-          >
-
-            {/* Video Header */}
-            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-              <PlayCircle className="h-4 w-4 text-[#ead9b8]" />
-
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">
-                  Property Video
-                </p>
-
-                <p className="text-xs font-bold text-white">
-                  Developer Property Video
-                </p>
-              </div>
-            </div>
-
-            {/* Video */}
-            <div className="relative aspect-video w-full bg-black">
-
-              {videoType === 'youtube' && youtubeEmbedUrl ? (
-                <iframe
-                  src={youtubeEmbedUrl}
-                  title={`${property.title} developer property video`}
-                  className="absolute inset-0 h-full w-full"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              ) : videoType === 'vimeo' && vimeoEmbedUrl ? (
-                <iframe
-                  src={vimeoEmbedUrl}
-                  title={`${property.title} developer property video`}
-                  className="absolute inset-0 h-full w-full"
-                  loading="lazy"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : videoType === 'direct' ? (
-                <video
-                  src={propertyVideoUrl}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="h-full w-full object-contain"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  Your browser does not support the video element.
-                </video>
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center px-5 text-center text-white">
-                  <PlayCircle className="h-9 w-9 text-[#c9a96e]" />
-
-                  <p className="mt-2 text-xs font-bold">
-                    Property Video
-                  </p>
-
-                  <p className="mt-1 text-[10px] leading-5 text-white/50">
-                    This video URL cannot be embedded.
-                    Use a YouTube, Vimeo, or direct video file URL.
-                  </p>
-                </div>
-              )}
-
-            </div>
-
-          </div>
-        ) : (
-          /* No video */
-          <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
-            <div className="flex items-center gap-2 text-slate-400">
-              <PlayCircle className="h-4 w-4" />
-
-              <span className="text-[10px] font-semibold">
-                No property video available
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* ====================================================================== */}
-        {/* MORE DETAILS - EXACTLY ONE BUTTON                                      */}
-        {/* ====================================================================== */}
-
-        <div className="mt-5">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              openDetails();
-            }}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-xs font-extrabold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-xl active:translate-y-0"
-          >
-            <Building2 className="h-4 w-4" />
-
-            <span>More Details</span>
-
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-      </div>
-      </article>
-
-      {/* ====================================================================== */}
-      {/* PROPERTY DETAILS MODAL                                                 */}
-      {/* ====================================================================== */}
-
-      {showDetails && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-md"
-          onClick={closeDetails}
-          role="presentation"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`property-title-${property.id}`}
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-            className="relative max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={closeDetails}
-              aria-label="Close property details"
-              className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-slate-950/65 text-white shadow-lg backdrop-blur-md transition hover:bg-[#c9a96e] active:scale-95"
+          {/* =========================================================
+              EXPANDED CONTENT
+          ========================================================= */}
+          {showDetails && (
+            <div
+              className="mt-5 space-y-5 border-t border-slate-100 pt-5"
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
             >
-              <X className="h-5 w-5" />
-            </button>
+              {/* PROPERTY DETAILS */}
+              <section>
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-white">
+                    <Building2 size={16} />
+                  </div>
 
-            {/* Hero */}
-            <div className="relative h-[300px] overflow-hidden bg-slate-950 sm:h-[380px] md:h-[460px]">
-              {propertyImages.length > 0 ? (
-                <img
-                  src={propertyImages[0]}
-                  alt={property.title}
-                  className="h-full w-full object-cover"
-                  onError={(event) => {
-                    event.currentTarget.style.display =
-                      'none';
-                  }}
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-white">
-                  No Image
-                </div>
-              )}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/10 to-transparent" />
-
-              <span className="absolute left-5 top-5 rounded-full bg-[#071936]/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-md sm:left-7 sm:top-7">
-                {property.tag}
-              </span>
-
-              <div className="absolute bottom-5 left-5 right-5 sm:bottom-7 sm:left-7 sm:right-7">
-                <p className="flex items-center gap-1.5 text-sm text-white/75">
-                  <MapPin className="h-4 w-4 text-[#ead9b8]" />
-                  {property.location}
-                </p>
-
-                <h2
-                  id={`property-title-${property.id}`}
-                  className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl"
-                >
-                  {property.title}
-                </h2>
-              </div>
-
-              {propertyImages.length > 1 && (
-                <button
-                  type="button"
-                  onClick={openGallery}
-                  className="absolute bottom-5 right-5 hidden items-center gap-2 rounded-full bg-white/95 px-4 py-2.5 text-xs font-bold text-slate-900 shadow-xl transition hover:bg-[#c9a96e] hover:text-white sm:flex"
-                >
-                  <Images className="h-4 w-4" />
-                  View More Photos ({propertyImages.length})
-                </button>
-              )}
-            </div>
-
-            {/* Details Content */}
-            <div className="p-5 sm:p-7 md:p-9">
-              {/* Price */}
-              <div className="flex flex-col justify-between gap-5 border-b border-slate-100 pb-7 sm:flex-row sm:items-end">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                    Property Price
-                  </p>
-
-                  <h3 className="mt-1 text-3xl font-black tracking-tight text-[#071936] sm:text-4xl">
-                    ₱{formatPrice(property.price)}
-                  </h3>
-
-                  {property.totalcp && (
-                    <p className="mt-1 text-sm text-slate-500">
-                      Total Contract Price: ₱
-                      {formatPrice(property.totalcp)}
+                  <div>
+                    <h3 className="text-sm font-bold text-[#071936]">
+                      Property Details
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Complete property information
                     </p>
-                  )}
+                  </div>
                 </div>
 
-                {propertyImages.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={openGallery}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-[#c9a96e] hover:text-[#071936] sm:hidden"
-                  >
-                    <Images className="h-4 w-4" />
-                    View More Photos
-                  </button>
-                )}
-              </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {property.category && (
+                    <DetailItem
+                      label="Category"
+                      value={property.category}
+                    />
+                  )}
 
-              {/* Stats */}
-              {(property.beds != null ||
-                property.baths != null ||
-                property.sqft != null) && (
-                <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {property.propertyType && (
+                    <DetailItem
+                      label="Property Type"
+                      value={property.propertyType}
+                    />
+                  )}
+
+                  {property.houseType && (
+                    <DetailItem
+                      label="House Type"
+                      value={property.houseType}
+                    />
+                  )}
+
+                  {property.storey && (
+                    <DetailItem
+                      label="Storey"
+                      value={property.storey}
+                    />
+                  )}
+
                   {property.beds != null && (
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <BedDouble className="mb-3 h-5 w-5 text-[#071936]" />
-
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Bedrooms
-                      </p>
-
-                      <p className="mt-1 text-lg font-black text-slate-900">
-                        {property.beds}
-                      </p>
-                    </div>
+                    <DetailItem
+                      label="Bedrooms"
+                      value={String(property.beds)}
+                    />
                   )}
 
                   {property.baths != null && (
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <Bath className="mb-3 h-5 w-5 text-[#071936]" />
-
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Bathrooms
-                      </p>
-
-                      <p className="mt-1 text-lg font-black text-slate-900">
-                        {property.baths}
-                      </p>
-                    </div>
+                    <DetailItem
+                      label="Bathrooms"
+                      value={String(property.baths)}
+                    />
                   )}
 
                   {property.sqft != null && (
-                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                      <Maximize className="mb-3 h-5 w-5 text-[#071936]" />
+                    <DetailItem
+                      label="Floor Area"
+                      value={`${property.sqft} sqm`}
+                    />
+                  )}
 
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Area
-                      </p>
-
-                      <p className="mt-1 text-lg font-black text-slate-900">
-                        {property.sqft} sqm
-                      </p>
-                    </div>
+                  {property.totalcp && (
+                    <DetailItem
+                      label="Total Contract Price"
+                      value={property.totalcp}
+                    />
                   )}
                 </div>
+              </section>
+
+              {/* DESCRIPTION */}
+              {property.description && (
+                <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="text-sm font-bold text-[#071936]">
+                    Description
+                  </h3>
+
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                    {property.description}
+                  </p>
+                </section>
               )}
 
-              {/* Property Details */}
-              {property.description && (
-                <div className="mt-8 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#071936] text-[#ead9b8]">
-                      <Building2 className="h-5 w-5" />
+              {/* DEVELOPER */}
+              {property.developer && (
+                <section className="rounded-xl border border-[#c9a96e]/25 bg-[#c9a96e]/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#c9a96e] shadow-sm">
+                      <Landmark size={18} />
                     </div>
 
-                    <div>
-                      <h3 className="text-lg font-black text-slate-950">
-                        Property Details
-                      </h3>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9b7b42]">
+                        Property Developer
+                      </p>
 
-                      <p className="text-xs font-medium text-slate-400">
-                        Complete property information
+                      <p className="mt-1 text-base font-bold text-[#071936]">
+                        {property.developer}
                       </p>
                     </div>
                   </div>
-
-                  <p className="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base">
-                    {property.description}
-                  </p>
-                </div>
+                </section>
               )}
 
-              {/* Property Information */}
-              {(property.developer ||
-                property.category ||
-                property.propertyType ||
-                property.houseType ||
-                property.storey) && (
-                <div className="mt-8">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-black text-slate-950">
-                      Property Information
-                    </h3>
-
-                    <p className="mt-1 text-xs font-medium text-slate-400">
-                      Listing information
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {property.developer && (
-                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                          Developer
-                        </p>
-
-                        <p className="mt-2 text-sm font-extrabold text-slate-900">
-                          {property.developer}
-                        </p>
-                      </div>
-                    )}
-
-                    {property.category && (
-                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                          Category
-                        </p>
-
-                        <p className="mt-2 text-sm font-extrabold text-slate-900">
-                          {property.category}
-                        </p>
-                      </div>
-                    )}
-
-                    {property.propertyType && (
-                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                          Property Type
-                        </p>
-
-                        <p className="mt-2 text-sm font-extrabold text-slate-900">
-                          {property.propertyType}
-                        </p>
-                      </div>
-                    )}
-
-                    {property.houseType && (
-                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                          House Type
-                        </p>
-
-                        <p className="mt-2 text-sm font-extrabold text-slate-900">
-                          {property.houseType}
-                        </p>
-                      </div>
-                    )}
-
-                    {property.storey && (
-                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                          Storey
-                        </p>
-
-                        <p className="mt-2 text-sm font-extrabold text-slate-900">
-                          {property.storey}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Bank Financing */}
+              {/* FINANCING */}
               {financingOptions.length > 0 && (
-                <div className="mt-8 rounded-2xl border border-slate-100 bg-gradient-to-br from-[#faf7ef] to-white p-5 sm:p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071936] text-[#ead9b8]">
-                      <Landmark className="h-5 w-5" />
+                <section>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-white">
+                      <LockKeyhole size={15} />
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-black text-slate-950">
+                      <h3 className="text-sm font-bold text-[#071936]">
                         Bank Financing
                       </h3>
-
-                      <p className="mt-1 text-xs font-medium text-slate-400">
+                      <p className="text-[11px] text-slate-400">
                         Available financing options
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {financingOptions.map((bank) => (
-                      <span
-                        key={bank}
-                        className="rounded-full border border-[#c9a96e]/40 bg-white px-4 py-2 text-xs font-bold text-[#071936] shadow-sm"
-                      >
-                        {bank}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {financingOptions.map(
+                      (bank, index) => (
+                        <span
+                          key={`${bank}-${index}`}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm"
+                        >
+                          {bank}
+                        </span>
+                      ),
+                    )}
                   </div>
-                </div>
+                </section>
               )}
 
-              {/* Property Video */}
-              {propertyVideoUrl && (
-                <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-[#071936]">
-                  <div className="border-b border-white/10 px-5 py-5 sm:px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#ead9b8]">
-                        <PlayCircle className="h-6 w-6" />
-                      </div>
+              {/* VIDEO */}
+              {property.videoUrl && (
+                <section>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-white">
+                      <PlayCircle size={16} />
+                    </div>
 
-                      <div>
-                        <h3 className="text-lg font-black text-white">
-                          Property Video
-                        </h3>
-
-                        <p className="mt-1 text-xs text-white/55">
-                          Watch the developer&apos;s property video
-                        </p>
-                      </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#071936]">
+                        Property Video
+                      </h3>
+                      <p className="text-[11px] text-slate-400">
+                        Watch the property presentation
+                      </p>
                     </div>
                   </div>
 
-                  <div className="relative aspect-video w-full bg-black">
-                    {videoType === 'youtube' &&
-                    youtubeEmbedUrl ? (
-                      <iframe
-                        src={youtubeEmbedUrl}
-                        title={`${property.title} property video`}
-                        className="absolute inset-0 h-full w-full"
-                        loading="lazy"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    ) : videoType === 'vimeo' &&
-                      vimeoEmbedUrl ? (
-                      <iframe
-                        src={vimeoEmbedUrl}
-                        title={`${property.title} Vimeo property video`}
-                        className="absolute inset-0 h-full w-full"
-                        loading="lazy"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : videoType === 'direct' ? (
+                  <div className="overflow-hidden rounded-2xl bg-slate-950">
+                    {parsedVideo?.type ===
+                      'youtube' ||
+                    parsedVideo?.type === 'vimeo' ? (
+                      <div className="aspect-video">
+                        <iframe
+                          src={parsedVideo.src}
+                          title={`${property.title} video`}
+                          className="h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : parsedVideo?.type ===
+                      'direct' ? (
                       <video
-                        src={propertyVideoUrl}
+                        src={parsedVideo.src}
                         controls
                         playsInline
-                        preload="metadata"
-                        className="h-full w-full object-contain"
+                        className="aspect-video w-full object-cover"
                       >
-                        Your browser does not support the video
-                        element.
+                        Your browser does not support
+                        video playback.
                       </video>
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center px-5 text-center text-white">
-                        <PlayCircle className="h-10 w-10 text-[#c9a96e]" />
+                    ) : parsedVideo?.type ===
+                      'unsupported' ? (
+                      <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
+                        <PlayCircle
+                          size={38}
+                          className="text-white/50"
+                        />
 
-                        <p className="mt-3 text-sm font-bold">
-                          Property Video
+                        <p className="mt-3 text-sm font-semibold text-white">
+                          Video unavailable
                         </p>
 
-                        <p className="mt-1 max-w-md text-xs leading-6 text-white/50">
-                          This video URL cannot be embedded directly.
-                          Please use a YouTube link, Vimeo link, or
-                          direct video file URL.
+                        <p className="mt-1 max-w-sm text-xs leading-5 text-white/50">
+                          This video link is not supported
+                          by the property viewer.
                         </p>
+
+                        {isSafeHttpUrl(
+                          parsedVideo.src,
+                        ) && (
+                          <a
+                            href={parsedVideo.src}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(event) =>
+                              event.stopPropagation()
+                            }
+                            className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#071936]"
+                          >
+                            Open Video
+                            <ExternalLink
+                              size={13}
+                            />
+                          </a>
+                        )}
                       </div>
-                    )}
+                    ) : null}
                   </div>
-                </div>
+                </section>
               )}
 
-              {/* Location */}
-              <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Location
-                </p>
+              {/* GALLERY */}
+              {propertyImages.length > 0 && (
+                <section>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#071936] text-white">
+                        <Images size={16} />
+                      </div>
 
-                <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <MapPin className="h-4 w-4 text-[#c9a96e]" />
-                  {property.location}
-                </p>
+                      <div>
+                        <h3 className="text-sm font-bold text-[#071936]">
+                          Property Gallery
+                        </h3>
+
+                        <p className="text-[11px] text-slate-400">
+                          {propertyImages.length}{' '}
+                          {propertyImages.length === 1
+                            ? 'photo'
+                            : 'photos'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {propertyImages.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(event) =>
+                          openGallery(event, 0)
+                        }
+                        className="text-xs font-bold text-[#071936] hover:text-[#9b7b42]"
+                      >
+                        View all
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {propertyImages
+                      .slice(0, 6)
+                      .map((image, index) => (
+                        <button
+                          key={`${image}-${index}`}
+                          type="button"
+                          onClick={(event) =>
+                            openGallery(
+                              event,
+                              index,
+                            )
+                          }
+                          className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100"
+                        >
+                          <img
+                            src={image}
+                            alt={`${property.title} ${
+                              index + 1
+                            }`}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+
+                          {index === 5 &&
+                            propertyImages.length >
+                              6 && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/55">
+                                <span className="text-sm font-bold text-white">
+                                  +
+                                  {propertyImages.length -
+                                    6}{' '}
+                                  more
+                                </span>
+                              </div>
+                            )}
+                        </button>
+                      ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ACTIONS */}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    openInquiry(event, false)
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0d2851]"
+                >
+                  <Send size={16} />
+                  Inquire
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    openInquiry(event, true)
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl border border-[#c9a96e] bg-[#c9a96e]/10 px-4 py-3 text-sm font-bold text-[#80612f] transition hover:bg-[#c9a96e]/20"
+                >
+                  <CalendarDays size={16} />
+                  Site Viewing
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(event) =>
+                    openContact(event)
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#071936] transition hover:border-[#071936]/30 hover:bg-slate-50"
+                >
+                  <MessageCircle size={16} />
+                  Contact
+                </button>
               </div>
 
-              {/* Property Actions */}
-              <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={openSiteViewing}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0"
-                >
-                  <CalendarDays className="h-5 w-5" />
-                  Schedule Site Viewing
-                </button>
+              {/* COLLAPSE */}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  closeDetails();
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 transition hover:bg-slate-50 hover:text-[#071936]"
+              >
+                <ChevronUp size={15} />
+                Collapse Details
+              </button>
+            </div>
+          )}
+        </div>
+      </article>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    openInquiry(defaultInquiryMessage)
+      {/* =============================================================
+          GALLERY MODAL
+      ============================================================= */}
+      {showGallery && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-sm"
+          onClick={closeGallery}
+        >
+          <div
+            className="relative flex h-full w-full max-w-6xl items-center justify-center"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <button
+              type="button"
+              onClick={closeGallery}
+              className="absolute right-0 top-0 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
+              aria-label="Close gallery"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="relative max-h-[85vh] w-full">
+              {propertyImages[selectedImage] && (
+                <img
+                  src={
+                    propertyImages[selectedImage]
                   }
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#071936] bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:bg-[#faf7ef] hover:shadow-lg active:translate-y-0"
-                >
-                  <Send className="h-5 w-5" />
-                  Send Inquiry
-                </button>
+                  alt={`${property.title} gallery image`}
+                  className="mx-auto max-h-[78vh] w-auto max-w-full rounded-2xl object-contain shadow-2xl"
+                />
+              )}
 
-                <button
-                  type="button"
-                  onClick={openContact}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3.5 text-sm font-bold text-[#071936] transition hover:-translate-y-0.5 hover:border-[#c9a96e] hover:shadow-lg active:translate-y-0"
-                >
-                  <Phone className="h-5 w-5" />
-                  Contact Agent
-                </button>
+              {propertyImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={previousImage}
+                    className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:left-4"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-4"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight size={22} />
+                  </button>
+                </>
+              )}
+
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-12 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md">
+                {selectedImage + 1} /{' '}
+                {propertyImages.length}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ====================================================================== */}
-      {/* INQUIRY / SITE VIEWING MODAL                                           */}
-      {/* ====================================================================== */}
-
-      {showInquiry && (
+      {/* =============================================================
+          CONTACT MODAL
+      ============================================================= */}
+      {showContact && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
-          onClick={closeInquiry}
-          role="presentation"
+          className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={closeContact}
         >
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`inquiry-title-${property.id}`}
+            className="w-full max-w-lg overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
             onClick={(event) =>
               event.stopPropagation()
             }
-            className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={closeInquiry}
-              disabled={inquirySubmitting}
-              aria-label="Close inquiry form"
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="relative bg-[#071936] px-6 py-7 text-white">
+              <button
+                type="button"
+                onClick={closeContact}
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+              >
+                <X size={18} />
+              </button>
 
-            {/* Header */}
-            <div
-              className={`p-6 text-white sm:p-7 ${
-                isSiteViewing
-                  ? 'bg-gradient-to-br from-[#071936] via-[#0b2347] to-[#123d68]'
-                  : 'bg-[#071936]'
-              }`}
-            >
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ead9b8]">
-                BREA 88 REALTY
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ead9b8]">
+                Contact Representative
               </p>
 
-              <div className="mt-2 flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10">
-                  <CalendarDays className="h-5 w-5 text-[#ead9b8]" />
-                </div>
+              <h3 className="mt-2 text-xl font-bold">
+                {selectedAgent?.fullName ||
+                  'Property Representative'}
+              </h3>
 
-                <div>
-                  <h2
-                    id={`inquiry-title-${property.id}`}
-                    className="text-2xl font-black"
-                  >
-                    {isSiteViewing
-                      ? 'Schedule Site Viewing'
-                      : 'Send an Inquiry'}
-                  </h2>
-
-                  <p className="mt-1 line-clamp-2 text-sm text-white/70">
-                    {property.title}
-                  </p>
-                </div>
-              </div>
+              {selectedAgent && (
+                <p className="mt-1 text-sm text-white/60">
+                  {getRoleLabel(
+                    selectedAgent.role,
+                  )}
+                </p>
+              )}
             </div>
 
-            {/* Success */}
+            <div className="space-y-3 p-6">
+              {selectedAgent?.phone && (
+                <a
+                  href={`tel:${selectedAgent.phone}`}
+                  className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#071936]/5 text-[#071936]">
+                    <Phone size={18} />
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Phone
+                    </p>
+                    <p className="mt-0.5 text-sm font-semibold text-[#071936]">
+                      {selectedAgent.phone}
+                    </p>
+                  </div>
+                </a>
+              )}
+
+              {selectedAgent?.email && (
+                <a
+                  href={`mailto:${selectedAgent.email}`}
+                  className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#071936]/5 text-[#071936]">
+                    <Mail size={18} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Email
+                    </p>
+
+                    <p className="mt-0.5 truncate text-sm font-semibold text-[#071936]">
+                      {selectedAgent.email}
+                    </p>
+                  </div>
+                </a>
+              )}
+
+              {selectedAgent?.messenger &&
+                isSafeHttpUrl(
+                  selectedAgent.messenger,
+                ) && (
+                  <a
+                    href={selectedAgent.messenger}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#071936]/5 text-[#071936]">
+                      <MessageCircle size={18} />
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Messenger
+                      </p>
+
+                      <p className="mt-0.5 text-sm font-semibold text-[#071936]">
+                        Message representative
+                      </p>
+                    </div>
+
+                    <ExternalLink
+                      size={15}
+                      className="ml-auto text-slate-400"
+                    />
+                  </a>
+                )}
+
+              {selectedAgent?.facebook &&
+                isSafeHttpUrl(
+                  selectedAgent.facebook,
+                ) && (
+                  <a
+                    href={selectedAgent.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#071936]/5 text-[#071936]">
+                      <Users size={18} />
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Facebook
+                      </p>
+
+                      <p className="mt-0.5 text-sm font-semibold text-[#071936]">
+                        View profile
+                      </p>
+                    </div>
+
+                    <ExternalLink
+                      size={15}
+                      className="ml-auto text-slate-400"
+                    />
+                  </a>
+                )}
+
+              {!selectedAgent?.phone &&
+                !selectedAgent?.email &&
+                !selectedAgent?.messenger &&
+                !selectedAgent?.facebook && (
+                  <div className="rounded-2xl bg-slate-50 p-6 text-center">
+                    <Users
+                      size={28}
+                      className="mx-auto text-slate-300"
+                    />
+
+                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                      Contact details are not
+                      available yet.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeContact();
+                        openInquiry();
+                      }}
+                      className="mt-4 rounded-xl bg-[#071936] px-5 py-3 text-sm font-bold text-white"
+                    >
+                      Send an Inquiry
+                    </button>
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =============================================================
+          INQUIRY / SITE VIEWING MODAL
+      ============================================================= */}
+      {showInquiry && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={closeInquiry}
+        >
+          <div
+            className="max-h-[95vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="sticky top-0 z-10 bg-[#071936] px-6 py-6 text-white">
+              <button
+                type="button"
+                onClick={closeInquiry}
+                disabled={inquirySubmitting}
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20 disabled:opacity-40"
+              >
+                <X size={18} />
+              </button>
+
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ead9b8]">
+                {isSiteViewing
+                  ? 'Site Viewing Request'
+                  : 'Property Inquiry'}
+              </p>
+
+              <h3 className="mt-2 pr-10 text-xl font-bold">
+                {property.title}
+              </h3>
+
+              <p className="mt-1 text-sm text-white/60">
+                {property.location}
+              </p>
+            </div>
+
             {inquirySuccess ? (
-              <div className="p-7 text-center sm:p-9">
+              <div className="px-6 py-12 text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <CheckCircle2 className="h-8 w-8" />
+                  <CheckCircle2 size={34} />
                 </div>
 
-                <h3 className="mt-5 text-xl font-black text-slate-950">
-                  {isSiteViewing
-                    ? 'Viewing Request Submitted'
-                    : 'Inquiry Submitted'}
-                </h3>
+                <h4 className="mt-5 text-xl font-bold text-[#071936]">
+                  Request Sent
+                </h4>
 
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  {isSiteViewing
-                    ? 'Your preferred viewing date has been sent to the assigned agent. The agent will contact you to confirm the available schedule.'
-                    : 'Thank you. Your inquiry has been submitted successfully. Our team will get back to you soon.'}
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                  Thank you. Your request has been
+                  submitted successfully. A property
+                  representative will get in touch with
+                  you.
                 </p>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowInquiry(false)
-                  }
-                  className="mt-6 min-h-11 rounded-xl bg-[#071936] px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                  onClick={closeInquiry}
+                  className="mt-6 rounded-xl bg-[#071936] px-6 py-3 text-sm font-bold text-white"
                 >
                   Done
                 </button>
@@ -1784,789 +1563,314 @@ export default function PropertyCard({
             ) : (
               <form
                 onSubmit={submitInquiry}
-                className="space-y-4 p-6 sm:p-7"
+                className="space-y-5 p-6"
               >
-                {/* Notice */}
-                <div className="rounded-xl border border-[#ead9b8] bg-[#faf7ef] p-3 text-xs leading-5 text-slate-600">
-                  {isSiteViewing
-                    ? 'Choose your preferred date. This is a request, not a confirmed appointment. The selected Agent or Broker will contact you to confirm availability.'
-                    : 'Tell us how we can help. Select an Agent or Broker and your inquiry will be routed directly to that registered account.'}
-                </div>
+                {/* SELECTED REPRESENTATIVE */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#071936] text-white">
+                      <Users size={17} />
+                    </div>
 
-                {/* Agent Selector */}
-                <div className="relative">
-                  <label
-                    htmlFor={`inquiryAgent-${property.id}`}
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                  >
-                    Choose an Agent or Broker
-                  </label>
-
-                  <button
-                    id={`inquiryAgent-${property.id}`}
-                    type="button"
-                    disabled={
-                      Boolean(linkedAgentSlug) ||
-                      agentsLoading ||
-                      agents.length === 0
-                    }
-                    onClick={() =>
-                      !linkedAgentSlug &&
-                      setShowAgentPicker(
-                        (current) => !current
-                      )
-                    }
-                    aria-expanded={showAgentPicker}
-                    aria-haspopup="listbox"
-                    className={`mt-2 flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border px-4 text-left outline-none transition-all duration-300 ${
-                      showAgentPicker
-                        ? 'border-cyan-400 bg-slate-950 text-white shadow-[0_0_35px_rgba(34,211,238,0.25)] ring-4 ring-cyan-400/10'
-                        : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-cyan-300 hover:shadow-[0_0_25px_rgba(34,211,238,0.10)]'
-                    } disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400`}
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
-                          showAgentPicker
-                            ? 'border-cyan-300/30 bg-cyan-400/10 text-cyan-300'
-                            : 'border-slate-200 bg-slate-50 text-[#071936]'
-                        }`}
-                      >
-                        {linkedAgentSlug ? (
-                          <LockKeyhole className="h-4 w-4" />
-                        ) : (
-                          <Users className="h-4 w-4" />
-                        )}
-                      </span>
-
-                      <span className="min-w-0">
-                        <span
-                          className={`block truncate text-sm font-bold ${
-                            showAgentPicker
-                              ? 'text-white'
-                              : ''
-                          }`}
-                        >
-                          {selectedAgent
-                            ? selectedAgent.fullName
-                            : linkedAgentSlug
-                              ? 'Linked Agent/Broker'
-                              : agentsLoading
-                                ? 'Loading Agents and Brokers...'
-                                : agents.length === 0
-                                  ? 'No Agents or Brokers available'
-                                  : 'Select an Agent or Broker'}
-                        </span>
-
-                        <span
-                          className={`mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.12em] ${
-                            showAgentPicker
-                              ? 'text-cyan-200/70'
-                              : 'text-slate-400'
-                          }`}
-                        >
-                          {selectedAgent
-                            ? selectedAgent.role
-                            : linkedAgentSlug
-                              ? 'Assigned by shared link'
-                              : 'Tap to open agent selection'}
-                        </span>
-                      </span>
-                    </span>
-
-                    {linkedAgentSlug ? (
-                      <LockKeyhole className="h-4 w-4 shrink-0 text-slate-400" />
-                    ) : (
-                      <ChevronDown
-                        className={`h-5 w-5 shrink-0 transition-transform duration-300 ${
-                          showAgentPicker
-                            ? 'rotate-180 text-cyan-300'
-                            : 'text-slate-400'
-                        }`}
-                      />
-                    )}
-                  </button>
-
-                  {/* Agent Picker */}
-                  {showAgentPicker &&
-                    !linkedAgentSlug &&
-                    agents.length > 0 && (
-                      <div
-                        className="absolute left-0 right-0 top-full z-[100] mt-3 origin-top animate-in overflow-hidden rounded-[1.35rem] border border-cyan-300/30 bg-[#020b1d]/95 shadow-[0_25px_80px_rgba(2,11,29,0.45),0_0_45px_rgba(34,211,238,0.12)] backdrop-blur-2xl duration-300"
-                        role="listbox"
-                        aria-label="Available Agents and Brokers"
-                      >
-                        <div className="relative overflow-hidden border-b border-cyan-300/15 px-4 py-3">
-                          <div className="absolute -right-10 -top-16 h-32 w-32 animate-pulse rounded-full bg-cyan-400/15 blur-2xl" />
-
-                          <div className="absolute -bottom-20 -left-12 h-32 w-32 animate-pulse rounded-full bg-blue-500/15 blur-2xl" />
-
-                          <div className="relative flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 animate-pulse text-cyan-300" />
-
-                            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-100">
-                              Agent Network
-                            </span>
-
-                            <span className="ml-auto text-[10px] font-bold text-white/40">
-                              {agents.length} available
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="max-h-64 overflow-y-auto p-2 [scrollbar-width:thin]">
-                          {agents.map((agent) => {
-                            const isSelected =
-                              selectedAgentSlug ===
-                              agent.slug;
-
-                            const isOnline =
-                              agent.lastSeen
-                                ? Date.now() -
-                                    new Date(
-                                      agent.lastSeen
-                                    ).getTime() <
-                                  15 * 60 * 1000
-                                : false;
-
-                            return (
-                              <button
-                                key={agent.id}
-                                type="button"
-                                role="option"
-                                aria-selected={isSelected}
-                                onClick={() => {
-                                  setSelectedAgentSlug(
-                                    agent.slug
-                                  );
-                                  setShowAgentPicker(false);
-                                }}
-                                className={`group/agent relative mb-1 flex w-full items-center gap-3 overflow-hidden rounded-xl border px-3 py-3 text-left transition-all duration-300 last:mb-0 ${
-                                  isSelected
-                                    ? 'border-cyan-300/40 bg-cyan-400/10 shadow-[0_0_25px_rgba(34,211,238,0.10)]'
-                                    : 'border-transparent hover:border-cyan-300/20 hover:bg-white/[0.04] hover:shadow-[0_0_20px_rgba(34,211,238,0.07)]'
-                                }`}
-                              >
-                                <div className="absolute inset-y-0 left-0 w-px bg-cyan-300/0 transition-all duration-300 group-hover/agent:bg-cyan-300/80" />
-
-                                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-cyan-200/20 bg-gradient-to-br from-blue-500/20 to-cyan-300/10">
-                                  {agent.profileImage ? (
-                                    <img
-                                      src={
-                                        agent.profileImage
-                                      }
-                                      alt={
-                                        agent.fullName
-                                      }
-                                      loading="lazy"
-                                      className="h-full w-full object-cover"
-                                      onError={(event) => {
-                                        event.currentTarget.style.display =
-                                          'none';
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-sm font-black text-cyan-200">
-                                      {getInitials(
-                                        agent.fullName
-                                      )}
-                                    </div>
-                                  )}
-
-                                  <span
-                                    className={`absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#071936] ${
-                                      isOnline
-                                        ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]'
-                                        : 'bg-slate-500'
-                                    }`}
-                                  />
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-extrabold text-white">
-                                    {agent.fullName}
-                                  </p>
-
-                                  <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.13em] text-cyan-200/55">
-                                    {agent.role}
-
-                                    <span className="mx-1 text-white/20">
-                                      •
-                                    </span>
-
-                                    {isOnline
-                                      ? 'Online'
-                                      : 'Available'}
-                                  </p>
-                                </div>
-
-                                <div
-                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
-                                    isSelected
-                                      ? 'border-cyan-300/50 bg-cyan-300/15 text-cyan-200'
-                                      : 'border-white/10 text-white/20 group-hover/agent:border-cyan-300/30 group-hover/agent:text-cyan-200'
-                                  }`}
-                                >
-                                  {isSelected ? (
-                                    <Sparkles className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Linked Agent Notice */}
-                  {linkedAgentSlug && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#071936]">
-                      <LockKeyhole className="h-3.5 w-3.5" />
-                      This shared link is locked to the assigned
-                      Agent/Broker.
-                    </p>
-                  )}
-
-                  {/* Assigned Property Agent */}
-                  {!linkedAgentSlug &&
-                    property.agent &&
-                    selectedAgentSlug ===
-                      property.agent.slug && (
-                      <p className="mt-1.5 text-xs text-slate-400">
-                        This property already has{' '}
-                        {property.agent.fullName} assigned,
-                        but you can choose another available
-                        Agent or Broker.
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Sending to
                       </p>
-                    )}
 
-                  {/* Direct Client */}
-                  {!linkedAgentSlug &&
-                    !property.agent &&
-                    !agentsLoading &&
-                    agents.length > 0 && (
-                      <p className="mt-1.5 text-xs text-slate-400">
-                        Direct Client: choose the Agent or
-                        Broker you want to handle this inquiry.
+                      <p className="mt-0.5 truncate text-sm font-bold text-[#071936]">
+                        {selectedAgent?.fullName ||
+                          'Select an Agent / Broker'}
                       </p>
-                    )}
 
-                  {agentsError && (
-                    <p
-                      role="alert"
-                      className="mt-1.5 text-xs text-red-600"
+                      {selectedAgent && (
+                        <p className="text-xs text-slate-400">
+                          {getRoleLabel(
+                            selectedAgent.role,
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {availableAgents.length > 1 && (
+                    <select
+                      value={selectedAgentSlug}
+                      onChange={(event) => {
+                        const slug =
+                          event.target.value;
+
+                        const agent =
+                          availableAgents.find(
+                            (item) =>
+                              item.slug === slug,
+                          );
+
+                        if (!agent) return;
+
+                        setAvailableAgents(
+                          (current) => current,
+                        );
+                      }}
+                      className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-[#c9a96e] focus:ring-2 focus:ring-[#c9a96e]/10"
                     >
-                      {agentsError}
-                    </p>
+                      {availableAgents.map(
+                        (agent) => (
+                          <option
+                            key={agent.id}
+                            value={agent.slug}
+                          >
+                            {agent.fullName} —{' '}
+                            {getRoleLabel(
+                              agent.role,
+                            )}
+                          </option>
+                        ),
+                      )}
+                    </select>
                   )}
-
-                  {!agentsLoading &&
-                    agents.length === 0 &&
-                    !agentsError && (
-                      <p className="mt-1.5 text-xs text-red-600">
-                        No active Agent or Broker accounts are
-                        currently available.
-                      </p>
-                    )}
                 </div>
 
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor={`inquiry-name-${property.id}`}
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                  >
-                    Full Name
-                  </label>
+                {/* NAME */}
+                <FormField
+                  label="Full Name"
+                  required
+                  value={inquiryForm.name}
+                  onChange={(value) =>
+                    updateInquiryField(
+                      'name',
+                      value,
+                    )
+                  }
+                  placeholder="Enter your full name"
+                />
 
-                  <input
-                    id={`inquiry-name-${property.id}`}
-                    required
-                    type="text"
-                    autoComplete="name"
-                    maxLength={100}
-                    value={inquiryForm.name}
-                    onChange={(event) =>
-                      setInquiryForm((current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                    placeholder="Enter your full name"
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                  />
-                </div>
+                {/* EMAIL */}
+                <FormField
+                  label="Email Address"
+                  required
+                  type="email"
+                  value={inquiryForm.email}
+                  onChange={(value) =>
+                    updateInquiryField(
+                      'email',
+                      value,
+                    )
+                  }
+                  placeholder="you@example.com"
+                />
 
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor={`inquiry-email-${property.id}`}
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                  >
-                    Email Address
-                  </label>
+                {/* PHONE */}
+                <FormField
+                  label="Phone Number"
+                  required
+                  type="tel"
+                  value={inquiryForm.phone}
+                  onChange={(value) =>
+                    updateInquiryField(
+                      'phone',
+                      value,
+                    )
+                  }
+                  placeholder="09XX XXX XXXX"
+                />
 
-                  <input
-                    id={`inquiry-email-${property.id}`}
-                    required
-                    type="email"
-                    autoComplete="email"
-                    maxLength={150}
-                    value={inquiryForm.email}
-                    onChange={(event) =>
-                      setInquiryForm((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
-                    }
-                    placeholder="you@example.com"
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                  />
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label
-                    htmlFor={`inquiry-phone-${property.id}`}
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                  >
-                    Contact Number
-                  </label>
-
-                  <input
-                    id={`inquiry-phone-${property.id}`}
-                    required
-                    type="tel"
-                    autoComplete="tel"
-                    maxLength={30}
-                    value={inquiryForm.phone}
-                    onChange={(event) =>
-                      setInquiryForm((current) => ({
-                        ...current,
-                        phone: event.target.value,
-                      }))
-                    }
-                    placeholder="09XXXXXXXXX"
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                  />
-                </div>
-
-                {/* Viewing Date */}
+                {/* VIEWING DATE */}
                 {isSiteViewing && (
                   <div>
-                    <label
-                      htmlFor={`preferredViewingDate-${property.id}`}
-                      className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                    >
-                      Preferred Site Viewing Date
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Preferred Viewing Date
+                      <span className="ml-1 text-red-500">
+                        *
+                      </span>
                     </label>
 
-                    <div className="relative mt-2">
-                      <CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#c9a96e]" />
+                    <div className="relative">
+                      <CalendarDays
+                        size={17}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
 
                       <input
-                        id={`preferredViewingDate-${property.id}`}
-                        required
                         type="date"
-                        min={minViewingDate}
+                        min={formatDateTimeLocalMin()}
                         value={
                           inquiryForm.preferredViewingDate
                         }
                         onChange={(event) =>
-                          setInquiryForm((current) => ({
-                            ...current,
-                            preferredViewingDate:
-                              event.target.value,
-                          }))
+                          updateInquiryField(
+                            'preferredViewingDate',
+                            event.target.value,
+                          )
                         }
-                        className="min-h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#c9a96e] focus:ring-2 focus:ring-[#c9a96e]/10"
                       />
                     </div>
                   </div>
                 )}
 
-                {/* Message */}
+                {/* MESSAGE */}
                 {!isSiteViewing && (
                   <div>
-                    <label
-                      htmlFor={`inquiry-message-${property.id}`}
-                      className="text-xs font-bold uppercase tracking-wider text-slate-500"
-                    >
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
                       Message
+                      <span className="ml-1 text-red-500">
+                        *
+                      </span>
                     </label>
 
                     <textarea
-                      id={`inquiry-message-${property.id}`}
-                      required
-                      rows={4}
-                      maxLength={2000}
+                      rows={5}
                       value={inquiryForm.message}
                       onChange={(event) =>
-                        setInquiryForm((current) => ({
-                          ...current,
-                          message: event.target.value,
-                        }))
+                        updateInquiryField(
+                          'message',
+                          event.target.value,
+                        )
                       }
-                      placeholder="I'm interested in this property..."
-                      className="mt-2 w-full resize-none rounded-xl border border-slate-200 p-4 text-sm outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                      placeholder="Tell us what you would like to know about this property..."
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-2 focus:ring-[#c9a96e]/10"
                     />
-
-                    <p className="mt-1 text-right text-[10px] text-slate-400">
-                      {inquiryForm.message.length}/2000
-                    </p>
                   </div>
                 )}
 
-                {/* Error */}
+                {/* SITE VIEWING NOTE */}
+                {isSiteViewing && (
+                  <div className="rounded-2xl border border-[#c9a96e]/25 bg-[#c9a96e]/5 p-4">
+                    <div className="flex gap-3">
+                      <CalendarDays
+                        size={18}
+                        className="mt-0.5 shrink-0 text-[#9b7b42]"
+                      />
+
+                      <div>
+                        <p className="text-sm font-bold text-[#071936]">
+                          Site Viewing
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          Your selected date will be
+                          sent to the assigned Agent or
+                          Broker for confirmation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ERROR */}
                 {inquiryError && (
-                  <div
-                    role="alert"
-                    className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
-                  >
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
                     {inquiryError}
                   </div>
                 )}
 
-                {/* Submit */}
+                {/* SUBMIT */}
                 <button
                   type="submit"
-                  disabled={
-                    inquirySubmitting ||
-                    agentsLoading ||
-                    agents.length === 0
-                  }
-                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={inquirySubmitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#071936]/10 transition hover:bg-[#0d2851] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {inquirySubmitting ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2
+                        size={17}
+                        className="animate-spin"
+                      />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" />
+                      {isSiteViewing ? (
+                        <CalendarDays size={17} />
+                      ) : (
+                        <Send size={17} />
+                      )}
+
                       {isSiteViewing
                         ? 'Request Site Viewing'
-                        : 'Submit Inquiry'}
+                        : 'Send Inquiry'}
                     </>
                   )}
                 </button>
+
+                <p className="text-center text-[10px] leading-4 text-slate-400">
+                  By submitting this form, you agree
+                  to be contacted regarding this property.
+                </p>
               </form>
             )}
           </div>
         </div>
       )}
-
-      {/* ====================================================================== */}
-      {/* IMAGE GALLERY                                                          */}
-      {/* ====================================================================== */}
-
-      {showGallery && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-3 sm:p-5"
-          onClick={closeGallery}
-          role="presentation"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${property.title} photo gallery`}
-            className="relative w-full max-w-6xl"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={closeGallery}
-              aria-label="Close gallery"
-              className="absolute right-0 top-[-3.2rem] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Main Image */}
-            <div className="relative h-[60vh] overflow-hidden rounded-2xl bg-black sm:h-[70vh]">
-              {propertyImages.length > 0 && (
-                <img
-                  src={
-                    propertyImages[
-                      Math.min(
-                        selectedImage,
-                        propertyImages.length - 1
-                      )
-                    ]
-                  }
-                  alt={`${property.title} - Photo ${
-                    selectedImage + 1
-                  }`}
-                  className="h-full w-full object-contain"
-                  onError={(event) => {
-                    event.currentTarget.style.opacity =
-                      '0.2';
-                  }}
-                />
-              )}
-
-              {/* Previous / Next */}
-              {propertyImages.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={previousImage}
-                    aria-label="Previous photo"
-                    className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white hover:text-black"
-                  >
-                    <ChevronLeft />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={nextImage}
-                    aria-label="Next photo"
-                    className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition hover:bg-white hover:text-black"
-                  >
-                    <ChevronRight />
-                  </button>
-                </>
-              )}
-
-              {/* Counter */}
-              {propertyImages.length > 0 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white">
-                  {selectedImage + 1} /{' '}
-                  {propertyImages.length}
-                </div>
-              )}
-            </div>
-
-            {/* Thumbnails */}
-            {propertyImages.length > 1 && (
-              <div className="mt-3 flex justify-center gap-2 overflow-x-auto pb-2">
-                {propertyImages.map(
-                  (image, index) => (
-                    <button
-                      type="button"
-                      key={`${image}-${index}`}
-                      onClick={() =>
-                        setSelectedImage(index)
-                      }
-                      aria-label={`View photo ${
-                        index + 1
-                      }`}
-                      aria-current={
-                        selectedImage === index
-                          ? 'true'
-                          : undefined
-                      }
-                      className={`h-16 w-20 shrink-0 overflow-hidden rounded-lg transition ${
-                        selectedImage === index
-                          ? 'ring-2 ring-[#c9a96e]'
-                          : 'opacity-55 hover:opacity-100'
-                      }`}
-                    >
-                      <img
-                        src={image}
-                        alt={`Thumbnail ${
-                          index + 1
-                        }`}
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.opacity =
-                            '0.2';
-                        }}
-                      />
-                    </button>
-                  )
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ====================================================================== */}
-      {/* CONTACT AGENT                                                          */}
-      {/* ====================================================================== */}
-
-      {showContact && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"
-          onClick={closeContact}
-          role="presentation"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={`contact-title-${property.id}`}
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-            className="relative w-full max-w-md overflow-hidden rounded-[1.5rem] bg-white shadow-2xl"
-          >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={closeContact}
-              aria-label="Close contact panel"
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e]"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Header */}
-            <div className="bg-[#071936] px-6 py-7 text-white">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ead9b8]">
-                BREA 88 REALTY
-              </p>
-
-              <h2
-                id={`contact-title-${property.id}`}
-                className="mt-2 text-2xl font-black"
-              >
-                Contact Agent
-              </h2>
-
-              <p className="mt-2 text-sm text-white/65">
-                Get in touch about this property.
-              </p>
-            </div>
-
-            <div className="p-5 sm:p-6">
-              {property.agent ? (
-                <>
-                  {/* Agent Profile */}
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Registered Property Contact
-                    </p>
-
-                    <h3 className="mt-1 text-lg font-black text-slate-900">
-                      {property.agent.fullName}
-                    </h3>
-
-                    {property.agent.role && (
-                      <p className="text-sm font-semibold text-[#071936]">
-                        {property.agent.role}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Contact Methods */}
-                  <div className="mt-4 space-y-2">
-                    {property.agent.phone && (
-                      <a
-                        href={`tel:${property.agent.phone}`}
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
-                      >
-                        <Phone className="h-5 w-5 text-[#071936]" />
-
-                        <span className="text-sm font-bold">
-                          {property.agent.phone}
-                        </span>
-                      </a>
-                    )}
-
-                    {property.agent.email && (
-                      <a
-                        href={`mailto:${property.agent.email}?subject=${encodeURIComponent(
-                          `Inquiry about ${property.title}`
-                        )}`}
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
-                      >
-                        <Mail className="h-5 w-5 text-[#071936]" />
-
-                        <span className="truncate text-sm font-bold">
-                          {property.agent.email}
-                        </span>
-                      </a>
-                    )}
-
-                    {isSafeExternalUrl(
-                      property.agent.messenger
-                    ) && (
-                      <a
-                        href={
-                          property.agent.messenger as string
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
-                      >
-                        <MessageCircle className="h-5 w-5 text-[#071936]" />
-
-                        <span className="text-sm font-bold">
-                          Message Agent
-                        </span>
-                      </a>
-                    )}
-
-                    {isSafeExternalUrl(
-                      property.agent.facebook
-                    ) && (
-                      <a
-                        href={
-                          property.agent.facebook as string
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-[#c9a96e] hover:bg-[#faf7ef]"
-                      >
-                        <MessageCircle className="h-5 w-5 text-[#071936]" />
-
-                        <span className="text-sm font-bold">
-                          Facebook
-                        </span>
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Inquiry */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openInquiry(
-                        defaultInquiryMessage
-                      )
-                    }
-                    className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800"
-                  >
-                    <Send className="h-4 w-4" />
-                    Send an Inquiry
-                  </button>
-                </>
-              ) : (
-                /* No Agent */
-                <div className="py-5 text-center">
-                  <Phone className="mx-auto h-7 w-7 text-slate-400" />
-
-                  <h3 className="mt-4 text-lg font-black">
-                    Contact BREA 88 Realty
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
-                    This property has no registered contact
-                    profile attached. Our team can assist you
-                    with this listing.
-                  </p>
-
-                  <a
-                    href="mailto:brea88realty@gmail.com"
-                    className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] text-sm font-bold text-white transition hover:bg-slate-800"
-                  >
-                    <Mail className="h-5 w-5" />
-                    Contact BREA 88 Realty
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
+  );
+}
+
+/* ===============================================================
+   DETAIL ITEM
+=============================================================== */
+
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words text-xs font-bold leading-5 text-[#071936]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/* ===============================================================
+   FORM FIELD
+=============================================================== */
+
+function FormField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  required = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+        {label}
+
+        {required && (
+          <span className="ml-1 text-red-500">
+            *
+          </span>
+        )}
+      </label>
+
+      <input
+        type={type}
+        required={required}
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-2 focus:ring-[#c9a96e]/10"
+      />
+    </div>
   );
 }
