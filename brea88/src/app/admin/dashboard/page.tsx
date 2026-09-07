@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, {
   ChangeEvent,
@@ -475,10 +475,11 @@ export default function AdminDashboardPage() {
   }, []);
 
   function handleInputChange(
-    event:
-      | ChangeEvent<HTMLInputElement>
-      | ChangeEvent<HTMLSelectElement>,
-  ) {
+  event:
+    | ChangeEvent<HTMLInputElement>
+    | ChangeEvent<HTMLSelectElement>
+    | ChangeEvent<HTMLTextAreaElement>,
+) {
     const { name, value } = event.target;
 
     if (name === 'category') {
@@ -833,7 +834,7 @@ export default function AdminDashboardPage() {
 
     try {
       const response = await fetch(
-        `/api/properties?id=${encodeURIComponent(
+        `/admin/api/properties?id=${encodeURIComponent(
           String(id),
         )}`,
         {
@@ -1007,10 +1008,7 @@ export default function AdminDashboardPage() {
             videoUrl: formData.videoUrl.trim() || null,
           };
 
-      const response =
-        await fetch(
-          '/api/properties',
-          {
+      const response = await fetch('/admin/api/properties', {
             method:
               editingId !== null
                 ? 'PUT'
