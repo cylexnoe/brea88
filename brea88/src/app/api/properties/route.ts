@@ -6,6 +6,8 @@ import { hasValidContentLength, isSafeHttpUrl } from '@/lib/security';
 const ALLOWED_TAGS = new Set(['Residential', 'Commercial', 'Investment', 'All']);
 const MAX_IMAGES = 10;
 const MAX_JSON_BYTES = 256 * 1024;
+const MAX_BANK_FINANCING = 20;
+const DEFAULT_BANK_FINANCING = ['BDO', 'China Bank', 'Metrobank', 'Pag-IBIG'];
 
 function cleanString(value: unknown, maxLength: number): string | null {
   if (typeof value !== 'string') return null;
@@ -24,6 +26,19 @@ function cleanImages(value: unknown): string[] {
     .map((item) => item.trim())
     .filter((item) => isSafeHttpUrl(item))
     .slice(0, MAX_IMAGES);
+}
+
+function cleanBankFinancing(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return Array.from(
+    new Set(
+      value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0 && item.length <= 100),
+    ),
+  ).slice(0, MAX_BANK_FINANCING);
 }
 
 function parseOptionalInteger(value: unknown): number | null {
@@ -72,6 +87,11 @@ function parsePropertyBody(body: unknown) {
   const propertyType = cleanOptionalString(data.propertyType, 120);
   const houseType = cleanOptionalString(data.houseType, 100);
   const storey = cleanOptionalString(data.storey, 30);
+  const developer = cleanOptionalString(data.developer, 200);
+  const description = cleanOptionalString(data.description, 10000);
+  const videoUrl = cleanOptionalString(data.videoUrl, 2048);
+  const totalcp = cleanOptionalString(data.totalcp, 100);
+  const bankFinancing = cleanBankFinancing(data.bankFinancing);
   const image = cleanString(data.image, 2048);
   const images = cleanImages(data.images);
   const beds = parseOptionalInteger(data.beds);
@@ -82,6 +102,7 @@ function parsePropertyBody(body: unknown) {
   if (!title || !tag || !price || !location) return { error: 'Title, tag, price, and location are required.' };
   if (!ALLOWED_TAGS.has(tag)) return { error: 'Invalid property tag.' };
   if (image && !isSafeHttpUrl(image)) return { error: 'Property image URL must use HTTPS.' };
+  if (videoUrl && !isSafeHttpUrl(videoUrl)) return { error: 'Property video URL must use HTTPS.' };
   if (data.beds !== undefined && data.beds !== null && data.beds !== '' && beds === null) return { error: 'Invalid number of bedrooms.' };
   if (data.baths !== undefined && data.baths !== null && data.baths !== '' && baths === null) return { error: 'Invalid number of bathrooms.' };
   if (data.sqft !== undefined && data.sqft !== null && data.sqft !== '' && sqft === null) return { error: 'Invalid floor area.' };
@@ -100,6 +121,11 @@ function parsePropertyBody(body: unknown) {
       propertyType,
       houseType,
       storey,
+      developer,
+      bankFinancing,
+      description,
+      videoUrl,
+      totalcp,
       image: finalImages[0],
       images: finalImages,
       beds,
