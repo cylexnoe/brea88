@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { upload as uploadBlob } from '@vercel/blob/client';
 import {
   PlusCircle,
   CheckCircle2,
@@ -38,7 +39,11 @@ import {
   Loader2,
   UserRound,
   Warehouse,
+  PlayCircle,
 } from 'lucide-react';
+const [videoFile, setVideoFile] = useState<File | null>(null);
+const [videoUploading, setVideoUploading] = useState(false);
+const [videoUploadProgress, setVideoUploadProgress] = useState(0);
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -1223,6 +1228,61 @@ export default function AdminDashboardPage() {
       '/img/background.png'
     );
   }
+
+  async function uploadVideoToBlob(file: File) {
+  const allowedTypes = [
+    'video/mp4',
+    'video/webm',
+    'video/quicktime',
+    'video/ogg',
+  ];
+
+  const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error(
+      'Unsupported video format. Please use MP4, WebM, MOV, or OGG.',
+    );
+  }
+
+  if (file.size <= 0 || file.size > MAX_VIDEO_SIZE) {
+    throw new Error(
+      'Video must be larger than 0 bytes and 500MB or smaller.',
+    );
+  }
+
+  setVideoUploading(true);
+  setVideoUploadProgress(0);
+
+  try {
+    const blob = await uploadBlob(
+      `properties/videos/${crypto.randomUUID()}-${file.name}`,
+      file,
+      {
+        access: 'public',
+        handleUploadUrl: '/api/blob/video-upload',
+        multipart: true,
+
+        onUploadProgress(event) {
+          setVideoUploadProgress(
+            Math.round(event.percentage),
+          );
+        },
+      },
+    );
+
+    setFormData((current) => ({
+      ...current,
+      videoUrl: blob.url,
+    }));
+
+    setVideoFile(file);
+
+    return blob.url;
+  } finally {
+    setVideoUploading(false);
+  }
+}
 
   if (loading) {
     return (
@@ -2566,23 +2626,183 @@ export default function AdminDashboardPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="videoUrl" className="text-sm font-semibold text-slate-700">
-                        Property Video URL
-                      </label>
-                      <div className="relative">
-                        <LinkIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          id="videoUrl"
-                          name="videoUrl"
-                          type="url"
-                          value={formData.videoUrl}
-                          onChange={handleInputChange}
-                          placeholder="https://youtube.com/watch?v=..."
-                          className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    <div className="space-y-4">
+  <div>
+    <label className="text-sm font-semibold text-slate-700">
+      Property Video
+    </label>
+
+    <p className="mt-1 text-xs text-slate-400">
+      Add a video using a URL or upload the actual video file.
+    </p>
+  </div>
+
+  {/* VIDEO URL */}
+  <div className="space-y-2">
+    <label
+      htmlFor="videoUrl"
+      className="text-xs font-bold uppercase tracking-wider text-slate-500"
+    >
+      Video URL
+    </label>
+
+    <div className="relative">
+      <LinkIcon
+        size={17}
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+      />
+
+      <input
+        id="videoUrl"
+        name="videoUrl"
+        type="url"
+        value={formData.videoUrl}
+        onChange={handleInputChange}
+        placeholder="https://youtube.com/watch?v=..."
+        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+      />
+    </div>
+
+    <p className="text-xs text-slate-400">
+      YouTube, Vimeo, or a direct HTTPS video URL.
+    </p>
+  </div>
+
+  {/* OR */}
+  <div className="flex items-center gap-3">
+    <div className="h-px flex-1 bg-slate-200" />
+    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+      OR
+    </span>
+    <div className="h-px flex-1 bg-slate-200" />
+  </div>
+
+  {/* VIDEO UPLOAD */}
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                        <PlayCircle size={20} />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          Upload Property Video
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          MP4, WebM, MOV, or OGG
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-xs font-bold text-white transition hover:bg-[#0b2a6f]">
+                      <Upload size={15} />
+
+                      {videoUploading
+                        ? 'Uploading...'
+                        : 'Choose Video'}
+
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/ogg"
+                        className="hidden"
+                        disabled={videoUploading}
+                        onChange={async (event) => {
+                          const file = event.target.files?.[0];
+
+                          event.target.value = '';
+
+                          if (!file) return;
+
+                          try {
+                            await uploadVideoToBlob(file);
+                          } catch (error) {
+                            console.error(
+                              'Video upload error:',
+                              error,
+                            );
+
+                            alert(
+                              error instanceof Error
+                                ? error.message
+                                : 'Failed to upload video.',
+                            );
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Upload progress */}
+                  {videoUploading && (
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-500">
+                        <span>Uploading video...</span>
+                        <span>
+                          {videoUploadProgress}%
+                        </span>
+                      </div>
+
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                          style={{
+                            width: `${videoUploadProgress}%`,
+                          }}
                         />
                       </div>
-                      <p className="text-xs text-slate-400">Optional. Add a YouTube, Facebook, or other property video link.</p>
+                    </div>
+                  )}
+
+                  {/* Uploaded video */}
+                      {videoFile && formData.videoUrl && (
+                        <div className="mt-4 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
+                          <div className="flex items-center justify-between gap-3 px-4 py-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-bold text-emerald-800">
+                                {videoFile.name}
+                                </p>
+
+                                <p className="mt-1 text-[10px] text-emerald-600">
+                                  Video uploaded successfully
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVideoFile(null);
+
+                                  setFormData((current) => ({
+                                    ...current,
+                                    videoUrl: '',
+                                  }));
+
+                                  setVideoUploadProgress(0);
+                                }}
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-emerald-600 transition hover:bg-emerald-100"
+                                title="Remove video"
+                              >
+                                <X size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Existing URL */}
+                        {!videoFile && formData.videoUrl && (
+                          <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                              Current Video
+                            </p>
+
+                            <p className="mt-1 truncate text-xs font-semibold text-blue-800">
+                              {formData.videoUrl}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid gap-5 sm:grid-cols-3">
