@@ -76,11 +76,14 @@ interface PropertyCardProps {
   agentSlug?: string;
 }
 
+type VideoType = 'youtube' | 'vimeo' | 'direct' | 'unsupported';
+
 export default function PropertyCard({
   property,
   agentSlug = '',
 }: PropertyCardProps) {
   const linkedAgentSlug = agentSlug.trim();
+
   const defaultAgentSlug =
     linkedAgentSlug || property.agent?.slug || '';
 
@@ -95,8 +98,10 @@ export default function PropertyCard({
   const [agents, setAgents] = useState<AvailableAgent[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [agentsError, setAgentsError] = useState('');
+
   const [selectedAgentSlug, setSelectedAgentSlug] =
     useState(defaultAgentSlug);
+
   const [showAgentPicker, setShowAgentPicker] = useState(false);
 
   const [inquiryForm, setInquiryForm] = useState({
@@ -109,8 +114,10 @@ export default function PropertyCard({
 
   const [inquirySubmitting, setInquirySubmitting] =
     useState(false);
+
   const [inquirySuccess, setInquirySuccess] =
     useState(false);
+
   const [inquiryError, setInquiryError] = useState('');
 
   /* -------------------------------------------------------------------------- */
@@ -217,7 +224,9 @@ export default function PropertyCard({
         hostname === 'youtu.be' ||
         hostname === 'www.youtu.be'
       ) {
-        videoId = url.pathname.replace(/^\/+/, '').split('/')[0];
+        videoId = url.pathname
+          .replace(/^\/+/, '')
+          .split('/')[0];
       }
 
       if (
@@ -229,10 +238,14 @@ export default function PropertyCard({
           videoId = url.searchParams.get('v') || '';
         } else if (url.pathname.startsWith('/shorts/')) {
           videoId =
-            url.pathname.split('/shorts/')[1]?.split('/')[0] || '';
+            url.pathname
+              .split('/shorts/')[1]
+              ?.split('/')[0] || '';
         } else if (url.pathname.startsWith('/embed/')) {
           videoId =
-            url.pathname.split('/embed/')[1]?.split('/')[0] || '';
+            url.pathname
+              .split('/embed/')[1]
+              ?.split('/')[0] || '';
         }
       }
 
@@ -248,8 +261,61 @@ export default function PropertyCard({
     }
   }, [propertyVideoUrl]);
 
+  const vimeoEmbedUrl = useMemo(() => {
+    if (!propertyVideoUrl) {
+      return '';
+    }
+
+    try {
+      const url = new URL(propertyVideoUrl);
+      const hostname = url.hostname.toLowerCase();
+
+      if (
+        hostname !== 'vimeo.com' &&
+        hostname !== 'www.vimeo.com' &&
+        hostname !== 'player.vimeo.com'
+      ) {
+        return '';
+      }
+
+      let videoId = '';
+
+      if (hostname === 'player.vimeo.com') {
+        const match = url.pathname.match(
+          /\/video\/(\d+)/
+        );
+
+        videoId = match?.[1] || '';
+      } else {
+        const parts = url.pathname
+          .split('/')
+          .filter(Boolean);
+
+        const numericPart = parts.find((part) =>
+          /^\d+$/.test(part)
+        );
+
+        videoId = numericPart || '';
+      }
+
+      if (!videoId) {
+        return '';
+      }
+
+      return `https://player.vimeo.com/video/${encodeURIComponent(
+        videoId
+      )}`;
+    } catch {
+      return '';
+    }
+  }, [propertyVideoUrl]);
+
   const isDirectVideo = useMemo(() => {
-    if (!propertyVideoUrl || youtubeEmbedUrl) {
+    if (
+      !propertyVideoUrl ||
+      youtubeEmbedUrl ||
+      vimeoEmbedUrl
+    ) {
       return false;
     }
 
@@ -261,7 +327,36 @@ export default function PropertyCard({
     } catch {
       return false;
     }
-  }, [propertyVideoUrl, youtubeEmbedUrl]);
+  }, [
+    propertyVideoUrl,
+    youtubeEmbedUrl,
+    vimeoEmbedUrl,
+  ]);
+
+  const videoType = useMemo<VideoType>(() => {
+    if (!propertyVideoUrl) {
+      return 'unsupported';
+    }
+
+    if (youtubeEmbedUrl) {
+      return 'youtube';
+    }
+
+    if (vimeoEmbedUrl) {
+      return 'vimeo';
+    }
+
+    if (isDirectVideo) {
+      return 'direct';
+    }
+
+    return 'unsupported';
+  }, [
+    propertyVideoUrl,
+    youtubeEmbedUrl,
+    vimeoEmbedUrl,
+    isDirectVideo,
+  ]);
 
   const selectedAgent = useMemo(
     () =>
@@ -547,7 +642,8 @@ export default function PropertyCard({
               onClick={(event) => event.stopPropagation()}
             >
               <div className="relative aspect-video w-full overflow-hidden bg-black">
-                {youtubeEmbedUrl ? (
+                {videoType === 'youtube' &&
+                youtubeEmbedUrl ? (
                   <iframe
                     src={youtubeEmbedUrl}
                     title={`${property.title} video`}
@@ -556,7 +652,17 @@ export default function PropertyCard({
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
-                ) : isDirectVideo ? (
+                ) : videoType === 'vimeo' &&
+                  vimeoEmbedUrl ? (
+                  <iframe
+                    src={vimeoEmbedUrl}
+                    title={`${property.title} Vimeo video`}
+                    className="absolute inset-0 h-full w-full"
+                    loading="lazy"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : videoType === 'direct' ? (
                   <video
                     src={propertyVideoUrl}
                     controls
@@ -578,8 +684,10 @@ export default function PropertyCard({
                       Property Video
                     </p>
 
-                    <p className="mt-1 text-[10px] text-white/50">
+                    <p className="mt-1 max-w-sm text-[10px] leading-5 text-white/50">
                       Video format cannot be embedded directly.
+                      Please use a YouTube, Vimeo, or direct video
+                      file URL.
                     </p>
                   </div>
                 )}
@@ -950,7 +1058,8 @@ export default function PropertyCard({
                   </div>
 
                   <div className="relative aspect-video w-full bg-black">
-                    {youtubeEmbedUrl ? (
+                    {videoType === 'youtube' &&
+                    youtubeEmbedUrl ? (
                       <iframe
                         src={youtubeEmbedUrl}
                         title={`${property.title} property video`}
@@ -959,7 +1068,17 @@ export default function PropertyCard({
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                       />
-                    ) : isDirectVideo ? (
+                    ) : videoType === 'vimeo' &&
+                      vimeoEmbedUrl ? (
+                      <iframe
+                        src={vimeoEmbedUrl}
+                        title={`${property.title} Vimeo property video`}
+                        className="absolute inset-0 h-full w-full"
+                        loading="lazy"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : videoType === 'direct' ? (
                       <video
                         src={propertyVideoUrl}
                         controls
@@ -978,10 +1097,10 @@ export default function PropertyCard({
                           Property Video
                         </p>
 
-                        <p className="mt-1 max-w-md text-xs text-white/50">
+                        <p className="mt-1 max-w-md text-xs leading-6 text-white/50">
                           This video URL cannot be embedded directly.
-                          Please use a YouTube link or direct video
-                          file URL.
+                          Please use a YouTube link, Vimeo link, or
+                          direct video file URL.
                         </p>
                       </div>
                     )}
@@ -1146,6 +1265,17 @@ export default function PropertyCard({
                     return;
                   }
 
+                  if (
+                    isSiteViewing &&
+                    !inquiryForm.preferredViewingDate
+                  ) {
+                    setInquiryError(
+                      'Please select your preferred site viewing date.'
+                    );
+                    setInquirySubmitting(false);
+                    return;
+                  }
+
                   try {
                     const response = await fetch(
                       '/api/inquiries',
@@ -1156,12 +1286,12 @@ export default function PropertyCard({
                         },
                         body: JSON.stringify({
                           propertyId: property.id,
-                          name: inquiryForm.name,
-                          email: inquiryForm.email,
-                          phone: inquiryForm.phone,
+                          name: inquiryForm.name.trim(),
+                          email: inquiryForm.email.trim(),
+                          phone: inquiryForm.phone.trim(),
                           message: isSiteViewing
                             ? `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`
-                            : inquiryForm.message,
+                            : inquiryForm.message.trim(),
                           preferredViewingDate: isSiteViewing
                             ? inquiryForm.preferredViewingDate
                             : undefined,
@@ -1211,14 +1341,14 @@ export default function PropertyCard({
                 {/* Agent Selector */}
                 <div className="relative">
                   <label
-                    htmlFor="inquiryAgent"
+                    htmlFor={`inquiryAgent-${property.id}`}
                     className="text-xs font-bold uppercase tracking-wider text-slate-500"
                   >
                     Choose an Agent or Broker
                   </label>
 
                   <button
-                    id="inquiryAgent"
+                    id={`inquiryAgent-${property.id}`}
                     type="button"
                     disabled={
                       Boolean(linkedAgentSlug) ||
@@ -1477,7 +1607,10 @@ export default function PropertyCard({
                   ['name', 'email', 'phone'] as const
                 ).map((field) => (
                   <div key={field}>
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <label
+                      htmlFor={`inquiry-${field}-${property.id}`}
+                      className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                    >
                       {field === 'name'
                         ? 'Full Name'
                         : field === 'email'
@@ -1486,6 +1619,7 @@ export default function PropertyCard({
                     </label>
 
                     <input
+                      id={`inquiry-${field}-${property.id}`}
                       required
                       type={
                         field === 'email'
@@ -1517,7 +1651,7 @@ export default function PropertyCard({
                 {isSiteViewing && (
                   <div>
                     <label
-                      htmlFor="preferredViewingDate"
+                      htmlFor={`preferredViewingDate-${property.id}`}
                       className="text-xs font-bold uppercase tracking-wider text-slate-500"
                     >
                       Preferred Site Viewing Date
@@ -1527,7 +1661,7 @@ export default function PropertyCard({
                       <CalendarDays className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#c9a96e]" />
 
                       <input
-                        id="preferredViewingDate"
+                        id={`preferredViewingDate-${property.id}`}
                         required
                         type="date"
                         min={minViewingDate}
@@ -1550,11 +1684,15 @@ export default function PropertyCard({
                 {/* Message */}
                 {!isSiteViewing && (
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <label
+                      htmlFor={`inquiry-message-${property.id}`}
+                      className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                    >
                       Message
                     </label>
 
                     <textarea
+                      id={`inquiry-message-${property.id}`}
                       required
                       rows={4}
                       value={inquiryForm.message}
@@ -1645,7 +1783,7 @@ export default function PropertyCard({
                 />
               )}
 
-              {/* Previous */}
+              {/* Previous / Next */}
               {propertyImages.length > 1 && (
                 <>
                   <button
@@ -1657,7 +1795,6 @@ export default function PropertyCard({
                     <ChevronLeft />
                   </button>
 
-                  {/* Next */}
                   <button
                     type="button"
                     onClick={nextImage}
@@ -1856,4 +1993,3 @@ export default function PropertyCard({
     </>
   );
 }
-
