@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, {
   ChangeEvent,
@@ -79,6 +79,13 @@ const HOUSE_TYPES = [
   'Duplex',
 ];
 
+const BANK_FINANCING_OPTIONS = [
+  'BDO',
+  'China Bank',
+  'Metrobank',
+  'Pag-IBIG',
+];
+
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
 type Section =
@@ -112,6 +119,10 @@ interface Property {
   sqft?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  developer?: string | null;
+  bankFinancing?: string[] | null;
+  description?: string | null;
+  videoUrl?: string | null;
 }
 
 interface FormData {
@@ -126,6 +137,11 @@ interface FormData {
   beds: string;
   baths: string;
   sqft: string;
+  developer: string;
+  bankFinancing: string[];
+  customBank: string;
+  description: string;
+  videoUrl: string;
 }
 
 const INITIAL_FORM: FormData = {
@@ -140,6 +156,11 @@ const INITIAL_FORM: FormData = {
   beds: '',
   baths: '',
   sqft: '',
+  developer: '',
+  bankFinancing: [],
+  customBank: '',
+  description: '',
+  videoUrl: '',
 };
 
 /**
@@ -711,13 +732,13 @@ export default function AdminDashboardPage() {
         property.propertyType || '',
 
       houseType:
-        property.houseType || 'None',
+        property.houseType || '',
 
       storey:
         property.storey !== null &&
         property.storey !== undefined
           ? String(property.storey)
-          : 'None',
+          : '',
 
       tag:
         property.tag ||
@@ -749,6 +770,14 @@ export default function AdminDashboardPage() {
         property.sqft !== undefined
           ? String(property.sqft)
           : '',
+
+      developer: property.developer || '',
+      bankFinancing: Array.isArray(property.bankFinancing)
+        ? property.bankFinancing.filter(Boolean)
+        : [],
+      customBank: '',
+      description: property.description || '',
+      videoUrl: property.videoUrl || '',
     });
 
     const existingImages =
@@ -970,6 +999,12 @@ export default function AdminDashboardPage() {
 
             image: uploadedImageUrls[0],
             images: uploadedImageUrls,
+            developer: formData.developer.trim() || null,
+            bankFinancing: formData.bankFinancing
+              .map((bank) => bank.trim())
+              .filter(Boolean),
+            description: formData.description.trim() || null,
+            videoUrl: formData.videoUrl.trim() || null,
           };
 
       const response =
@@ -2445,6 +2480,119 @@ export default function AdminDashboardPage() {
                           className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                         />
                       </div>
+                    </div>
+
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      <div className="space-y-2">
+                        <label htmlFor="developer" className="text-sm font-semibold text-slate-700">
+                          Developer
+                        </label>
+                        <input
+                          id="developer"
+                          name="developer"
+                          value={formData.developer}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Cebu Landmasters, Inc."
+                          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-sm font-semibold text-slate-700">
+                          Bank Financing
+                        </label>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          {BANK_FINANCING_OPTIONS.map((bank) => {
+                            const checked = formData.bankFinancing.includes(bank);
+                            return (
+                              <label key={bank} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${checked ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200'}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    setFormData((current) => ({
+                                      ...current,
+                                      bankFinancing: checked
+                                        ? current.bankFinancing.filter((item) => item !== bank)
+                                        : [...current.bankFinancing, bank],
+                                    }));
+                                  }}
+                                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                {bank}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {formData.bankFinancing.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {formData.bankFinancing.map((bank) => (
+                              <span key={bank} className="rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-700">
+                                {bank}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <input
+                            type="text"
+                            value={formData.customBank}
+                            onChange={(event) => setFormData((current) => ({ ...current, customBank: event.target.value }))}
+                            placeholder="Add another bank or financing provider"
+                            className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const custom = formData.customBank.trim();
+                              if (!custom) return;
+                              const exists = formData.bankFinancing.some((item) => item.toLowerCase() === custom.toLowerCase());
+                              if (exists) {
+                                setFormData((current) => ({ ...current, customBank: '' }));
+                                return;
+                              }
+                              setFormData((current) => ({ ...current, bankFinancing: [...current.bankFinancing, custom], customBank: '' }));
+                            }}
+                            className="h-11 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white transition hover:bg-blue-700"
+                          >
+                            Add Provider
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="description" className="text-sm font-semibold text-slate-700">
+                        Property Details
+                      </label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={6}
+                        placeholder="Enter the full property details, features, inclusions, nearby landmarks, and other information buyers should know."
+                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="videoUrl" className="text-sm font-semibold text-slate-700">
+                        Property Video URL
+                      </label>
+                      <div className="relative">
+                        <LinkIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          id="videoUrl"
+                          name="videoUrl"
+                          type="url"
+                          value={formData.videoUrl}
+                          onChange={handleInputChange}
+                          placeholder="https://youtube.com/watch?v=..."
+                          className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400">Optional. Add a YouTube, Facebook, or other property video link.</p>
                     </div>
 
                     <div className="grid gap-5 sm:grid-cols-3">
