@@ -41,9 +41,7 @@ import {
   Warehouse,
   PlayCircle,
 } from 'lucide-react';
-const [videoFile, setVideoFile] = useState<File | null>(null);
-const [videoUploading, setVideoUploading] = useState(false);
-const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -311,6 +309,9 @@ function StatCard({
 }
 
 export default function AdminDashboardPage() {
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+const [videoUploading, setVideoUploading] = useState(false);
+const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const router = useRouter();
 
   const [activeAccounts, setActiveAccounts] =
