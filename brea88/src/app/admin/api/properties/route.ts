@@ -15,24 +15,24 @@ const MAX_IMAGES = 10;
 function cleanString(
   value: unknown,
   max: number,
-): string | null {
-  if (typeof value !== 'string') return null;
+): string {
+  if (typeof value !== 'string') return '';
 
   const result = value.trim();
 
   return result && result.length <= max
     ? result
-    : null;
+    : '';
 }
 
 function cleanOptionalUrl(
   value: unknown,
-): string | null {
+): string {
   const result = cleanString(value, 2048);
 
-  if (!result) return null;
+  if (!result) return '';
 
-  return isSafeHttpUrl(result) ? result : null;
+  return isSafeHttpUrl(result) ? result : '';
 }
 
 function cleanImages(value: unknown): string[] {
