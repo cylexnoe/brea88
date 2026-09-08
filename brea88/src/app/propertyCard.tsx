@@ -1104,9 +1104,9 @@ function stripHtml(html?: string | null) {
             <X size={20} />
           </button>
 
-          <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[1.02fr_0.98fr]">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {/* IMAGE SIDE */}
-            <div className="relative min-h-[310px] bg-slate-950 lg:min-h-0">
+            <div className="relative h-[280px] w-full shrink-0 bg-slate-950 sm:h-[380px] lg:h-[420px]">
               <img
                 src={currentImage}
                 alt={property.title}
@@ -1185,7 +1185,7 @@ function stripHtml(html?: string | null) {
             </div>
 
             {/* DETAILS SIDE */}
-            <div className="min-w-0 bg-white">
+            <div className="w-full min-w-0 bg-white">
               <div className="space-y-8 p-5 sm:p-7 lg:p-9">
                 {/* Header */}
                 <div>
@@ -1528,10 +1528,10 @@ function stripHtml(html?: string | null) {
       {/* COMPACT PROPERTY CARD */}
       <article
         onClick={openDetails}
-        className="group cursor-pointer overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/10 active:scale-[0.99]"
+        className="group flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/10 active:scale-[0.99]"
       >
-        {/* IMAGE */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        {/* IMAGE — ALWAYS ON TOP */}
+        <div className="relative h-56 w-full shrink-0 overflow-hidden bg-slate-100 sm:h-64">
           <img
             src={property.image}
             alt={property.title}
@@ -1557,8 +1557,8 @@ function stripHtml(html?: string | null) {
           )}
         </div>
 
-        {/* CARD CONTENT */}
-        <div className="p-4 sm:p-5">
+        {/* CARD CONTENT — ALWAYS BELOW IMAGE */}
+        <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
           <p className="text-xl font-black tracking-tight text-slate-900">
             {formatPrice(property.price)}
           </p>
@@ -1567,13 +1567,13 @@ function stripHtml(html?: string | null) {
             {property.title}
           </h3>
 
-          <div className="mt-2.5 flex items-start gap-1.5 text-xs leading-5 text-slate-500">
+          <div className="mt-2.5 flex min-w-0 items-start gap-1.5 text-xs leading-5 text-slate-500">
             <MapPin
               size={14}
               className="mt-0.5 shrink-0 text-[#b08b4f]"
             />
 
-            <span className="line-clamp-2">
+            <span className="line-clamp-2 min-w-0">
               {property.location}
             </span>
           </div>
@@ -1581,7 +1581,7 @@ function stripHtml(html?: string | null) {
           {(property.beds != null ||
             property.baths != null ||
             property.sqft != null) && (
-            <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-3.5 text-[11px] font-semibold text-slate-500">
+            <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-slate-100 pt-3.5 text-[11px] font-semibold text-slate-500">
               {property.beds != null && (
                 <span className="flex items-center gap-1">
                   <BedDouble
@@ -1609,6 +1609,7 @@ function stripHtml(html?: string | null) {
                     className="text-slate-400"
                   />
                   {Number(property.sqft).toFixed(2)}
+
                   <span className="hidden sm:inline">
                     m²
                   </span>
@@ -1618,7 +1619,7 @@ function stripHtml(html?: string | null) {
           )}
 
           {isAgent && property.developer && (
-            <div className="rounded-2xl bg-slate-50 p-3.5">
+            <div className="mt-4 rounded-2xl bg-slate-50 p-3.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Developer
               </p>
@@ -1634,13 +1635,12 @@ function stripHtml(html?: string | null) {
               View Details
             </span>
 
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#c9a96e]/10 text-[#a47d3c] transition group-hover:translate-x-0.5 group-hover:bg-[#c9a96e]/20">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#c9a96e]/10 text-[#a47d3c] transition group-hover:translate-x-0.5 group-hover:bg-[#c9a96e]/20">
               <ChevronRight size={15} />
             </span>
           </div>
         </div>
       </article>
-
       {/* MODALS */}
       {modal === 'details' && (
         renderDetailsModal()
