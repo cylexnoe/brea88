@@ -663,6 +663,7 @@ export default function MortgageCalculatorPage() {
                     />
                   </span>
                 </div>
+              </div>
 
               {/* Loan Ratio */}
               <div className="mt-5 rounded-2xl border border-white/10 p-4">
