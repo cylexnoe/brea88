@@ -620,6 +620,29 @@ export default function PropertyCard({
   };
 }, []);
 
+function stripHtml(html?: string | null) {
+  if (!html) return '';
+
+  if (typeof window !== 'undefined') {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    return (div.textContent || div.innerText || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
   function renderAgentSelector() {
     return (
       <div>
@@ -1321,17 +1344,20 @@ export default function PropertyCard({
                 {property.description && (
                   <section>
                     <SectionTitle
-                      icon={
-                        <FileText
-                          size={17}
-                        />
-                      }
+                      icon={<FileText size={17} />}
                       title="Description"
                     />
 
-                    <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-600">
-                      {property.description}
-                    </p>
+                    <div
+                      className="property-description mt-4 text-sm leading-7 text-slate-600"
+                      dangerouslySetInnerHTML={{
+                        __html: property.description
+                          .replace(/&nbsp;/g, ' ')
+                          .replace(/&amp;/g, '&')
+                          .replace(/&quot;/g, '"')
+                          .replace(/&#39;/g, "'"),
+                      }}
+                    />
                   </section>
                 )}
 

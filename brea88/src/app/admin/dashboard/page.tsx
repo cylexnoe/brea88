@@ -41,7 +41,15 @@ import {
   Warehouse,
   PlayCircle,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
 
+const ReactQuill = dynamic(
+  () => import("react-quill-new"),
+  {
+    ssr: false,
+  }
+);
 
 const MAX_IMAGES = 10;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -1584,7 +1592,7 @@ export default function AdminDashboardPage() {
       </aside>
 
       {/* MAIN */}
-      <main className="min-h-screen lg:pl-[280px]">
+      <main className="min-h-screen min-w-0 max-w-full overflow-x-hidden lg:pl-[280px]">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
           <div className="flex h-[76px] items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -1647,7 +1655,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {/* CONTENT */}
-        <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="mx-auto w-full min-w-0 max-w-[1600px] overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {/* OVERVIEW */}
           {activeSection ===
             'overview' && (
@@ -2249,9 +2257,8 @@ export default function AdminDashboardPage() {
           )}
 
           {/* ADD / EDIT */}
-          {activeSection ===
-            'add' && (
-            <section className="mx-auto max-w-5xl space-y-6">
+          {activeSection === 'add' && (
+            <section className="mx-auto w-full min-w-0 max-w-5xl space-y-6">
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                 <div>
                   <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
@@ -2316,7 +2323,7 @@ export default function AdminDashboardPage() {
                 onSubmit={
                   handleSubmit
                 }
-                className="space-y-6"
+                className="min-w-0 space-y-6"
               >
                 {/* Classification */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
@@ -2451,8 +2458,8 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-5 p-5 sm:p-6">
-                    <div className="grid gap-5 lg:grid-cols-2">
+                  <div className="grid min-w-0 gap-5 p-5 sm:p-6">
+                    <div className="grid min-w-0 gap-5 lg:grid-cols-2">
                       <div className="space-y-2">
                         <label
                           htmlFor="title"
@@ -2546,7 +2553,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid gap-5 lg:grid-cols-2">
+                    <div className="grid min-w-0 gap-5 lg:grid-cols-2">
                       <div className="space-y-2">
                         <label htmlFor="developer" className="text-sm font-semibold text-slate-700">
                           Developer
@@ -2625,30 +2632,69 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="description" className="text-sm font-semibold text-slate-700">
-                        Property Details
-                      </label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={6}
-                        placeholder="Enter the full property details, features, inclusions, nearby landmarks, and other information buyers should know."
-                        className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                      />
+                    <div className="w-full min-w-0 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label
+                          htmlFor="description"
+                          className="text-sm font-semibold tracking-tight text-slate-800"
+                        >
+                          Property Details
+                        </label>
+
+                        <span className="text-xs font-medium text-slate-400">
+                          Rich text
+                        </span>
+                      </div>
+
+                      <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md focus-within:border-blue-500 focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.08)]">
+                        <ReactQuill
+                          theme="snow"
+                          value={formData.description}
+                          onChange={(value) =>
+                            setFormData((current) => ({
+                              ...current,
+                              description: value,
+                            }))
+                          }
+                          modules={{
+                            toolbar: [
+                              [{ header: [2, 3, false] }],
+                              ["bold", "italic", "underline"],
+                              [{ list: "bullet" }, { list: "ordered" }],
+                              [{ align: [] }],
+                              ["clean"],
+                            ],
+                          }}
+                          formats={[
+                            "header",
+                            "bold",
+                            "italic",
+                            "underline",
+                            "list",
+                            "align",
+                          ]}
+                          placeholder="Describe the property, features, inclusions, nearby landmarks, and other information buyers should know..."
+                          className="premium-quill"
+                        />
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                            <span>Rich text formatting enabled</span>
+                          </div>
+
+                          <span className="text-xs font-medium text-slate-400">
+                            Bold · Lists · Alignment
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="w-full min-w-0 max-w-full space-y-4">
                       <div>
                         <label className="text-sm font-semibold text-slate-700">
                           Property Video
                         </label>
-
-                        <p className="mt-1 text-xs text-slate-400">
-                          Add a video using a URL or upload the actual video file.
-                        </p>
                       </div>
 
                       {/* VIDEO URL */}
@@ -2659,8 +2705,11 @@ export default function AdminDashboardPage() {
                         >
                           Video URL
                         </label>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Add a video using a URL or upload the actual video file.
+                        </p>
 
-                        <div className="relative">
+                        <div className="relative w-full min-w-0">
                           <LinkIcon
                             size={17}
                             className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -2693,8 +2742,8 @@ export default function AdminDashboardPage() {
                     </div>
 
                    {/* VIDEO UPLOAD */}
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                         <PlayCircle size={20} />
@@ -2820,7 +2869,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid gap-5 sm:grid-cols-3">
+                    <div className="grid min-w-0 gap-5 sm:grid-cols-3">
                       {showHouseDetails && (
                         <>
                           <div className="space-y-2">
@@ -2887,7 +2936,7 @@ export default function AdminDashboardPage() {
                         </>
                       )}
 
-                      <div className="grid gap-5 sm:grid-cols-2">
+                      <div className="grid min-w-0 gap-5 sm:grid-cols-2">
                         {/* Sqm */}
                         <div className="space-y-2">
                           <label
