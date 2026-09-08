@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Calculator,
   CalendarDays,
+  ChevronDown,
   CircleDollarSign,
   Landmark,
   Percent,
@@ -654,11 +655,14 @@ export default function MortgageCalculatorPage() {
                     Loan Term
                   </span>
 
-                  <span className="text-right text-sm font-black text-white">
+                  <span className="flex items-center gap-2 text-right text-sm font-black text-white">
                     {calculation.years} years
+                    <ChevronDown
+                      size={16}
+                      className="text-slate-400"
+                    />
                   </span>
                 </div>
-              </div>
 
               {/* Loan Ratio */}
               <div className="mt-5 rounded-2xl border border-white/10 p-4">
