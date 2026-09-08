@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  CircleDollarSign,
   ExternalLink,
   FileText,
   Image as ImageIcon,
@@ -35,23 +34,19 @@ interface Property {
   location: string;
   image: string;
   images?: string[];
-
   beds?: number | null;
   baths?: number | null;
   sqft?: number | null;
   lotArea?: number | null;
-
   category?: string | null;
   propertyType?: string | null;
   houseType?: string | null;
   storey?: string | null;
-
   developer?: string | null;
   totalcp?: string | null;
   bankFinancing?: string[] | null;
   description?: string | null;
   videoUrl?: string | null;
-
   agent?: {
     id: number;
     fullName: string;
@@ -78,12 +73,7 @@ interface PropertyCardProps {
   agentSlug?: string;
 }
 
-type ModalType =
-  | 'details'
-  | 'inquiry'
-  | 'viewing'
-  | 'contact'
-  | null;
+type ModalType = 'details' | 'inquiry' | 'viewing' | null;
 
 interface InquiryForm {
   name: string;
@@ -175,6 +165,7 @@ function getVideoEmbedUrl(value?: string | null) {
       }
     }
 
+    // YouTube short URL
     if (hostname === 'youtu.be') {
       const videoId = url.pathname.replace('/', '');
 
@@ -198,6 +189,7 @@ function getVideoEmbedUrl(value?: string | null) {
       }
     }
 
+    // Vimeo player URL
     if (hostname === 'player.vimeo.com') {
       if (url.pathname.startsWith('/video/')) {
         return value;
@@ -215,13 +207,11 @@ function formatPrice(value?: string | null) {
 
   const trimmed = String(value).trim();
 
-  // Remove peso sign and commas before formatting
   const numericValue = trimmed
     .replace(/₱/g, '')
     .replace(/,/g, '')
     .trim();
 
-  // Format pure numeric prices with commas
   if (/^\d+(?:\.\d+)?$/.test(numericValue)) {
     const amount = Number(numericValue);
 
@@ -231,7 +221,6 @@ function formatPrice(value?: string | null) {
       })}`;
     }
   }
-
 
   return trimmed;
 }
@@ -254,12 +243,15 @@ export default function PropertyCard({
   const [selectedImageIndex, setSelectedImageIndex] =
     useState(0);
 
+  const [galleryPreviewOpen, setGalleryPreviewOpen] =
+    useState(false);
+
   const [availableAgents, setAvailableAgents] = useState<
     AvailableAgent[]
   >([]);
 
-  // IMPORTANT:
-  // Empty by default. No first agent or property.agent is selected.
+  // Empty by default.
+  // No first agent or property.agent is automatically selected.
   const [selectedAgentSlug, setSelectedAgentSlug] =
     useState('');
 
@@ -267,7 +259,10 @@ export default function PropertyCard({
     useState(false);
 
   const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const [submitSuccess, setSubmitSuccess] =
+    useState(false);
+
   const [submitError, setSubmitError] = useState('');
 
   const [inquiryForm, setInquiryForm] =
@@ -278,6 +273,8 @@ export default function PropertyCard({
       message: '',
       preferredViewingDate: '',
     });
+
+  const [isAgent, setIsAgent] = useState(false);
 
   const galleryImages = useMemo(() => {
     const images = [
@@ -294,7 +291,8 @@ export default function PropertyCard({
 
   const videoUrl = property.videoUrl?.trim() || '';
 
-  const videoEmbedUrl = getVideoEmbedUrl(videoUrl);
+  const videoEmbedUrl =
+    getVideoEmbedUrl(videoUrl);
 
   const hasDirectVideo =
     isDirectVideoUrl(videoUrl);
@@ -305,8 +303,14 @@ export default function PropertyCard({
   const hasVideo =
     hasDirectVideo || hasEmbeddedVideo;
 
+  /*
+   * Lock page scrolling whenever either modal
+   * or fullscreen gallery is open.
+   */
   useEffect(() => {
-    if (!modal) return;
+    if (!modal && !galleryPreviewOpen) {
+      return;
+    }
 
     const originalOverflow =
       document.body.style.overflow;
@@ -317,40 +321,68 @@ export default function PropertyCard({
       document.body.style.overflow =
         originalOverflow;
     };
-  }, [modal]);
+  }, [modal, galleryPreviewOpen]);
 
+  /*
+   * Keyboard controls:
+   * Escape = close active overlay
+   * Left Arrow = previous image
+   * Right Arrow = next image
+   */
   useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
+    if (!modal && !galleryPreviewOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        closeModal();
+        if (galleryPreviewOpen) {
+          closeGalleryPreview();
+        } else if (modal) {
+          closeModal();
+        }
+
+        return;
+      }
+
+      if (
+        galleryPreviewOpen &&
+        galleryImages.length > 1
+      ) {
+        if (event.key === 'ArrowLeft') {
+          previousImage();
+        }
+
+        if (event.key === 'ArrowRight') {
+          nextImage();
+        }
       }
     }
 
-    if (modal) {
-      window.addEventListener(
-        'keydown',
-        handleEscape,
-      );
-    }
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    );
 
     return () => {
       window.removeEventListener(
         'keydown',
-        handleEscape,
+        handleKeyDown,
       );
     };
-  }, [modal]);
+  }, [
+    modal,
+    galleryPreviewOpen,
+    galleryImages.length,
+  ]);
 
   async function loadAgents() {
     setLoadingAgents(true);
 
     try {
-      const response = await fetch(
-        '/api/agents',
-        {
-          cache: 'no-store',
-        },
-      );
+      const response = await fetch('/api/agents', {
+        cache: 'no-store',
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -401,19 +433,19 @@ export default function PropertyCard({
     loadAgents();
   }
 
-  function openContact() {
-    setSubmitSuccess(false);
-    setSubmitError('');
-    setSelectedAgentSlug('');
-    setModal('contact');
-
-    loadAgents();
-  }
-
   function closeModal() {
     setModal(null);
     setSubmitSuccess(false);
     setSubmitError('');
+  }
+
+  function openGalleryPreview(index: number) {
+    setSelectedImageIndex(index);
+    setGalleryPreviewOpen(true);
+  }
+
+  function closeGalleryPreview() {
+    setGalleryPreviewOpen(false);
   }
 
   function updateForm(
@@ -426,10 +458,14 @@ export default function PropertyCard({
     }));
   }
 
-  function nextImage(event?: React.MouseEvent) {
+  function nextImage(
+    event?: React.MouseEvent,
+  ) {
     event?.stopPropagation();
 
-    if (galleryImages.length <= 1) return;
+    if (galleryImages.length <= 1) {
+      return;
+    }
 
     setSelectedImageIndex(
       (current) =>
@@ -443,7 +479,9 @@ export default function PropertyCard({
   ) {
     event?.stopPropagation();
 
-    if (galleryImages.length <= 1) return;
+    if (galleryImages.length <= 1) {
+      return;
+    }
 
     setSelectedImageIndex(
       (current) =>
@@ -454,7 +492,7 @@ export default function PropertyCard({
 
   async function submitInquiry(
     event: React.FormEvent<HTMLFormElement>,
-    type: 'inquiry' | 'viewing' | 'contact',
+    type: 'inquiry' | 'viewing',
   ) {
     event.preventDefault();
 
@@ -508,14 +546,6 @@ export default function PropertyCard({
       if (type === 'viewing') {
         message =
           `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`;
-      }
-
-      if (
-        type === 'contact' &&
-        !message
-      ) {
-        message =
-          `Client would like to contact an Agent or Broker regarding "${property.title}".`;
       }
 
       const response = await fetch(
@@ -573,75 +603,51 @@ export default function PropertyCard({
     }
   }
 
-  const [isAgent, setIsAgent] = useState(false);
   useEffect(() => {
-  let mounted = true;
+    let mounted = true;
 
-  async function checkAgent() {
-    try {
-      const response = await fetch(
-        '/api/agent/me',
-        {
-          credentials: 'include',
-          cache: 'no-store',
-        },
-      );
+    async function checkAgent() {
+      try {
+        const response = await fetch(
+          '/api/agent/me',
+          {
+            credentials: 'include',
+            cache: 'no-store',
+          },
+        );
 
-      if (!response.ok) {
+        if (!response.ok) {
+          if (mounted) {
+            setIsAgent(false);
+          }
+
+          return;
+        }
+
+        const data = await response.json();
+
+        if (mounted) {
+          setIsAgent(
+            data?.success === true &&
+              data?.agent?.isActive === true &&
+              ['Agent', 'Broker'].includes(
+                data?.agent?.role,
+              ),
+          );
+        }
+      } catch {
         if (mounted) {
           setIsAgent(false);
         }
-
-        return;
-      }
-
-      const data = await response.json();
-
-      if (mounted) {
-        setIsAgent(
-          data?.success === true &&
-          data?.agent?.isActive === true &&
-          ['Agent', 'Broker'].includes(
-            data?.agent?.role,
-          ),
-        );
-      }
-    } catch {
-      if (mounted) {
-        setIsAgent(false);
       }
     }
-  }
 
-  checkAgent();
+    checkAgent();
 
-  return () => {
-    mounted = false;
-  };
-}, []);
-
-function stripHtml(html?: string | null) {
-  if (!html) return '';
-
-  if (typeof window !== 'undefined') {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-
-    return (div.textContent || div.innerText || '')
-      .replace(/\u00a0/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   function renderAgentSelector() {
     return (
@@ -711,21 +717,17 @@ function stripHtml(html?: string | null) {
   }
 
   function renderRequestForm(
-    type: 'inquiry' | 'viewing' | 'contact',
+    type: 'inquiry' | 'viewing',
   ) {
     const title =
       type === 'viewing'
         ? 'Request Site Viewing'
-        : type === 'contact'
-          ? 'Contact an Agent / Broker'
-          : 'Property Inquiry';
+        : 'Property Inquiry';
 
     const description =
       type === 'viewing'
         ? 'Choose your preferred Agent or Broker and viewing date.'
-        : type === 'contact'
-          ? 'Choose who you would like to contact about this property.'
-          : 'Send your property inquiry to your chosen Agent or Broker.';
+        : 'Send your property inquiry to your chosen Agent or Broker.';
 
     return (
       <div className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
@@ -734,8 +736,6 @@ function stripHtml(html?: string | null) {
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#c9a96e]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9c7a3d]">
               {type === 'viewing' ? (
                 <CalendarDays size={13} />
-              ) : type === 'contact' ? (
-                <Phone size={13} />
               ) : (
                 <MessageCircle size={13} />
               )}
@@ -795,6 +795,7 @@ function stripHtml(html?: string | null) {
             </div>
           ) : (
             <div className="space-y-5">
+              {/* FULL NAME */}
               <div>
                 <label
                   htmlFor="inquiry-name"
@@ -826,6 +827,7 @@ function stripHtml(html?: string | null) {
                 </div>
               </div>
 
+              {/* EMAIL */}
               <div>
                 <label
                   htmlFor="inquiry-email"
@@ -857,6 +859,7 @@ function stripHtml(html?: string | null) {
                 </div>
               </div>
 
+              {/* PHONE */}
               <div>
                 <label
                   htmlFor="inquiry-phone"
@@ -888,8 +891,10 @@ function stripHtml(html?: string | null) {
                 </div>
               </div>
 
+              {/* AGENT / BROKER */}
               {renderAgentSelector()}
 
+              {/* VIEWING DATE */}
               {type === 'viewing' && (
                 <div>
                   <label
@@ -928,45 +933,45 @@ function stripHtml(html?: string | null) {
                 </div>
               )}
 
-              {type !== 'contact' && (
-                <div>
-                  <label
-                    htmlFor="inquiry-message"
-                    className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500"
-                  >
-                    Message
-                    {type === 'inquiry' && (
-                      <span className="ml-1 text-red-500">
-                        *
-                      </span>
-                    )}
-                  </label>
+              {/* MESSAGE */}
+              <div>
+                <label
+                  htmlFor="inquiry-message"
+                  className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500"
+                >
+                  Message
 
-                  <textarea
-                    id="inquiry-message"
-                    value={inquiryForm.message}
-                    onChange={(event) =>
-                      updateForm(
-                        'message',
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Tell us how we can help you..."
-                    required={
-                      type === 'inquiry'
-                    }
-                    rows={4}
-                    className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                  />
-                </div>
-              )}
+                  {type === 'inquiry' && (
+                    <span className="ml-1 text-red-500">
+                      *
+                    </span>
+                  )}
+                </label>
 
+                <textarea
+                  id="inquiry-message"
+                  value={inquiryForm.message}
+                  onChange={(event) =>
+                    updateForm(
+                      'message',
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Tell us how we can help you..."
+                  required={type === 'inquiry'}
+                  rows={4}
+                  className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                />
+              </div>
+
+              {/* ERROR */}
               {submitError && (
                 <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-5 text-red-600">
                   {submitError}
                 </div>
               )}
 
+              {/* SUBMIT */}
               <button
                 type="submit"
                 disabled={
@@ -987,11 +992,10 @@ function stripHtml(html?: string | null) {
                 ) : (
                   <>
                     <Send size={17} />
+
                     {type === 'viewing'
                       ? 'Request Site Viewing'
-                      : type === 'contact'
-                        ? 'Contact Agent / Broker'
-                        : 'Send Inquiry'}
+                      : 'Send Inquiry'}
                   </>
                 )}
               </button>
@@ -1095,6 +1099,7 @@ function stripHtml(html?: string | null) {
         }}
       >
         <div className="relative flex h-full w-full flex-col overflow-hidden bg-white sm:h-[94vh] sm:max-w-6xl sm:rounded-[30px]">
+          {/* CLOSE DETAILS */}
           <button
             type="button"
             onClick={closeModal}
@@ -1115,6 +1120,7 @@ function stripHtml(html?: string | null) {
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/10" />
 
+              {/* IMAGE NAVIGATION */}
               {galleryImages.length > 1 && (
                 <>
                   <button
@@ -1137,6 +1143,7 @@ function stripHtml(html?: string | null) {
                 </>
               )}
 
+              {/* PROPERTY OVERLAY */}
               <div className="absolute bottom-5 left-5 right-5 text-white sm:bottom-7 sm:left-7">
                 <span className="inline-flex rounded-full bg-white/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] backdrop-blur-md">
                   {property.tag}
@@ -1156,6 +1163,7 @@ function stripHtml(html?: string | null) {
                 </div>
               </div>
 
+              {/* IMAGE INDICATORS */}
               {galleryImages.length > 1 && (
                 <div className="absolute bottom-5 right-5 hidden gap-1.5 sm:flex">
                   {galleryImages
@@ -1184,10 +1192,10 @@ function stripHtml(html?: string | null) {
               )}
             </div>
 
-            {/* DETAILS SIDE */}
+            {/* DETAILS */}
             <div className="w-full min-w-0 bg-white">
               <div className="space-y-8 p-5 sm:p-7 lg:p-9">
-                {/* Header */}
+                {/* HEADER */}
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     {property.category && (
@@ -1224,67 +1232,85 @@ function stripHtml(html?: string | null) {
 
                 {/* QUICK DETAILS */}
                 {(property.beds != null ||
-                    property.baths != null ||
-                    property.sqft != null ||
-                    property.lotArea != null) && (
-                    <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3.5 sm:flex sm:items-center sm:gap-4">
-                      {property.beds != null && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                          <BedDouble
-                            size={14}
-                            className="shrink-0 text-slate-400"
-                          />
-                          <span>{property.beds}</span>
-                          <span className="text-slate-400">Beds</span>
+                  property.baths != null ||
+                  property.sqft != null ||
+                  property.lotArea != null) && (
+                  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3.5 sm:flex sm:items-center sm:gap-4">
+                    {property.beds != null && (
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                        <BedDouble
+                          size={14}
+                          className="shrink-0 text-slate-400"
+                        />
+                        <span>
+                          {property.beds}
                         </span>
-                      )}
+                        <span className="text-slate-400">
+                          Beds
+                        </span>
+                      </span>
+                    )}
 
-                      {property.baths != null && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                          <Bath
-                            size={14}
-                            className="shrink-0 text-slate-400"
-                          />
-                          <span>{property.baths}</span>
-                          <span className="text-slate-400">Baths</span>
+                    {property.baths != null && (
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                        <Bath
+                          size={14}
+                          className="shrink-0 text-slate-400"
+                        />
+                        <span>
+                          {property.baths}
                         </span>
-                      )}
+                        <span className="text-slate-400">
+                          Baths
+                        </span>
+                      </span>
+                    )}
 
-                      {property.sqft != null && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                          <Maximize
-                            size={14}
-                            className="shrink-0 text-slate-400"
-                          />
-                          <span>
-                            {Number(property.sqft).toFixed(2)}
-                          </span>
-                          <span className="text-slate-400">Sqm</span>
-                        </span>
-                      )}
+                    {property.sqft != null && (
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                        <Maximize
+                          size={14}
+                          className="shrink-0 text-slate-400"
+                        />
 
-                      {property.lotArea != null && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                          <Maximize
-                            size={14}
-                            className="shrink-0 text-slate-400"
-                          />
-                          <span>
-                            {Number(property.lotArea).toFixed(2)}
-                          </span>
-                          <span className="text-slate-400">Lot Area</span>
+                        <span>
+                          {Number(
+                            property.sqft,
+                          ).toFixed(2)}
                         </span>
-                      )}
-                    </div>
-                  )}
+
+                        <span className="text-slate-400">
+                          Sqm
+                        </span>
+                      </span>
+                    )}
+
+                    {property.lotArea != null && (
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                        <Maximize
+                          size={14}
+                          className="shrink-0 text-slate-400"
+                        />
+
+                        <span>
+                          {Number(
+                            property.lotArea,
+                          ).toFixed(2)}
+                        </span>
+
+                        <span className="text-slate-400">
+                          Lot Area
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* PROPERTY DETAILS */}
                 <section>
                   <SectionTitle
                     icon={
-                      <Building2
-                        size={17}
-                      />
+                      <Building2 size={17} />
                     }
                     title="Property Details"
                   />
@@ -1344,18 +1370,35 @@ function stripHtml(html?: string | null) {
                 {property.description && (
                   <section>
                     <SectionTitle
-                      icon={<FileText size={17} />}
+                      icon={
+                        <FileText
+                          size={17}
+                        />
+                      }
                       title="Description"
                     />
 
                     <div
                       className="property-description mt-4 text-sm leading-7 text-slate-600"
                       dangerouslySetInnerHTML={{
-                        __html: property.description
-                          .replace(/&nbsp;/g, ' ')
-                          .replace(/&amp;/g, '&')
-                          .replace(/&quot;/g, '"')
-                          .replace(/&#39;/g, "'"),
+                        __html:
+                          property.description
+                            .replace(
+                              /&nbsp;/g,
+                              ' ',
+                            )
+                            .replace(
+                              /&amp;/g,
+                              '&',
+                            )
+                            .replace(
+                              /&quot;/g,
+                              '"',
+                            )
+                            .replace(
+                              /&#39;/g,
+                              "'",
+                            ),
                       }}
                     />
                   </section>
@@ -1363,7 +1406,8 @@ function stripHtml(html?: string | null) {
 
                 {/* FINANCING */}
                 {(property.totalcp ||
-                  property.bankFinancing?.length) && (
+                  property.bankFinancing
+                    ?.length) && (
                   <section>
                     <SectionTitle
                       icon={
@@ -1451,10 +1495,13 @@ function stripHtml(html?: string | null) {
                             type="button"
                             key={`${image}-${index}`}
                             onClick={() =>
-                              setSelectedImageIndex(
+                              openGalleryPreview(
                                 index,
                               )
                             }
+                            aria-label={`Open image ${
+                              index + 1
+                            } in fullscreen`}
                             className={`group relative aspect-square overflow-hidden rounded-xl ${
                               selectedImageIndex ===
                               index
@@ -1481,6 +1528,7 @@ function stripHtml(html?: string | null) {
                 {/* ACTIONS */}
                 <section className="border-t border-slate-100 pt-6">
                   <div className="space-y-3">
+                    {/* SEND INQUIRY */}
                     <button
                       type="button"
                       onClick={openInquiry}
@@ -1492,6 +1540,7 @@ function stripHtml(html?: string | null) {
                       Send Property Inquiry
                     </button>
 
+                    {/* REQUEST VIEWING */}
                     <button
                       type="button"
                       onClick={openViewing}
@@ -1502,23 +1551,115 @@ function stripHtml(html?: string | null) {
                       />
                       Request Site Viewing
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={openContact}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#c9a96e]/30 bg-[#c9a96e]/10 px-5 py-4 text-sm font-bold text-[#8c6a32] transition hover:bg-[#c9a96e]/20"
-                    >
-                      <UserRound
-                        size={18}
-                      />
-                      Contact an Agent / Broker
-                    </button>
                   </div>
                 </section>
               </div>
             </div>
           </div>
         </div>
+
+        {/* FULLSCREEN GALLERY PREVIEW */}
+        {galleryPreviewOpen && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-3 sm:p-6"
+            onMouseDown={(event) => {
+              if (
+                event.target ===
+                event.currentTarget
+              ) {
+                closeGalleryPreview();
+              }
+            }}
+          >
+            {/* CLOSE */}
+            <button
+              type="button"
+              onClick={closeGalleryPreview}
+              aria-label="Close image preview"
+              className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-6 sm:top-6"
+            >
+              <X size={22} />
+            </button>
+
+            {/* COUNTER */}
+            <div className="absolute left-1/2 top-5 z-20 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md">
+              {selectedImageIndex + 1} /{' '}
+              {galleryImages.length}
+            </div>
+
+            {/* PREVIOUS */}
+            {galleryImages.length > 1 && (
+              <button
+                type="button"
+                onClick={previousImage}
+                aria-label="Previous image"
+                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:left-6 sm:h-12 sm:w-12"
+              >
+                <ChevronLeft size={24} />
+              </button>
+            )}
+
+            {/* MAIN IMAGE */}
+            <div className="flex h-full w-full items-center justify-center">
+              <img
+                src={currentImage}
+                alt={`${property.title} ${
+                  selectedImageIndex + 1
+                }`}
+                onClick={(event) =>
+                  event.stopPropagation()
+                }
+                className="max-h-[90vh] max-w-[94vw] select-none object-contain sm:max-h-[88vh] sm:max-w-[90vw]"
+              />
+            </div>
+
+            {/* NEXT */}
+            {galleryImages.length > 1 && (
+              <button
+                type="button"
+                onClick={nextImage}
+                aria-label="Next image"
+                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-6 sm:h-12 sm:w-12"
+              >
+                <ChevronRight size={24} />
+              </button>
+            )}
+
+            {/* BOTTOM THUMBNAILS */}
+            {galleryImages.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 z-20 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-2xl bg-black/45 p-2 backdrop-blur-md">
+                {galleryImages.map(
+                  (image, index) => (
+                    <button
+                      key={`${image}-preview-${index}`}
+                      type="button"
+                      onClick={() =>
+                        setSelectedImageIndex(
+                          index,
+                        )
+                      }
+                      aria-label={`View image ${
+                        index + 1
+                      }`}
+                      className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16 ${
+                        selectedImageIndex ===
+                        index
+                          ? 'border-[#c9a96e] opacity-100'
+                          : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -1530,7 +1671,7 @@ function stripHtml(html?: string | null) {
         onClick={openDetails}
         className="group flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/10 active:scale-[0.99]"
       >
-        {/* IMAGE — ALWAYS ON TOP */}
+        {/* IMAGE */}
         <div className="relative h-56 w-full shrink-0 overflow-hidden bg-slate-100 sm:h-64">
           <img
             src={property.image}
@@ -1557,7 +1698,7 @@ function stripHtml(html?: string | null) {
           )}
         </div>
 
-        {/* CARD CONTENT — ALWAYS BELOW IMAGE */}
+        {/* CARD CONTENT */}
         <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
           <p className="text-xl font-black tracking-tight text-slate-900">
             {formatPrice(property.price)}
@@ -1608,7 +1749,10 @@ function stripHtml(html?: string | null) {
                     size={13}
                     className="text-slate-400"
                   />
-                  {Number(property.sqft).toFixed(2)}
+
+                  {Number(
+                    property.sqft,
+                  ).toFixed(2)}
 
                   <span className="hidden sm:inline">
                     m²
@@ -1618,17 +1762,18 @@ function stripHtml(html?: string | null) {
             </div>
           )}
 
-          {isAgent && property.developer && (
-            <div className="mt-4 rounded-2xl bg-slate-50 p-3.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Developer
-              </p>
+          {isAgent &&
+            property.developer && (
+              <div className="mt-4 rounded-2xl bg-slate-50 p-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Developer
+                </p>
 
-              <p className="mt-1.5 text-sm font-bold text-slate-800">
-                {property.developer}
-              </p>
-            </div>
-          )}
+                <p className="mt-1.5 text-sm font-bold text-slate-800">
+                  {property.developer}
+                </p>
+              </div>
+            )}
 
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5">
             <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[#a47d3c] transition group-hover:text-[#8c6a32]">
@@ -1641,18 +1786,16 @@ function stripHtml(html?: string | null) {
           </div>
         </div>
       </article>
-      {/* MODALS */}
-      {modal === 'details' && (
-        renderDetailsModal()
-      )}
 
+      {/* DETAILS MODAL */}
+      {modal === 'details' &&
+        renderDetailsModal()}
+
+      {/* INQUIRY / VIEWING MODALS */}
       {(modal === 'inquiry' ||
-        modal === 'viewing' ||
-        modal === 'contact') && (
+        modal === 'viewing') && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-5">
-          {renderRequestForm(
-            modal,
-          )}
+          {renderRequestForm(modal)}
         </div>
       )}
     </>
@@ -1700,3 +1843,4 @@ function DetailRow({
     </div>
   );
 }
+
