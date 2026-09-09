@@ -2137,12 +2137,7 @@ export default function AgentDashboardPage() {
                     Client Communication
                   </p>
 
-                  <h2 className="truncate text-lg font-bold text-[#071936]">
-                    Inquiry #
-                    {
-                      selectedInquiry.id
-                    }
-                  </h2>
+                  <h2 className="truncate text-lg font-bold text-[#071936]"> {selectedInquiry.name} </h2>
 
                 </div>
 
