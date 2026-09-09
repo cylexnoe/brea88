@@ -1085,7 +1085,7 @@ export default function AdminDashboardPage() {
       alert(
         error instanceof Error
           ? error.message
-          : 'Something went wrong while saving the property.',
+          : 'Timeout you need to refresh the page.',
       );
     }
   }
@@ -1352,7 +1352,7 @@ export default function AdminDashboardPage() {
 
       {/* SIDEBAR */}
       <aside
-       className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-[#030b1c] text-white shadow-[10px_0_40px_rgba(0,0,0,0.45)] transition-transform duration-300 lg:translate-x-0 ${
+       className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-slate-200/70 bg-[#030b1c] text-white shadow-[2px_0_8px_rgba(15,23,42,0.06)] transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen
             ? 'translate-x-0'
             : '-translate-x-full'
