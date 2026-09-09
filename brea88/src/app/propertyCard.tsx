@@ -1,6 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Bath,
   BedDouble,
@@ -235,10 +240,28 @@ function formatDateMin() {
   return `${year}-${month}-${day}`;
 }
 
+function getInitials(name: string) {
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) {
+    return 'U';
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+}
+
 export default function PropertyCard({
   property,
 }: PropertyCardProps) {
-  const [modal, setModal] = useState<ModalType>(null);
+  const [modal, setModal] =
+    useState<ModalType>(null);
 
   const [selectedImageIndex, setSelectedImageIndex] =
     useState(0);
@@ -246,24 +269,32 @@ export default function PropertyCard({
   const [galleryPreviewOpen, setGalleryPreviewOpen] =
     useState(false);
 
-  const [availableAgents, setAvailableAgents] = useState<
-    AvailableAgent[]
-  >([]);
+  const [availableAgents, setAvailableAgents] =
+    useState<AvailableAgent[]>([]);
 
-  // Empty by default.
-  // No first agent or property.agent is automatically selected.
+  /*
+   * Agent selection
+   */
   const [selectedAgentSlug, setSelectedAgentSlug] =
     useState('');
 
   const [loadingAgents, setLoadingAgents] =
     useState(false);
 
-  const [submitting, setSubmitting] = useState(false);
+  const [agentDropdownOpen, setAgentDropdownOpen] =
+    useState(false);
+
+  const agentSelectorRef =
+    useRef<HTMLDivElement | null>(null);
+
+  const [submitting, setSubmitting] =
+    useState(false);
 
   const [submitSuccess, setSubmitSuccess] =
     useState(false);
 
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] =
+    useState('');
 
   const [inquiryForm, setInquiryForm] =
     useState<InquiryForm>({
@@ -274,7 +305,8 @@ export default function PropertyCard({
       preferredViewingDate: '',
     });
 
-  const [isAgent, setIsAgent] = useState(false);
+  const [isAgent, setIsAgent] =
+    useState(false);
 
   const galleryImages = useMemo(() => {
     const images = [
@@ -289,7 +321,8 @@ export default function PropertyCard({
     galleryImages[selectedImageIndex] ||
     property.image;
 
-  const videoUrl = property.videoUrl?.trim() || '';
+  const videoUrl =
+    property.videoUrl?.trim() || '';
 
   const videoEmbedUrl =
     getVideoEmbedUrl(videoUrl);
@@ -301,7 +334,14 @@ export default function PropertyCard({
     Boolean(videoEmbedUrl);
 
   const hasVideo =
-    hasDirectVideo || hasEmbeddedVideo;
+    hasDirectVideo ||
+    hasEmbeddedVideo;
+
+  const selectedAgent =
+    availableAgents.find(
+      (agent) =>
+        agent.slug === selectedAgentSlug,
+    ) || null;
 
   /*
    * Lock page scrolling whenever either modal
@@ -324,6 +364,40 @@ export default function PropertyCard({
   }, [modal, galleryPreviewOpen]);
 
   /*
+   * Close Agent dropdown when clicking outside.
+   */
+  useEffect(() => {
+    if (!agentDropdownOpen) {
+      return;
+    }
+
+    function handleClickOutside(
+      event: MouseEvent,
+    ) {
+      if (
+        agentSelectorRef.current &&
+        !agentSelectorRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setAgentDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      'mousedown',
+      handleClickOutside,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleClickOutside,
+      );
+    };
+  }, [agentDropdownOpen]);
+
+  /*
    * Keyboard controls:
    * Escape = close active overlay
    * Left Arrow = previous image
@@ -334,7 +408,9 @@ export default function PropertyCard({
       return;
     }
 
-    function handleKeyDown(event: KeyboardEvent) {
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
       if (event.key === 'Escape') {
         if (galleryPreviewOpen) {
           closeGalleryPreview();
@@ -380,9 +456,12 @@ export default function PropertyCard({
     setLoadingAgents(true);
 
     try {
-      const response = await fetch('/api/agents', {
-        cache: 'no-store',
-      });
+      const response = await fetch(
+        '/api/agents',
+        {
+          cache: 'no-store',
+        },
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -392,11 +471,12 @@ export default function PropertyCard({
 
       const data = await response.json();
 
-      const agents = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.agents)
-          ? data.agents
-          : [];
+      const agents =
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data?.agents)
+            ? data.agents
+            : [];
 
       setAvailableAgents(agents);
     } catch {
@@ -410,6 +490,7 @@ export default function PropertyCard({
     setSelectedImageIndex(0);
     setSubmitSuccess(false);
     setSubmitError('');
+    setAgentDropdownOpen(false);
     setModal('details');
 
     loadAgents();
@@ -419,6 +500,7 @@ export default function PropertyCard({
     setSubmitSuccess(false);
     setSubmitError('');
     setSelectedAgentSlug('');
+    setAgentDropdownOpen(false);
     setModal('inquiry');
 
     loadAgents();
@@ -428,6 +510,7 @@ export default function PropertyCard({
     setSubmitSuccess(false);
     setSubmitError('');
     setSelectedAgentSlug('');
+    setAgentDropdownOpen(false);
     setModal('viewing');
 
     loadAgents();
@@ -437,9 +520,12 @@ export default function PropertyCard({
     setModal(null);
     setSubmitSuccess(false);
     setSubmitError('');
+    setAgentDropdownOpen(false);
   }
 
-  function openGalleryPreview(index: number) {
+  function openGalleryPreview(
+    index: number,
+  ) {
     setSelectedImageIndex(index);
     setGalleryPreviewOpen(true);
   }
@@ -485,123 +571,112 @@ export default function PropertyCard({
 
     setSelectedImageIndex(
       (current) =>
-        (current - 1 + galleryImages.length) %
+        (current -
+          1 +
+          galleryImages.length) %
         galleryImages.length,
     );
   }
 
-  async function submitInquiry(
-    event: React.FormEvent<HTMLFormElement>,
-    type: 'inquiry' | 'viewing',
-  ) {
-    event.preventDefault();
+ async function submitInquiry(
+  event: React.FormEvent<HTMLFormElement>,
+  type: 'inquiry' | 'viewing',
+) {
+  event.preventDefault();
 
-    setSubmitError('');
-    setSubmitSuccess(false);
+  setSubmitError('');
+  setSubmitSuccess(false);
 
-    if (!selectedAgentSlug) {
-      setSubmitError(
-        'Please choose an Agent or Broker before submitting.',
-      );
-      return;
-    }
-
-    if (
-      !inquiryForm.name.trim() ||
-      !inquiryForm.email.trim() ||
-      !inquiryForm.phone.trim()
-    ) {
-      setSubmitError(
-        'Please complete your name, email, and phone number.',
-      );
-      return;
-    }
-
-    if (
-      type === 'inquiry' &&
-      !inquiryForm.message.trim()
-    ) {
-      setSubmitError(
-        'Please enter your message.',
-      );
-      return;
-    }
-
-    if (
-      type === 'viewing' &&
-      !inquiryForm.preferredViewingDate
-    ) {
-      setSubmitError(
-        'Please select your preferred viewing date.',
-      );
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      let message =
-        inquiryForm.message.trim();
-
-      if (type === 'viewing') {
-        message =
-          `Site viewing request for "${property.title}". Preferred viewing date: ${inquiryForm.preferredViewingDate}.`;
-      }
-
-      const response = await fetch(
-        '/api/inquiries',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify({
-            propertyId: property.id,
-            name: inquiryForm.name.trim(),
-            email: inquiryForm.email.trim(),
-            phone: inquiryForm.phone.trim(),
-            message,
-            preferredViewingDate:
-              type === 'viewing'
-                ? inquiryForm.preferredViewingDate
-                : undefined,
-            agentSlug:
-              selectedAgentSlug,
-          }),
-        },
-      );
-
-      const data = await response
-        .json()
-        .catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            'Unable to send your request. Please try again.',
-        );
-      }
-
-      setSubmitSuccess(true);
-
-      setInquiryForm({
-        name: '',
-        email: '',
-        phone: '',
-        message: '',
-        preferredViewingDate: '',
-      });
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to send your request.',
-      );
-    } finally {
-      setSubmitting(false);
-    }
+  if (!selectedAgentSlug) {
+    setSubmitError(
+      'Please choose an Agent or Broker before submitting.',
+    );
+    return;
   }
+
+  if (
+    !inquiryForm.name.trim() ||
+    !inquiryForm.email.trim() ||
+    !inquiryForm.phone.trim()
+  ) {
+    setSubmitError(
+      'Please complete your name, email, and phone number.',
+    );
+    return;
+  }
+
+  if (!inquiryForm.message.trim()) {
+    setSubmitError(
+      'Please enter your message.',
+    );
+    return;
+  }
+
+  if (
+    type === 'viewing' &&
+    !inquiryForm.preferredViewingDate
+  ) {
+    setSubmitError(
+      'Please select your preferred viewing date.',
+    );
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    // Keep ONLY the client's actual message.
+    // The API will add the Site Viewing Request details.
+    const message = inquiryForm.message.trim();
+
+    const response = await fetch('/api/inquiries', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: inquiryForm.name.trim(),
+        email: inquiryForm.email.trim(),
+        phone: inquiryForm.phone.trim(),
+        agentSlug: selectedAgentSlug,
+        propertyId: property.id,
+        preferredViewingDate:
+          type === 'viewing'
+            ? inquiryForm.preferredViewingDate
+            : '',
+        message,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message || 'Failed to submit inquiry.',
+      );
+    }
+
+    setSubmitSuccess(true);
+
+    setInquiryForm({
+      name: '',
+      email: '',
+      phone: '',
+      preferredViewingDate: '',
+      message: '',
+    });
+  } catch (error) {
+    console.error('Inquiry submission error:', error);
+
+    setSubmitError(
+      error instanceof Error
+        ? error.message
+        : 'Failed to submit inquiry.',
+    );
+  } finally {
+    setSubmitting(false);
+  }
+}
 
   useEffect(() => {
     let mounted = true;
@@ -624,7 +699,8 @@ export default function PropertyCard({
           return;
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
         if (mounted) {
           setIsAgent(
@@ -651,10 +727,14 @@ export default function PropertyCard({
 
   function renderAgentSelector() {
     return (
-      <div>
+      <div
+        ref={agentSelectorRef}
+        className="relative"
+      >
+        {/* LABEL */}
         <label
           htmlFor="selected-agent"
-          className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500"
+          className="mb-3 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500"
         >
           Choose Agent or Broker
           <span className="ml-1 text-red-500">
@@ -662,56 +742,339 @@ export default function PropertyCard({
           </span>
         </label>
 
-        <div className="relative">
-          <UserRound
-            size={17}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-          />
+        {/* LOADING */}
+        {loadingAgents ? (
+          <div className="flex min-h-[68px] items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-[#c9a96e]" />
 
-          <select
-            id="selected-agent"
-            value={selectedAgentSlug}
-            onChange={(event) =>
-              setSelectedAgentSlug(
-                event.target.value,
-              )
-            }
-            required
-            disabled={loadingAgents}
-            className="w-full appearance-none rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-10 text-sm font-medium text-slate-700 outline-none transition focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10 disabled:cursor-not-allowed disabled:bg-slate-50"
-          >
-            <option value="">
-              {loadingAgents
-                ? 'Loading Agents and Brokers...'
-                : 'Select an Agent or Broker'}
-            </option>
+            <span className="text-sm font-medium text-slate-500">
+              Loading Agents and Brokers...
+            </span>
+          </div>
+        ) : availableAgents.length === 0 ? (
+          /* EMPTY STATE */
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-7 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+              <UserRound
+                size={23}
+                strokeWidth={1.7}
+              />
+            </div>
 
-            {availableAgents.map(
-              (agent) => (
-                <option
-                  key={agent.id}
-                  value={agent.slug}
-                >
-                  {agent.fullName} —{' '}
-                  {agent.role}
-                </option>
-              ),
-            )}
-          </select>
-
-          <ChevronRight
-            size={18}
-            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-slate-400"
-          />
-        </div>
-
-        {!loadingAgents &&
-          availableAgents.length === 0 && (
-            <p className="mt-2 text-xs text-slate-400">
-              No Agents or Brokers are currently
-              available.
+            <p className="text-sm font-semibold text-slate-700">
+              No Agents or Brokers available
             </p>
-          )}
+
+            <p className="mt-1 text-xs text-slate-400">
+              Please try again later.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* MAIN DROPDOWN */}
+            <button
+                id="selected-agent"
+                type="button"
+                onClick={() =>
+                  setAgentDropdownOpen((current) => !current)
+                }
+                aria-expanded={agentDropdownOpen}
+                aria-haspopup="listbox"
+                className={`group flex min-h-[58px] w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-2xl border bg-white px-3 py-2.5 text-left transition-all duration-200 sm:min-h-[68px] sm:gap-4 sm:px-5 sm:py-3 ${
+                  agentDropdownOpen
+                    ? 'border-[#c9a96e] shadow-[0_12px_35px_rgba(15,23,42,0.10)] ring-4 ring-[#c9a96e]/10'
+                    : 'border-slate-200 shadow-sm hover:border-[#d8c08e] hover:shadow-md'
+                }`}
+              >
+                {/* PROFILE PHOTO */}
+                <div
+                  className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border sm:h-12 sm:w-12 ${
+                    selectedAgent
+                      ? 'border-[#c9a96e]/40'
+                      : 'border-slate-200 bg-slate-100'
+                  }`}
+                >
+                  {selectedAgent?.profileImage ? (
+                    <>
+                      <img
+                        src={selectedAgent.profileImage}
+                        alt={selectedAgent.fullName}
+                        className="h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none';
+
+                          const fallback =
+                            event.currentTarget.nextElementSibling;
+
+                          if (fallback instanceof HTMLElement) {
+                            fallback.style.display = 'flex';
+                          }
+                        }}
+                      />
+
+                      <div className="hidden h-full w-full items-center justify-center bg-[#faf7ef] text-[#a8864f]">
+                        <span className="text-xs font-black sm:text-sm">
+                          {getInitials(selectedAgent.fullName)}
+                        </span>
+                      </div>
+                    </>
+                  ) : selectedAgent ? (
+                    <div className="flex h-full w-full items-center justify-center bg-[#faf7ef] text-[#a8864f]">
+                      <span className="text-xs font-black sm:text-sm">
+                        {getInitials(selectedAgent.fullName)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-slate-400">
+                      <UserRound
+                        size={18}
+                        strokeWidth={1.7}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* TEXT */}
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  {selectedAgent ? (
+                    <>
+                      <p className="truncate text-xs font-bold text-slate-800 sm:text-[15px]">
+                        {selectedAgent.fullName}
+                      </p>
+
+                      <span className="mt-1 inline-flex max-w-full truncate rounded-full bg-[#faf7ef] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-[#a8864f] sm:px-2.5 sm:py-1 sm:text-[9px] sm:tracking-[0.1em]">
+                        {selectedAgent.role}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <p className="truncate text-xs font-semibold text-slate-600 sm:text-sm">
+                        Select an Agent or Broker
+                      </p>
+
+                      <p className="mt-0.5 truncate text-[10px] text-slate-400 sm:text-xs">
+                        Choose who you would like to contact
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {/* ARROW */}
+                <ChevronRight
+                  size={18}
+                  className={`shrink-0 text-slate-400 transition-all duration-200 sm:h-5 sm:w-5 ${
+                    agentDropdownOpen
+                      ? 'rotate-[-90deg] text-[#a8864f]'
+                      : 'rotate-90 group-hover:text-slate-600'
+                  }`}
+                />
+              </button>
+
+            {/* DROPDOWN PANEL */}
+            {agentDropdownOpen && (
+              <div
+                className="absolute left-0 right-0 z-[80] mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.16)]"
+                role="listbox"
+                aria-label="Available Agents and Brokers"
+              >
+                {/* PANEL HEADER */}
+                <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-3.5 sm:px-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.1em] text-slate-600">
+                        Available Agents & Brokers
+                      </p>
+
+                      <p className="mt-1 text-[11px] leading-4 text-slate-400">
+                        Select a professional to
+                        handle your inquiry
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-400 shadow-sm">
+                      {availableAgents.length}{' '}
+                      Available
+                    </span>
+                  </div>
+                </div>
+
+                {/* CARDS */}
+                <div className="max-h-[390px] overflow-y-auto p-3 sm:p-4">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {availableAgents.map(
+                      (agent) => {
+                        const isSelected =
+                          selectedAgentSlug ===
+                          agent.slug;
+
+                        return (
+                          <button
+                            key={agent.id}
+                            type="button"
+                            role="option"
+                            aria-selected={
+                              isSelected
+                            }
+                            onClick={() => {
+                              setSelectedAgentSlug(
+                                agent.slug,
+                              );
+
+                              setAgentDropdownOpen(
+                                false,
+                              );
+                            }}
+                            className={`group relative flex min-h-[92px] w-full items-center gap-3 overflow-hidden rounded-2xl border p-3.5 text-left transition-all duration-200 active:scale-[0.98] sm:p-4 ${
+                              isSelected
+                                ? 'border-[#c9a96e] bg-[#faf7ef] shadow-[0_8px_25px_rgba(201,169,110,0.16)] ring-2 ring-[#c9a96e]/10'
+                                : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-[#d8c08e] hover:bg-slate-50 hover:shadow-[0_10px_25px_rgba(15,23,42,0.07)]'
+                            }`}
+                          >
+                            {/* LEFT GOLD ACCENT */}
+                            <div
+                              className={`absolute bottom-0 left-0 top-0 w-1 transition-all duration-200 ${
+                                isSelected
+                                  ? 'bg-[#c9a96e]'
+                                  : 'bg-transparent group-hover:bg-[#e4d2aa]'
+                              }`}
+                            />
+
+                            {/* PROFILE PHOTO */}
+                            <div
+                              className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border ${
+                                isSelected
+                                  ? 'border-[#c9a96e]/40 shadow-sm'
+                                  : 'border-slate-200'
+                              }`}
+                            >
+                              {agent.profileImage ? (
+                                <>
+                                  <img
+                                    src={
+                                      agent.profileImage
+                                    }
+                                    alt={
+                                      agent.fullName
+                                    }
+                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    onError={(
+                                      event,
+                                    ) => {
+                                      event.currentTarget.style.display =
+                                        'none';
+
+                                      const fallback =
+                                        event.currentTarget
+                                          .nextElementSibling;
+
+                                      if (
+                                        fallback instanceof
+                                        HTMLElement
+                                      ) {
+                                        fallback.style.display =
+                                          'flex';
+                                      }
+                                    }}
+                                  />
+
+                                  {/* IMAGE ERROR FALLBACK */}
+                                  <div className="hidden h-full w-full items-center justify-center bg-[#faf7ef] text-[#a8864f]">
+                                    <span className="text-sm font-black">
+                                      {getInitials(
+                                        agent.fullName,
+                                      )}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                /* NO IMAGE FALLBACK */
+                                <div
+                                  className={`flex h-full w-full items-center justify-center ${
+                                    isSelected
+                                      ? 'bg-[#c9a96e] text-white'
+                                      : 'bg-slate-100 text-slate-400 group-hover:bg-[#faf7ef] group-hover:text-[#a8864f]'
+                                  }`}
+                                >
+                                  <span className="text-sm font-black">
+                                    {getInitials(
+                                      agent.fullName,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* STATUS DOT */}
+                              <span
+                                className={`absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
+                                  agent.lastSeen
+                                    ? 'bg-emerald-500'
+                                    : 'bg-slate-300'
+                                }`}
+                              />
+                            </div>
+
+                            {/* AGENT INFORMATION */}
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={`truncate text-sm font-bold ${
+                                  isSelected
+                                    ? 'text-slate-900'
+                                    : 'text-slate-700 group-hover:text-slate-900'
+                                }`}
+                              >
+                                {agent.fullName}
+                              </p>
+
+                              <div className="mt-1.5 flex min-w-0 items-center gap-2">
+                                <span
+                                  className={`inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] ${
+                                    isSelected
+                                      ? 'bg-white text-[#a8864f] shadow-sm'
+                                      : 'bg-slate-100 text-slate-500 group-hover:bg-[#faf7ef] group-hover:text-[#a8864f]'
+                                  }`}
+                                >
+                                  {agent.role}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* CHECKMARK */}
+                            <div
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                                isSelected
+                                  ? 'border-[#c9a96e] bg-[#c9a96e] text-white shadow-sm'
+                                  : 'border-slate-300 bg-white text-transparent group-hover:border-[#c9a96e]'
+                              }`}
+                            >
+                              {isSelected && (
+                                <CheckCircle2
+                                  size={15}
+                                  strokeWidth={3}
+                                />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* REQUIRED VALUE FOR FORM */}
+        <input
+          name="selectedAgentSlug"
+          type="text"
+          value={selectedAgentSlug}
+          onChange={() => {}}
+          required
+          tabIndex={-1}
+          aria-hidden="true"
+          className="pointer-events-none absolute h-0 w-0 opacity-0"
+        />
       </div>
     );
   }
@@ -731,6 +1094,7 @@ export default function PropertyCard({
 
     return (
       <div className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+        {/* HEADER */}
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-5 sm:px-7">
           <div className="pr-4">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#c9a96e]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9c7a3d]">
@@ -762,6 +1126,7 @@ export default function PropertyCard({
           </button>
         </div>
 
+        {/* FORM */}
         <form
           onSubmit={(event) =>
             submitInquiry(event, type)
@@ -771,9 +1136,7 @@ export default function PropertyCard({
           {submitSuccess ? (
             <div className="py-10 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                <CheckCircle2
-                  size={34}
-                />
+                <CheckCircle2 size={34} />
               </div>
 
               <h3 className="mt-5 text-xl font-bold text-slate-900">
@@ -807,7 +1170,7 @@ export default function PropertyCard({
                 <div className="relative">
                   <UserRound
                     size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                   />
 
                   <input
@@ -839,7 +1202,7 @@ export default function PropertyCard({
                 <div className="relative">
                   <Mail
                     size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                   />
 
                   <input
@@ -871,7 +1234,7 @@ export default function PropertyCard({
                 <div className="relative">
                   <Phone
                     size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                   />
 
                   <input
@@ -910,7 +1273,7 @@ export default function PropertyCard({
                   <div className="relative">
                     <CalendarDays
                       size={17}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                     />
 
                     <input
@@ -932,7 +1295,45 @@ export default function PropertyCard({
                   </div>
                 </div>
               )}
-              
+
+              {/* MESSAGE */}
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="inquiry-message"
+                    className="block text-xs font-bold uppercase tracking-[0.12em] text-slate-500"
+                  >
+                    Write a message
+                    <span className="ml-1 text-red-500">
+                      *
+                    </span>
+                  </label>
+                </div>
+
+                <textarea
+                  id="inquiry-message"
+                  name="message"
+                  value={inquiryForm.message}
+                  onChange={(event) =>
+                    updateForm(
+                      'message',
+                      event.target.value,
+                    )
+                  }
+                  required
+                  rows={6}
+                  placeholder="Write your message here..."
+                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                />
+
+                <div className="mt-1.5 flex items-center justify-between">
+
+                  <span className="text-[10px] text-slate-400">
+                    {inquiryForm.message.length.toLocaleString()}{' '}
+                    characters
+                  </span>
+                </div>
+              </div>
 
               {/* ERROR */}
               {submitError && (
@@ -1009,7 +1410,10 @@ export default function PropertyCard({
       );
     }
 
-    if (hasEmbeddedVideo && videoEmbedUrl) {
+    if (
+      hasEmbeddedVideo &&
+      videoEmbedUrl
+    ) {
       return (
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-black">
           <iframe
@@ -1062,7 +1466,8 @@ export default function PropertyCard({
         className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-0 backdrop-blur-sm sm:p-4"
         onMouseDown={(event) => {
           if (
-            event.target === event.currentTarget
+            event.target ===
+            event.currentTarget
           ) {
             closeModal();
           }
@@ -1120,7 +1525,9 @@ export default function PropertyCard({
                 </span>
 
                 <p className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-                  {formatPrice(property.price)}
+                  {formatPrice(
+                    property.price,
+                  )}
                 </p>
 
                 <h2 className="mt-1 text-lg font-bold sm:text-xl">
