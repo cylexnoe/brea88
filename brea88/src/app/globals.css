@@ -81,7 +81,7 @@ body:has(input[placeholder*="Search properties"]) .fixed.z-50 button[class*="bg-
 
 /* Agent / Broker dashboard premium CRM presentation. */
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) { background:radial-gradient(circle at 78% -10%,rgba(201,169,110,.09),transparent 28%),radial-gradient(circle at 15% 20%,rgba(11,42,111,.045),transparent 30%),#f6f7f9; }
-body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside { border-right-color:rgba(15,23,42,.08); background:rgba(255,255,255,.94); box-shadow:18px 0 50px rgba(15,23,42,.035); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside { border-right-color:rgba(15,23,42,.08); background:rgba(255,255,255,.94); box-shadow:none; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button { border:1px solid transparent; }
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button:hover { border-color:rgba(201,169,110,.18); transform:translateX(2px); }
 body:has(aside[class*="w-72"][class*="lg:translate-x-0"]) aside nav button[class*="bg-slate-950"] { background:linear-gradient(135deg,#071936,#102b54); box-shadow:0 10px 24px rgba(7,25,54,.16); }
