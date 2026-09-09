@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Trash,
   User,
   UserCheck,
   UserPlus,
@@ -451,14 +452,14 @@ export default function AdminAgentsPage() {
                     <button type="button" onClick={() => updateAgent(agent, { isActive: !agent.isActive })} disabled={updating} className={`mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${agent.isActive ? 'border border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700'}`}>
                       {updating ? <><RefreshCw size={16} className="animate-spin" /> Updating...</> : agent.isActive ? <><UserX size={16} /> Deactivate Account</> : <><UserCheck size={16} /> Activate Account</>}
                     </button>
-                    
+
                     <button
                       type="button"
                       onClick={() => deleteAgent(agent)}
                       disabled={updating}
                       className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <UserX size={16} />
+                      <Trash  size={16} />
                       Delete Account
                     </button>
                   </div>
