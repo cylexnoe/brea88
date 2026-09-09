@@ -545,6 +545,10 @@ export default function MortgageCalculatorPage() {
                       30 years
                     </option>
                   </select>
+                  <ChevronDown
+                      size={18}
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
                 </div>
               </div>
             </div>
@@ -657,10 +661,6 @@ export default function MortgageCalculatorPage() {
 
                   <span className="flex items-center gap-2 text-right text-sm font-black text-white">
                     {calculation.years} years
-                    <ChevronDown
-                      size={16}
-                      className="text-slate-400"
-                    />
                   </span>
                 </div>
               </div>
