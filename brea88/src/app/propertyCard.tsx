@@ -932,37 +932,7 @@ export default function PropertyCard({
                   </div>
                 </div>
               )}
-
-              {/* MESSAGE */}
-              <div>
-                <label
-                  htmlFor="inquiry-message"
-                  className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500"
-                >
-                  Message
-
-                  {type === 'inquiry' && (
-                    <span className="ml-1 text-red-500">
-                      *
-                    </span>
-                  )}
-                </label>
-
-                <textarea
-                  id="inquiry-message"
-                  value={inquiryForm.message}
-                  onChange={(event) =>
-                    updateForm(
-                      'message',
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Tell us how we can help you..."
-                  required={type === 'inquiry'}
-                  rows={4}
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                />
-              </div>
+              
 
               {/* ERROR */}
               {submitError && (
