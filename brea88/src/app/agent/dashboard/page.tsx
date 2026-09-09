@@ -259,7 +259,7 @@ export default function AgentDashboardPage() {
   const [
   deleteInquiryTarget,
   setDeleteInquiryTarget,
-] = useState<number | null>(null);
+  ] = useState<number | null>(null);
 
   const [lastUpdated, setLastUpdated] =
     useState<Date | null>(null);
