@@ -32,7 +32,9 @@ import {
   Image as ImageIcon,
   PhilippinePeso,
   Sparkles,
-  Calculator
+  Calculator,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 type Agent = {
@@ -253,6 +255,11 @@ export default function AgentDashboardPage() {
     deletingInquiryId,
     setDeletingInquiryId,
   ] = useState<number | null>(null);
+
+  const [
+  deleteInquiryTarget,
+  setDeleteInquiryTarget,
+] = useState<number | null>(null);
 
   const [lastUpdated, setLastUpdated] =
     useState<Date | null>(null);
@@ -717,85 +724,88 @@ export default function AgentDashboardPage() {
     }
   };
 
-  const deleteInquiry = async (
-    inquiryId: number
-  ) => {
-    if (deletingInquiryId === inquiryId) {
-      return;
-    }
+  const deleteInquiry = (
+  inquiryId: number
+) => {
+  if (deletingInquiryId === inquiryId) {
+    return;
+  }
 
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this inquiry? This action cannot be undone.'
+  setDeleteInquiryTarget(inquiryId);
+};
+
+const confirmDeleteInquiry = async () => {
+  if (deleteInquiryTarget === null) {
+    return;
+  }
+
+  const inquiryId = deleteInquiryTarget;
+
+  setDeletingInquiryId(inquiryId);
+  setInquiriesError('');
+
+  try {
+    const response = await fetch(
+      '/api/inquiries',
+      {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify({
+          id: inquiryId,
+        }),
+      }
     );
 
-    if (!confirmed) {
+    let data: any = null;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (response.status === 401) {
+      router.replace('/agent/login');
       return;
     }
 
-    setDeletingInquiryId(inquiryId);
-    setInquiriesError('');
-
-    try {
-      const response = await fetch(
-        '/api/inquiries',
-        {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify({
-            id: inquiryId,
-          }),
-        }
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          data?.error ||
+          'Unable to delete inquiry.'
       );
-
-      let data: any = null;
-
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
-
-      if (response.status === 401) {
-        router.replace('/agent/login');
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            'Unable to delete inquiry.'
-        );
-      }
-
-      setInquiries((previous) =>
-        previous.filter(
-          (inquiry) =>
-            inquiry.id !== inquiryId
-        )
-      );
-
-      setSelectedInquiryId(null);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error(
-        'Delete inquiry error:',
-        error
-      );
-
-      setInquiriesError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to delete inquiry.'
-      );
-    } finally {
-      setDeletingInquiryId(null);
     }
-  };
+
+    setInquiries((previous) =>
+      previous.filter(
+        (inquiry) =>
+          inquiry.id !== inquiryId
+      )
+    );
+
+    setSelectedInquiryId(null);
+    setDeleteInquiryTarget(null);
+    setLastUpdated(new Date());
+  } catch (error) {
+    console.error(
+      'Delete inquiry error:',
+      error
+    );
+
+    setInquiriesError(
+      error instanceof Error
+        ? error.message
+        : 'Unable to delete inquiry.'
+    );
+  } finally {
+    setDeletingInquiryId(null);
+  }
+};
 
   /*
    * =========================================================
@@ -2717,7 +2727,146 @@ export default function AgentDashboardPage() {
 
         </div>
       )}
+{/* =====================================================
+    DELETE INQUIRY CONFIRMATION MODAL
+===================================================== */}
 
+{deleteInquiryTarget !== null && (
+  <div
+    className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md"
+    onMouseDown={(event) => {
+      if (
+        event.target === event.currentTarget &&
+        deletingInquiryId === null
+      ) {
+        setDeleteInquiryTarget(null);
+      }
+    }}
+  >
+    <div
+      className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+      onMouseDown={(event) =>
+        event.stopPropagation()
+      }
+    >
+      {/* GOLD / RED ACCENT */}
+      <div className="h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500" />
+
+      <div className="p-6 sm:p-7">
+
+        {/* HEADER */}
+        <div className="flex items-start gap-4">
+
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-600">
+            <Trash2 size={24} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+
+            <h3 className="text-lg font-bold tracking-tight text-[#071936]">
+              Delete inquiry?
+            </h3>
+
+            <p className="mt-1.5 text-sm leading-6 text-slate-500">
+              Are you sure you want to permanently
+              delete this inquiry?
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            aria-label="Close confirmation"
+            onClick={() =>
+              setDeleteInquiryTarget(null)
+            }
+            disabled={
+              deletingInquiryId !== null
+            }
+            className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X size={19} />
+          </button>
+
+        </div>
+
+        {/* WARNING */}
+        <div className="mt-6 rounded-2xl border border-red-100 bg-red-50/70 p-4">
+
+          <div className="flex items-start gap-3">
+
+            <AlertTriangle
+              size={18}
+              className="mt-0.5 shrink-0 text-red-500"
+            />
+
+            <div>
+
+              <p className="text-sm font-bold text-red-700">
+                Permanent deletion
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-red-600/80">
+                This inquiry and its conversation
+                record will be removed. This action
+                cannot be undone.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ACTIONS */}
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+
+          <button
+            type="button"
+            disabled={
+              deletingInquiryId !== null
+            }
+            onClick={() =>
+              setDeleteInquiryTarget(null)
+            }
+            className="h-11 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              deletingInquiryId !== null
+            }
+            onClick={confirmDeleteInquiry}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+
+            {deletingInquiryId ===
+            deleteInquiryTarget ? (
+              <>
+                <Loader2
+                  size={17}
+                  className="animate-spin"
+                />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 size={17} />
+                Delete Inquiry
+              </>
+            )}
+
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
