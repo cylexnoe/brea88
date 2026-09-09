@@ -1356,24 +1356,6 @@ export default function ProfilePage() {
 
                 </div>
 
-                {!isEditing && (
-                  <button
-                    type="button"
-                    onClick={
-                      handleEdit
-                    }
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-blue-700 transition-all hover:bg-blue-50"
-                  >
-
-                    <Pencil
-                      size={13}
-                    />
-
-                    Edit
-
-                  </button>
-                )}
-
               </div>
 
               <div className="grid grid-cols-1 gap-px overflow-hidden rounded-b-3xl bg-slate-100 sm:grid-cols-2">
@@ -1831,11 +1813,11 @@ export default function ProfilePage() {
               <div className="border-b border-slate-100 px-6 py-5">
 
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-700">
-                  Account
+                  Account & Messages
                 </p>
 
                 <h3 className="mt-1 text-lg font-bold text-slate-950">
-                  Password & Settings
+                  Change Password & Inquiry Messages
                 </h3>
 
               </div>
@@ -1899,7 +1881,7 @@ export default function ProfilePage() {
                     </p>
 
                     <p className="mt-0.5 text-[11px] text-slate-500">
-                      Manage account notifications
+                      Manage Inquiry Messages
                     </p>
                   </div>
 
