@@ -848,10 +848,9 @@ export default function ProfilePage() {
 
                       <div className="flex flex-wrap items-center gap-2">
 
-                        <h2 className="break-words text-2xl font-bold leading-tight tracking-tight text-slate-950 sm:text-3xl">
-                          {profile.fullName ||
-                            'Your Name'}
-                        </h2>
+                        <h2 className="break-words bg-gradient-to-r from-pink-500 via-purple-600 to-orange-500 bg-[length:200%_200%] bg-clip-text text-2xl font-bold leading-tight tracking-tight text-transparent animate-gradient sm:text-3xl">
+                            {profile.fullName || 'Your Name'}
+                          </h2>
 
                       </div>
 
