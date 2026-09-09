@@ -12,7 +12,7 @@ export default function LandingPage() {
   const router = useRouter();
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050b18] px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-[#050b18] px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(37,99,235,.18),transparent_34%),radial-gradient(circle_at_85%_15%,rgba(201,169,110,.14),transparent_30%),linear-gradient(135deg,#050b18,#071936_55%,#020617)]" />
       <div className="absolute inset-0 opacity-[0.035] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:56px_56px]" />
       <div className="liquid-blob blob-one pointer-events-none absolute -left-32 -top-32 h-[480px] w-[480px] rounded-full bg-blue-700/30 blur-[110px]" />
