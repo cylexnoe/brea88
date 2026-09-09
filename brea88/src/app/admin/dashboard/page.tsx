@@ -1534,7 +1534,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-white">
+          <p className="truncate bg-gradient-to-r from-cyan-300 via-cyan-400 to-cyan-500 bg-clip-text text-xs font-semibold text-transparent">
             Administrator
           </p>
 
