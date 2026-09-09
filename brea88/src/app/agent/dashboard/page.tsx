@@ -822,7 +822,7 @@ export default function AgentDashboardPage() {
         error
       );
     } finally {
-      router.replace('/agent/login');
+      router.replace('/');
       router.refresh();
     }
   };

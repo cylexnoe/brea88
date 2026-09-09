@@ -259,6 +259,7 @@ function getInitials(name: string) {
 
 export default function PropertyCard({
   property,
+  agentSlug,
 }: PropertyCardProps) {
   const [modal, setModal] =
     useState<ModalType>(null);
@@ -342,7 +343,12 @@ export default function PropertyCard({
       (agent) =>
         agent.slug === selectedAgentSlug,
     ) || null;
-
+  const isAgentLocked = Boolean(agentSlug?.trim());
+  useEffect(() => {
+    if (agentSlug?.trim()) {
+      setSelectedAgentSlug(agentSlug.trim());
+    }
+  }, [agentSlug]);
   /*
    * Lock page scrolling whenever either modal
    * or fullscreen gallery is open.
@@ -453,38 +459,48 @@ export default function PropertyCard({
   ]);
 
   async function loadAgents() {
-    setLoadingAgents(true);
+  setLoadingAgents(true);
 
-    try {
-      const response = await fetch(
-        '/api/agents',
-        {
-          cache: 'no-store',
-        },
+  try {
+    const response = await fetch('/api/agents', {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error('Unable to load agents.');
+    }
+
+    const data = await response.json();
+
+    const agents =
+      Array.isArray(data)
+        ? data
+        : Array.isArray(data?.agents)
+          ? data.agents
+          : [];
+
+    setAvailableAgents(agents);
+
+    /*
+     * Automatically pin the Agent/Broker from
+     * the public profile URL.
+     */
+    if (agentSlug?.trim()) {
+      const matchedAgent = agents.find(
+        (agent: AvailableAgent) =>
+          agent.slug === agentSlug.trim(),
       );
 
-      if (!response.ok) {
-        throw new Error(
-          'Unable to load agents.',
-        );
+      if (matchedAgent) {
+        setSelectedAgentSlug(matchedAgent.slug);
       }
-
-      const data = await response.json();
-
-      const agents =
-        Array.isArray(data)
-          ? data
-          : Array.isArray(data?.agents)
-            ? data.agents
-            : [];
-
-      setAvailableAgents(agents);
-    } catch {
-      setAvailableAgents([]);
-    } finally {
-      setLoadingAgents(false);
     }
+  } catch {
+    setAvailableAgents([]);
+  } finally {
+    setLoadingAgents(false);
   }
+}
 
   function openDetails() {
     setSelectedImageIndex(0);
@@ -497,24 +513,32 @@ export default function PropertyCard({
   }
 
   function openInquiry() {
-    setSubmitSuccess(false);
-    setSubmitError('');
-    setSelectedAgentSlug('');
-    setAgentDropdownOpen(false);
-    setModal('inquiry');
+  setSubmitSuccess(false);
+  setSubmitError('');
 
-    loadAgents();
+  if (agentSlug?.trim()) {
+    setSelectedAgentSlug(agentSlug.trim());
   }
+
+  setAgentDropdownOpen(false);
+  setModal('inquiry');
+
+  loadAgents();
+}
 
   function openViewing() {
-    setSubmitSuccess(false);
-    setSubmitError('');
-    setSelectedAgentSlug('');
-    setAgentDropdownOpen(false);
-    setModal('viewing');
+  setSubmitSuccess(false);
+  setSubmitError('');
 
-    loadAgents();
+  if (agentSlug?.trim()) {
+    setSelectedAgentSlug(agentSlug.trim());
   }
+
+  setAgentDropdownOpen(false);
+  setModal('viewing');
+
+  loadAgents();
+}
 
   function closeModal() {
     setModal(null);
@@ -725,6 +749,12 @@ export default function PropertyCard({
     };
   }, []);
 
+  useEffect(() => {
+    if (agentSlug?.trim()) {
+      setSelectedAgentSlug(agentSlug.trim());
+    }
+  }, [agentSlug]);
+
   function renderAgentSelector() {
     return (
       <div
@@ -775,15 +805,20 @@ export default function PropertyCard({
             <button
                 id="selected-agent"
                 type="button"
-                onClick={() =>
-                  setAgentDropdownOpen((current) => !current)
-                }
-                aria-expanded={agentDropdownOpen}
+                disabled={isAgentLocked}
+                onClick={() => {
+                  if (isAgentLocked) return;
+
+                  setAgentDropdownOpen((current) => !current);
+                }}
+                aria-expanded={isAgentLocked ? false : agentDropdownOpen}
                 aria-haspopup="listbox"
-                className={`group flex min-h-[58px] w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-2xl border bg-white px-3 py-2.5 text-left transition-all duration-200 sm:min-h-[68px] sm:gap-4 sm:px-5 sm:py-3 ${
-                  agentDropdownOpen
-                    ? 'border-[#c9a96e] shadow-[0_12px_35px_rgba(15,23,42,0.10)] ring-4 ring-[#c9a96e]/10'
-                    : 'border-slate-200 shadow-sm hover:border-[#d8c08e] hover:shadow-md'
+                className={`group flex min-h-[58px] w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-2xl border px-3 py-2.5 text-left transition-all duration-200 sm:min-h-[68px] sm:gap-4 sm:px-5 sm:py-3 ${
+                  isAgentLocked
+                    ? 'cursor-not-allowed border-slate-200 bg-slate-50 shadow-sm'
+                    : agentDropdownOpen
+                      ? 'border-[#c9a96e] bg-white shadow-[0_12px_35px_rgba(15,23,42,0.10)] ring-4 ring-[#c9a96e]/10'
+                      : 'border-slate-200 bg-white shadow-sm hover:border-[#d8c08e] hover:shadow-md'
                 }`}
               >
                 {/* PROFILE PHOTO */}
@@ -871,7 +906,7 @@ export default function PropertyCard({
               </button>
 
             {/* DROPDOWN PANEL */}
-            {agentDropdownOpen && (
+            {agentDropdownOpen && !isAgentLocked && (
               <div
                 className="absolute left-0 right-0 z-[80] mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.16)]"
                 role="listbox"
