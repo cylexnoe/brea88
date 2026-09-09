@@ -896,28 +896,6 @@ export default function ProfilePage() {
                   {/* Actions */}
 
                   <div className="flex flex-wrap gap-2 pb-1">
-
-                    <button
-                      type="button"
-                      onClick={
-                        handleOpenPublicProfile
-                      }
-                      disabled={
-                        !publicAgentUrl
-                      }
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-
-                      <ExternalLink
-                        size={16}
-                      />
-
-                      <span>
-                        Public Profile
-                      </span>
-
-                    </button>
-
                     <button
                       type="button"
                       onClick={
