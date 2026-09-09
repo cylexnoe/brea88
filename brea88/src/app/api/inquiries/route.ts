@@ -103,11 +103,28 @@ export async function POST(request: Request) {
     }
 
     const isSiteViewing = preferredViewingDate instanceof Date;
+
     const message = isSiteViewing
-      ? `Site Viewing Request\nPreferred Date: ${formatViewingDate(preferredViewingDate)}\n\nThe client would like to schedule a site viewing for ${property?.title ?? 'this property'}. Please contact the client to confirm availability.`
+      ? `Site Viewing Request
+    Preferred Date: ${formatViewingDate(preferredViewingDate)}
+
+    The client would like to schedule a site viewing for ${
+          property?.title ?? 'this property'
+        }.
+
+    Client Message:
+    ${suppliedMessage || 'No additional message provided.'}`
       : suppliedMessage;
 
-    if (!message || message.length > 2000) return NextResponse.json({ success: false, message: 'Inquiry message is required.' }, { status: 400 });
+    if (!message || message.length > 2000) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Inquiry message is required.',
+        },
+        { status: 400 }
+      );
+}
 
     const inquiry = await prisma.inquiry.create({
       data: { name, email, phone, message, propertyId, agentId: agent.id, preferredViewingDate: isSiteViewing ? preferredViewingDate : null, status: 'New' },
