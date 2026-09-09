@@ -155,3 +155,106 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: false, message: 'Unable to update the account.' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    // Only administrators can permanently delete team accounts.
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Only administrators can delete Agent or Broker accounts.',
+        },
+        { status: 403 },
+      );
+    }
+
+    const url = new URL(request.url);
+    const id = Number(url.searchParams.get('id'));
+
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid agent ID.',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Only Agent and Broker accounts can be deleted.
+    const existing = await prisma.agent.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    if (!existing || !isTeamRole(existing.role)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Agent or Broker not found.',
+        },
+        { status: 404 },
+      );
+    }
+
+    /*
+     * Preserve all properties and inquiries belonging to this account.
+     *
+     * Both Property.agentId and Inquiry.agentId are nullable in the
+     * Prisma schema, so we can safely disconnect them before deleting
+     * the Agent/Broker account.
+     */
+    await prisma.$transaction(async (tx) => {
+      // Remove the Agent/Broker assignment from properties.
+      await tx.property.updateMany({
+        where: {
+          agentId: id,
+        },
+        data: {
+          agentId: null,
+        },
+      });
+
+      // Remove the Agent/Broker assignment from inquiries.
+      await tx.inquiry.updateMany({
+        where: {
+          agentId: id,
+        },
+        data: {
+          agentId: null,
+        },
+      });
+
+      // Permanently delete the Agent/Broker account.
+      await tx.agent.delete({
+        where: {
+          id,
+        },
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `${existing.role} account for ${existing.fullName} was permanently deleted.`,
+    });
+  } catch (error) {
+    console.error(
+      'Admin agents DELETE failed:',
+      error instanceof Error ? error.message : 'Unknown error',
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Unable to delete the account.',
+      },
+      { status: 500 },
+    );
+  }
+}
