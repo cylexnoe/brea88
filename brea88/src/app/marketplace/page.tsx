@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import {
   ArrowUpDown,
   Building2,
@@ -90,7 +89,6 @@ const HOUSE_TYPES = [
 const STOREY_OPTIONS = ['1', '2', '3', '4+'];
 
 export default function MarketplacePage() {
-  const searchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [agentSlug, setAgentSlug] = useState('');
@@ -102,10 +100,12 @@ export default function MarketplacePage() {
   const [maxPrice, setMaxPrice] = useState(500000000);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
 
-  useEffect(() => {
-  const slug = searchParams.get('agent')?.trim() || '';
+ useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('agent')?.trim() || '';
   setAgentSlug(slug);
-}, [searchParams]);
+}, []);
+
 
   useEffect(() => {
     const loadProperties = async () => {
