@@ -1521,14 +1521,14 @@ export default function PropertyCard({
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             {/* IMAGE SIDE */}
-            <div className="relative h-[280px] w-full shrink-0 bg-slate-950 sm:h-[380px] lg:h-[420px]">
+            <div className="relative z-0 h-[280px] w-full shrink-0 bg-slate-950 sm:h-[380px] lg:h-[420px]">
               <img
                 src={currentImage}
                 alt={property.title}
-                className="h-full min-h-[310px] w-full object-cover lg:min-h-full"
+                className="h-full w-full object-cover"
               />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/10" />
+              <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/65 via-transparent to-black/10" />
 
               {/* IMAGE NAVIGATION */}
               {galleryImages.length > 1 && (
@@ -1537,24 +1537,24 @@ export default function PropertyCard({
                     type="button"
                     onClick={previousImage}
                     aria-label="Previous image"
-                    className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-black/65"
+                    className="absolute left-2 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-md transition active:scale-95 hover:bg-black/70 sm:left-4"
                   >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={21} />
                   </button>
 
                   <button
                     type="button"
                     onClick={nextImage}
                     aria-label="Next image"
-                    className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-black/65"
+                    className="absolute right-2 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-md transition active:scale-95 hover:bg-black/70 sm:right-4"
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={21} />
                   </button>
                 </>
               )}
 
               {/* PROPERTY OVERLAY */}
-              <div className="absolute bottom-5 left-5 right-5 text-white sm:bottom-7 sm:left-7">
+              <div className="pointer-events-none absolute bottom-5 left-5 right-5 z-20 text-white sm:bottom-7 sm:left-7">
                 <span className="inline-flex rounded-full bg-white/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] backdrop-blur-md">
                   {property.tag}
                 </span>
