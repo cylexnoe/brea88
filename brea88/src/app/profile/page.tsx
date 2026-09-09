@@ -998,9 +998,6 @@ export default function ProfilePage() {
                     </button>
                   )}
 
-                  <span className="ml-auto text-[10px] text-slate-400">
-                    JPG, PNG or WebP · Max 5MB
-                  </span>
 
                 </div>
 
