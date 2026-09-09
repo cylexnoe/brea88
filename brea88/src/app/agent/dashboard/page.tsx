@@ -745,20 +745,16 @@ const confirmDeleteInquiry = async () => {
   setInquiriesError('');
 
   try {
-    const response = await fetch(
-      '/api/inquiries',
-      {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Content-Type':
-            'application/json',
-        },
-        body: JSON.stringify({
-          id: inquiryId,
-        }),
-      }
-    );
+    const response = await fetch('/api/inquiries', {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: inquiryId,
+      }),
+    });
 
     let data: any = null;
 
@@ -783,8 +779,7 @@ const confirmDeleteInquiry = async () => {
 
     setInquiries((previous) =>
       previous.filter(
-        (inquiry) =>
-          inquiry.id !== inquiryId
+        (inquiry) => inquiry.id !== inquiryId
       )
     );
 
