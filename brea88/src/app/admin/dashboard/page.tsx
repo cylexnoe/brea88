@@ -1352,244 +1352,212 @@ export default function AdminDashboardPage() {
 
       {/* SIDEBAR */}
       <aside
-       className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-slate-200/70 bg-[#030b1c] text-white shadow-[2px_0_8px_rgba(15,23,42,0.06)] transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen
-            ? 'translate-x-0'
-            : '-translate-x-full'
-        }`}
+  className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-slate-200/70 bg-[#030b1c] text-white transition-transform duration-300 lg:translate-x-0 ${
+    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+  }`}
+>
+  <div className="relative flex h-full flex-col">
+    {/* Logo */}
+    <div className="border-b border-white/10 px-6 py-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-black/20">
+          <img
+            src="/img/LOGO.png"
+            alt="BREA 88 Realty"
+            className="h-full w-full object-contain p-1.5"
+          />
+        </div>
+
+        <div>
+          <p className="text-[15px] font-bold tracking-wide">
+            <span className="text-black">
+              BREA
+            </span>
+            <span className="text-blue-400">
+              88
+            </span>
+          </p>
+
+          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
+            Realty Admin
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 h-px bg-gradient-to-r from-transparent via-[#c9a96e]/70 to-transparent" />
+    </div>
+
+    {/* Navigation */}
+    <div className="flex-1 overflow-y-auto px-4 py-6">
+      <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+        Workspace
+      </p>
+
+      <nav className="space-y-1.5">
+        <button
+          type="button"
+          onClick={() => navigate('overview')}
+          className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+            activeSection === 'overview'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          <LayoutDashboard
+            size={18}
+            className={
+              activeSection === 'overview'
+                ? 'text-white'
+                : 'text-slate-500 group-hover:text-blue-400'
+            }
+          />
+
+          <span className="flex-1">
+            Overview
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('properties')}
+          className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+            activeSection === 'properties'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+              : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+          }`}
+        >
+          <Building2
+            size={18}
+            className={
+              activeSection === 'properties'
+                ? 'text-white'
+                : 'text-slate-500 group-hover:text-blue-400'
+            }
+          />
+
+          <span className="flex-1">
+            Properties
+          </span>
+
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] ${
+              activeSection === 'properties'
+                ? 'bg-white/15 text-white'
+                : 'bg-white/5 text-slate-500'
+            }`}
+          >
+            {properties.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('add')}
+          className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+            activeSection === 'add'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+              : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+          }`}
+        >
+          <PlusCircle
+            size={18}
+            className={
+              activeSection === 'add'
+                ? 'text-white'
+                : 'text-slate-500 group-hover:text-blue-400'
+            }
+          />
+
+          <span>
+            Add Property
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSidebarOpen(false);
+            router.push('/admin/agents');
+          }}
+          className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
+        >
+          <UserRound
+            size={18}
+            className="text-slate-500 group-hover:text-emerald-400"
+          />
+
+          <span className="flex-1">
+            Agent Accounts
+          </span>
+
+          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
+            {activeAccounts}
+          </span>
+        </button>
+      </nav>
+
+      <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+        System
+      </p>
+
+      <nav>
+        <button
+          type="button"
+          onClick={() => navigate('settings')}
+          className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
+            activeSection === 'settings'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+              : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+          }`}
+        >
+          <Settings
+            size={18}
+            className={
+              activeSection === 'settings'
+                ? 'text-white'
+                : 'text-slate-500 group-hover:text-blue-400'
+            }
+          />
+
+          <span>
+            Settings
+          </span>
+        </button>
+      </nav>
+    </div>
+
+    {/* User / Logout */}
+    <div className="border-t border-white/10 p-4">
+      <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.04] p-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600/15 text-blue-400">
+          <ShieldCheck size={18} />
+        </div>
+
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold text-white">
+            Administrator
+          </p>
+
+          <p className="truncate text-[10px] text-slate-500">
+            Secure session
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
       >
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-600/20 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
-        </div>
+        <LogOut size={18} />
 
-        <div className="relative flex h-full flex-col">
-          {/* Logo */}
-          <div className="border-b border-white/10 px-6 py-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-black/20">
-                <img
-                  src="/img/LOGO.png"
-                  alt="BREA 88 Realty"
-                  className="h-full w-full object-contain p-1.5"
-                />
-              </div>
-
-              <div>
-                <p className="text-[15px] font-bold tracking-wide">
-                  <span className="text-black">
-                    BREA
-                  </span>
-                  <span className="text-blue-400">
-                    88
-                  </span>
-                </p>
-
-                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
-                  Realty Admin
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 h-px bg-gradient-to-r from-transparent via-[#c9a96e]/70 to-transparent" />
-          </div>
-
-          {/* Navigation */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-              Workspace
-            </p>
-
-            <nav className="space-y-1.5">
-              <button
-                type="button"
-                onClick={() =>
-                  navigate('overview')
-                }
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection ===
-                  'overview'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <LayoutDashboard
-                  size={18}
-                  className={
-                    activeSection ===
-                    'overview'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
-
-                <span className="flex-1">
-                  Overview
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate('properties')
-                }
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection ===
-                  'properties'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
-                }`}
-              >
-                <Building2
-                  size={18}
-                  className={
-                    activeSection ===
-                    'properties'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
-
-                <span className="flex-1">
-                  Properties
-                </span>
-
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] ${
-                    activeSection ===
-                    'properties'
-                      ? 'bg-white/15 text-white'
-                      : 'bg-white/5 text-slate-500'
-                  }`}
-                >
-                  {properties.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate('add')
-                }
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection ===
-                  'add'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
-                }`}
-              >
-                <PlusCircle
-                  size={18}
-                  className={
-                    activeSection ===
-                    'add'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
-
-                <span>
-                  Add Property
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSidebarOpen(
-                    false,
-                  );
-
-                  router.push(
-                    '/admin/agents',
-                  );
-                }}
-                className="group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-emerald-400"
-              >
-                <UserRound
-                  size={18}
-                  className="text-slate-500 group-hover:text-emerald-400"
-                />
-
-                <span className="flex-1">
-                  Agent Accounts
-                </span>
-
-                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400">
-                  {activeAccounts}
-                </span>
-              </button>
-            </nav>
-
-            <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-              System
-            </p>
-
-            <nav>
-              <button
-                type="button"
-                onClick={() =>
-                  navigate('settings')
-                }
-                className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition ${
-                  activeSection ===
-                  'settings'
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
-                }`}
-              >
-                <Settings
-                  size={18}
-                  className={
-                    activeSection ===
-                    'settings'
-                      ? 'text-white'
-                      : 'text-slate-500 group-hover:text-blue-400'
-                  }
-                />
-
-                <span>
-                  Settings
-                </span>
-              </button>
-            </nav>
-          </div>
-
-          {/* User / Logout */}
-          <div className="border-t border-white/10 p-4">
-            <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.04] p-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600/15 text-blue-400">
-                <ShieldCheck
-                  size={18}
-                />
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate text-xs font-semibold text-white">
-                  Administrator
-                </p>
-
-                <p className="truncate text-[10px] text-slate-500">
-                  Secure session
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={
-                handleLogout
-              }
-              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
-            >
-              <LogOut size={18} />
-              <span>
-                Sign Out
-              </span>
-            </button>
-          </div>
-        </div>
-      </aside>
+        <span>
+          Sign Out
+        </span>
+      </button>
+    </div>
+  </div>
+</aside>
 
       {/* MAIN */}
       <main className="min-h-screen min-w-0 max-w-full overflow-x-hidden lg:pl-[280px]">
