@@ -849,7 +849,7 @@ export default function AdminDashboardPage() {
 
     try {
       const response = await fetch(
-        `/admin/properties?id=${encodeURIComponent(
+        `/api/properties?id=${encodeURIComponent(
           String(id),
         )}`,
         {
