@@ -1352,7 +1352,7 @@ export default function AdminDashboardPage() {
 
       {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-[#030b1c] text-white shadow-2xl shadow-slate-950/20 transition-transform duration-300 lg:translate-x-0 ${
+       className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-[#030b1c] text-white shadow-[10px_0_40px_rgba(0,0,0,0.45)] transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen
             ? 'translate-x-0'
             : '-translate-x-full'
