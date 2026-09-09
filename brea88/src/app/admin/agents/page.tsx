@@ -191,6 +191,55 @@ export default function AdminAgentsPage() {
     }
   };
 
+  const deleteAgent = async (agent: Agent) => {
+    if (updatingId !== null) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete ${agent.fullName}'s account?\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setUpdatingId(agent.id);
+
+    try {
+      const response = await fetch(
+        `/api/admin/agents?id=${encodeURIComponent(String(agent.id))}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+        },
+      );
+
+      if (response.status === 401 || response.status === 403) {
+        router.replace('/admin');
+        return;
+      }
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(
+          data?.message || 'Unable to delete account.',
+        );
+      }
+
+      setAgents((current) =>
+        current.filter((item) => item.id !== agent.id),
+      );
+    } catch (deleteError) {
+      console.error('Failed to delete agent:', deleteError);
+
+      window.alert(
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'Unable to delete account.',
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const filteredAgents = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     return agents.filter((agent) => {
@@ -401,6 +450,16 @@ export default function AdminAgentsPage() {
 
                     <button type="button" onClick={() => updateAgent(agent, { isActive: !agent.isActive })} disabled={updating} className={`mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${agent.isActive ? 'border border-red-200 bg-red-50 text-red-600 hover:border-red-300 hover:bg-red-100' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700'}`}>
                       {updating ? <><RefreshCw size={16} className="animate-spin" /> Updating...</> : agent.isActive ? <><UserX size={16} /> Deactivate Account</> : <><UserCheck size={16} /> Activate Account</>}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => deleteAgent(agent)}
+                      disabled={updating}
+                      className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <UserX size={16} />
+                      Delete Account
                     </button>
                   </div>
                 </article>
