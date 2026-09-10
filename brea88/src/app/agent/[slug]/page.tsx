@@ -162,16 +162,6 @@ export default function AgentProfilePage({
     }
   };
 
-  /*
-   * Keep the current Agent/Broker slug when opening
-   * the Marketplace.
-   *
-   * Example:
-   * /agent/cylex-noe-catadman
-   *
-   * becomes:
-   * /marketplace?agent=cylex-noe-catadman
-   */
   const openAgentMarketplace = () => {
     if (!agent?.slug) {
       router.push('/marketplace');
@@ -185,15 +175,17 @@ export default function AgentProfilePage({
 
   if (loading) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#061329]">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#061329] px-4">
         <MapBackground />
 
-        <div className="relative z-20 flex flex-col items-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-[#071936]/80 shadow-2xl backdrop-blur-xl">
-            <Loader2 className="h-7 w-7 animate-spin text-[#d6b77a]" />
+        <div className="relative z-20 flex animate-[fadeInUp_0.7s_ease-out_both] flex-col items-center">
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#071936]/80 shadow-2xl backdrop-blur-xl sm:h-16 sm:w-16">
+            <div className="absolute inset-0 rounded-2xl bg-[#d6b77a]/10 blur-xl" />
+
+            <Loader2 className="relative h-6 w-6 animate-spin text-[#d6b77a] sm:h-7 sm:w-7" />
           </div>
 
-          <p className="mt-4 text-sm font-medium text-white/50">
+          <p className="mt-4 text-xs font-medium text-white/50 sm:text-sm">
             Loading profile...
           </p>
         </div>
@@ -203,27 +195,29 @@ export default function AgentProfilePage({
 
   if (error || !agent) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#061329] px-6 text-white">
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#061329] px-5 text-white">
         <MapBackground />
 
-        <div className="relative z-20 w-full max-w-md text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl">
-            <Building2 className="h-7 w-7 text-white/40" />
+        <div className="relative z-20 w-full max-w-md animate-[fadeInUp_0.8s_ease-out_both] text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl sm:h-16 sm:w-16">
+            <Building2 className="h-6 w-6 text-white/40 sm:h-7 sm:w-7" />
           </div>
 
-          <h1 className="mt-5 text-2xl font-black">
+          <h1 className="mt-5 text-xl font-black sm:text-2xl">
             Profile Not Found
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-white/45">
+          <p className="mt-2 text-xs leading-6 text-white/45 sm:text-sm">
             {error ||
               'This Agent or Broker profile is not available.'}
           </p>
 
           <button
+            type="button"
             onClick={() => router.push('/')}
-            className="mt-6 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#061329] transition hover:bg-[#ead9b8]"
+            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-bold text-[#061329] shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-[#ead9b8] hover:shadow-xl sm:px-6 sm:text-sm"
           >
+            <ArrowLeft className="h-4 w-4" />
             Back to Home
           </button>
         </div>
@@ -243,47 +237,77 @@ export default function AgentProfilePage({
 
   return (
     <>
-      <main className="relative min-h-screen overflow-hidden bg-[#061329] px-4 py-6 sm:px-6 sm:py-10">
-        {/* =====================================================
-            3D MAP BACKGROUND
-        ====================================================== */}
-
+      <main className="relative min-h-screen overflow-hidden bg-[#061329] px-3 py-4 sm:px-6 sm:py-10">
         <MapBackground />
-
 
         {/* =====================================================
             PROFILE
         ====================================================== */}
 
-        <section className="relative z-20 mx-auto mt-6 w-full max-w-2xl sm:mt-8">
-          <div className="profile-card relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/[0.96] shadow-[0_30px_100px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:rounded-[2.5rem]">
+        <section className="relative z-20 mx-auto mt-2 w-full max-w-2xl sm:mt-8">
+          <div className="profile-card relative overflow-hidden rounded-[1.5rem] border border-white/20 bg-white/[0.96] shadow-[0_25px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[2.5rem] sm:shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
 
-            {/* Premium card glow */}
-            <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-72 -translate-x-1/2 rounded-full bg-[#d6b77a]/10 blur-3xl" />
+            {/* Premium background effects */}
 
-            <div className="relative px-5 pb-7 pt-8 sm:px-9 sm:pb-9 sm:pt-10">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="profile-light-sweep absolute -left-[120%] top-0 h-full w-[75%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+              <div className="absolute left-1/2 top-0 h-32 w-56 -translate-x-1/2 rounded-full bg-[#d6b77a]/10 blur-3xl sm:h-40 sm:w-72" />
+
+              <div className="absolute -right-24 top-24 h-48 w-48 rounded-full bg-blue-100/30 blur-3xl sm:-right-32 sm:h-64 sm:w-64" />
+
+              <div className="absolute -left-24 bottom-16 h-48 w-48 rounded-full bg-[#ead9b8]/20 blur-3xl sm:-left-32 sm:h-64 sm:w-64" />
+            </div>
+
+            {/* Top accent */}
+
+            <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-[#d6b77a]/70 to-transparent sm:inset-x-8" />
+
+            <div className="relative px-4 pb-6 pt-7 sm:px-9 sm:pb-9 sm:pt-10">
 
               {/* =================================================
                   PROFILE IMAGE
               ================================================== */}
 
-              <div className="flex justify-center">
+              <div className="profile-element profile-element-1 flex justify-center">
                 <div className="relative">
-                  <div className="profile-ring absolute -inset-3 rounded-full" />
 
-                  <div className="relative rounded-full bg-white p-1">
+                  {/* Outer orbit */}
+
+                  <div className="profile-orbit absolute -inset-3 rounded-full border border-[#d6b77a]/20 sm:-inset-4" />
+
+                  <div className="profile-orbit profile-orbit-two absolute -inset-5 rounded-full border border-blue-200/20 sm:-inset-6" />
+
+                  {/* Gold rotating ring */}
+
+                  <div className="profile-ring absolute -inset-2.5 rounded-full sm:-inset-3" />
+
+                  {/* Image glow */}
+
+                  <div className="absolute -inset-5 rounded-full bg-[#d6b77a]/10 blur-xl sm:-inset-7 sm:blur-2xl" />
+
+                  <div className="relative rounded-full bg-white p-1 shadow-[0_15px_35px_rgba(7,25,54,0.18)]">
+
                     {agent.profileImage ? (
                       <img
                         src={agent.profileImage}
                         alt={agent.fullName}
-                        className="h-32 w-32 rounded-full object-cover shadow-[0_15px_40px_rgba(7,25,54,0.2)] sm:h-36 sm:w-36"
+                        className="profile-image h-24 w-24 rounded-full object-cover shadow-[0_12px_30px_rgba(7,25,54,0.18)] sm:h-36 sm:w-36"
                       />
                     ) : (
-                      <div className="flex h-32 w-32 items-center justify-center rounded-full bg-[#071936] text-3xl font-black text-white shadow-[0_15px_40px_rgba(7,25,54,0.2)] sm:h-36 sm:w-36">
+                      <div className="profile-image flex h-24 w-24 items-center justify-center rounded-full bg-[#071936] text-2xl font-black text-white shadow-[0_12px_30px_rgba(7,25,54,0.18)] sm:h-36 sm:w-36 sm:text-3xl">
                         {initials}
                       </div>
                     )}
+
                   </div>
+
+                  {/* Online indicator */}
+
+                  <div className="absolute bottom-0.5 right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-[3px] border-white bg-emerald-500 shadow-lg sm:bottom-1 sm:right-1 sm:h-7 sm:w-7 sm:border-4">
+                    <span className="h-1.5 w-1.5 animate-status-pulse rounded-full bg-white sm:h-2 sm:w-2" />
+                  </div>
+
                 </div>
               </div>
 
@@ -291,14 +315,26 @@ export default function AgentProfilePage({
                   NAME
               ================================================== */}
 
-              <div className="mt-6 text-center">
-                <h1 className="break-words text-2xl font-black tracking-tight text-[#071936] sm:text-3xl">
+              <div className="profile-element profile-element-2 mt-5 text-center sm:mt-7">
+
+                <div className="flex items-center justify-center gap-2">
+                  <span className="h-px w-5 bg-gradient-to-r from-transparent to-[#d6b77a] sm:w-8" />
+
+                  <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-[#b08a48] sm:text-[9px] sm:tracking-[0.22em]">
+                    BREA 88 REALTY
+                  </span>
+
+                  <span className="h-px w-5 bg-gradient-to-l from-transparent to-[#d6b77a] sm:w-8" />
+                </div>
+
+                <h1 className="profile-name mt-2 break-words px-2 text-xl font-black leading-tight tracking-tight text-[#071936] sm:mt-3 sm:text-3xl">
                   {agent.fullName}
                 </h1>
 
-                <p className="mt-2 text-sm font-bold uppercase tracking-[0.18em] text-[#b08a48]">
+                <p className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#b08a48] sm:mt-2 sm:text-sm sm:tracking-[0.18em]">
                   {role}
                 </p>
+
               </div>
 
               {/* =================================================
@@ -306,10 +342,16 @@ export default function AgentProfilePage({
               ================================================== */}
 
               {agent.bio && (
-                <div className="mx-auto mt-6 max-w-xl">
-                  <p className="text-center text-sm leading-7 text-slate-600 sm:text-base">
-                    {agent.bio}
-                  </p>
+                <div className="profile-element profile-element-3 mx-auto mt-5 max-w-xl sm:mt-6">
+                  <div className="relative rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3.5 sm:rounded-2xl sm:px-5 sm:py-4">
+
+                    <div className="absolute left-1/2 top-0 h-px w-12 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#d6b77a]/60 to-transparent sm:w-16" />
+
+                    <p className="text-center text-xs leading-6 text-slate-600 sm:text-base sm:leading-7">
+                      {agent.bio}
+                    </p>
+
+                  </div>
                 </div>
               )}
 
@@ -317,41 +359,45 @@ export default function AgentProfilePage({
                   CONTACT
               ================================================== */}
 
-              <div className="mt-7 space-y-2.5">
+              <div className="mt-5 space-y-2 sm:mt-7 sm:space-y-2.5">
 
                 {/* Email */}
-                <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 transition hover:border-[#ead9b8] hover:bg-[#faf8f2]">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                    <Mail className="h-4.5 w-4.5 text-[#071936]" />
+
+                <div className="profile-element profile-element-4 contact-card group flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 transition-all duration-500 hover:-translate-y-1 hover:border-[#ead9b8] hover:bg-[#faf8f2] hover:shadow-[0_12px_30px_rgba(7,25,54,0.08)] sm:rounded-2xl sm:p-3.5">
+
+                  <div className="contact-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm transition-all duration-500 group-hover:bg-[#071936] group-hover:shadow-lg sm:h-10 sm:w-10 sm:rounded-xl">
+                    <Mail className="h-4 w-4 text-[#071936] transition-colors duration-500 group-hover:text-[#ead9b8]" />
                   </div>
 
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:text-[10px] sm:tracking-[0.15em]">
                       Email
                     </p>
 
-                    <p className="mt-0.5 break-all text-sm font-semibold text-slate-700">
+                    <p className="mt-0.5 break-all text-xs font-semibold text-slate-700 sm:text-sm">
                       {agent.email}
                     </p>
                   </div>
+
                 </div>
 
                 {/* Phone */}
+
                 {agent.phone && (
                   <a
                     href={`tel:${agent.phone}`}
-                    className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 transition hover:border-[#ead9b8] hover:bg-[#faf8f2]"
+                    className="profile-element profile-element-5 contact-card group flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 transition-all duration-500 hover:-translate-y-1 hover:border-[#ead9b8] hover:bg-[#faf8f2] hover:shadow-[0_12px_30px_rgba(7,25,54,0.08)] sm:rounded-2xl sm:p-3.5"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                      <Phone className="h-4.5 w-4.5 text-[#071936]" />
+                    <div className="contact-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm transition-all duration-500 group-hover:bg-[#071936] group-hover:shadow-lg sm:h-10 sm:w-10 sm:rounded-xl">
+                      <Phone className="h-4 w-4 text-[#071936] transition-colors duration-500 group-hover:text-[#ead9b8]" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                      <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:text-[10px] sm:tracking-[0.15em]">
                         Phone
                       </p>
 
-                      <p className="mt-0.5 text-sm font-semibold text-slate-700">
+                      <p className="mt-0.5 text-xs font-semibold text-slate-700 sm:text-sm">
                         {agent.phone}
                       </p>
                     </div>
@@ -359,23 +405,27 @@ export default function AgentProfilePage({
                 )}
 
                 {/* Location */}
+
                 {agent.address && (
-                  <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 transition hover:border-[#ead9b8] hover:bg-[#faf8f2]">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                      <MapPin className="h-4.5 w-4.5 text-[#b08a48]" />
+                  <div className="profile-element profile-element-6 contact-card group flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 transition-all duration-500 hover:-translate-y-1 hover:border-[#ead9b8] hover:bg-[#faf8f2] hover:shadow-[0_12px_30px_rgba(7,25,54,0.08)] sm:rounded-2xl sm:p-3.5">
+
+                    <div className="contact-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm transition-all duration-500 group-hover:bg-[#071936] group-hover:shadow-lg sm:h-10 sm:w-10 sm:rounded-xl">
+                      <MapPin className="h-4 w-4 text-[#b08a48] transition-colors duration-500 group-hover:text-[#ead9b8]" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                      <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:text-[10px] sm:tracking-[0.15em]">
                         Location
                       </p>
 
-                      <p className="mt-0.5 text-sm font-semibold text-slate-700">
+                      <p className="mt-0.5 break-words text-xs font-semibold leading-5 text-slate-700 sm:text-sm">
                         {agent.address}
                       </p>
                     </div>
+
                   </div>
                 )}
+
               </div>
 
               {/* =================================================
@@ -383,18 +433,22 @@ export default function AgentProfilePage({
               ================================================== */}
 
               {(agent.messenger || agent.facebook) && (
-                <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:mt-5 sm:grid-cols-2 sm:gap-2.5">
 
                   {agent.messenger && (
                     <a
                       href={agent.messenger}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3 text-sm font-bold text-white shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-[#10294e] hover:shadow-xl"
+                      className="profile-element profile-element-7 premium-button group relative inline-flex min-h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#071936] px-4 py-2.5 text-xs font-bold text-white shadow-lg transition duration-500 hover:-translate-y-1 hover:bg-[#10294e] hover:shadow-[0_15px_30px_rgba(7,25,54,0.25)] sm:min-h-12 sm:text-sm"
                     >
-                      <MessageCircle className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="button-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                      Messenger
+                      <MessageCircle className="relative h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+
+                      <span className="relative">
+                        Messenger
+                      </span>
                     </a>
                   )}
 
@@ -403,51 +457,81 @@ export default function AgentProfilePage({
                       href={agent.facebook}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:border-[#c9a96e] hover:bg-[#faf7ef]"
+                      className="profile-element profile-element-8 premium-button group relative inline-flex min-h-11 items-center justify-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition duration-500 hover:-translate-y-1 hover:border-[#c9a96e] hover:bg-[#faf7ef] hover:shadow-[0_12px_30px_rgba(7,25,54,0.08)] sm:min-h-12 sm:text-sm"
                     >
-                      <ExternalLink className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="button-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#d6b77a]/10 to-transparent" />
 
-                      Facebook
+                      <ExternalLink className="relative h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" />
+
+                      <span className="relative">
+                        Facebook
+                      </span>
                     </a>
                   )}
+
                 </div>
               )}
 
               {/* =================================================
-                  BIG PROPERTIES BUTTON
+                  VIEW PROPERTIES
               ================================================== */}
 
-              <div className="mt-6">
+              <div className="profile-element profile-element-9 mt-5 sm:mt-6">
                 <button
                   type="button"
                   onClick={openAgentMarketplace}
-                  className="group flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-[#071936] px-6 py-4 text-sm font-black text-white shadow-[0_12px_30px_rgba(7,25,54,0.2)] transition duration-300 hover:-translate-y-1 hover:bg-[#10294e] hover:shadow-[0_18px_40px_rgba(7,25,54,0.3)] active:translate-y-0"
+                  className="premium-main-button group relative flex min-h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-[#071936] px-5 py-3 text-xs font-black text-white shadow-[0_10px_25px_rgba(7,25,54,0.2)] transition duration-500 hover:-translate-y-1 hover:bg-[#10294e] hover:shadow-[0_18px_40px_rgba(7,25,54,0.3)] active:translate-y-0 sm:min-h-14 sm:gap-2.5 sm:rounded-2xl sm:px-6 sm:py-4 sm:text-sm"
                 >
-                  <Building2 className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                  <span className="button-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                  View Properties
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 sm:h-5 sm:w-5" />
+
+                    View Properties
+                  </span>
                 </button>
               </div>
 
               {/* =================================================
-                  BIG SEND INQUIRY BUTTON
+                  SEND INQUIRY
               ================================================== */}
 
-              <div className="mt-3">
+              <div className="profile-element profile-element-10 mt-2.5 sm:mt-3">
                 <button
                   type="button"
                   onClick={openInquiry}
-                  className="group flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#c9a96e] bg-gradient-to-r from-[#ead9b8] to-[#d6b77a] px-6 py-4 text-sm font-black text-[#071936] shadow-[0_12px_30px_rgba(201,169,110,0.2)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(201,169,110,0.3)] active:translate-y-0"
+                  className="premium-main-button group relative flex min-h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-[#c9a96e] bg-gradient-to-r from-[#ead9b8] to-[#d6b77a] px-5 py-3 text-xs font-black text-[#071936] shadow-[0_10px_25px_rgba(201,169,110,0.2)] transition duration-500 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(201,169,110,0.3)] active:translate-y-0 sm:min-h-14 sm:gap-2.5 sm:rounded-2xl sm:px-6 sm:py-4 sm:text-sm"
                 >
-                  <Send className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  <span className="button-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
-                  Send Inquiry
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Send className="h-4 w-4 transition-transform duration-500 group-hover:translate-x-1 group-hover:-rotate-3 sm:h-5 sm:w-5" />
+
+                    Send Inquiry
+                  </span>
                 </button>
               </div>
+
+              {/* =================================================
+                  BOTTOM ACCENT
+              ================================================== */}
+
+              <div className="profile-element profile-element-11 mt-5 flex items-center justify-center gap-2 sm:mt-7 sm:gap-3">
+                <span className="h-px w-10 bg-gradient-to-r from-transparent to-slate-200 sm:w-16" />
+
+                <span className="h-1.5 w-1.5 rounded-full bg-[#d6b77a] shadow-[0_0_10px_rgba(214,183,122,0.6)]" />
+
+                <span className="h-px w-10 bg-gradient-to-l from-transparent to-slate-200 sm:w-16" />
+              </div>
+
             </div>
+
+            {/* Bottom premium line */}
+
+            <div className="pointer-events-none absolute inset-x-5 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d6b77a]/50 to-transparent sm:inset-x-8" />
           </div>
 
-          <p className="mt-5 text-center text-[10px] font-bold uppercase tracking-[0.22em] text-white/25">
+          <p className="profile-footer-text mt-4 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-white/25 sm:mt-5 sm:text-[10px] sm:tracking-[0.22em]">
             BREA 88 REALTY
           </p>
         </section>
@@ -472,6 +556,7 @@ export default function AgentProfilePage({
           <div className="relative max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-[1.5rem] bg-white shadow-2xl sm:rounded-[2rem]">
 
             {/* Close */}
+
             <button
               type="button"
               onClick={() =>
@@ -479,25 +564,26 @@ export default function AgentProfilePage({
               }
               disabled={submitting}
               aria-label="Close inquiry"
-              className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e] disabled:cursor-not-allowed disabled:opacity-50"
+              className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-[#c9a96e] disabled:cursor-not-allowed disabled:opacity-50 sm:right-4 sm:top-4 sm:h-10 sm:w-10"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
             {/* Modal Header */}
-            <div className="relative overflow-hidden bg-[#071936] p-6 text-white sm:p-7">
+
+            <div className="relative overflow-hidden bg-[#071936] p-5 text-white sm:p-7">
               <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-blue-500/10 blur-2xl" />
 
               <div className="relative">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ead9b8]">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#ead9b8] sm:text-[10px]">
                   BREA 88 REALTY
                 </p>
 
-                <h2 className="mt-2 pr-10 text-2xl font-black">
+                <h2 className="mt-2 pr-8 text-xl font-black sm:text-2xl">
                   Contact {role}
                 </h2>
 
-                <p className="mt-1 text-sm leading-6 text-white/60">
+                <p className="mt-1 text-xs leading-6 text-white/60 sm:text-sm">
                   Your message will be securely routed to{' '}
                   {agent.fullName}.
                 </p>
@@ -505,25 +591,27 @@ export default function AgentProfilePage({
             </div>
 
             {/* Success */}
+
             {status === 'success' ? (
-              <div className="p-7 text-center sm:p-9">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <CheckCircle2 className="h-8 w-8" />
+              <div className="p-6 text-center sm:p-9">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 sm:h-16 sm:w-16">
+                  <CheckCircle2 className="h-7 w-7 sm:h-8 sm:w-8" />
                 </div>
 
-                <h3 className="mt-5 text-xl font-black text-slate-950">
+                <h3 className="mt-5 text-lg font-black text-slate-950 sm:text-xl">
                   Inquiry Sent
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <p className="mt-2 text-xs leading-6 text-slate-500 sm:text-sm">
                   Thank you. Your inquiry has been submitted
                   successfully. {agent.fullName} will get back to
                   you soon.
                 </p>
 
                 <button
+                  type="button"
                   onClick={() => setShowInquiry(false)}
-                  className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071936] px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                  className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071936] px-6 py-3 text-xs font-bold text-white transition hover:bg-slate-800 sm:text-sm"
                 >
                   Done
                 </button>
@@ -531,13 +619,14 @@ export default function AgentProfilePage({
             ) : (
               <form
                 onSubmit={submitInquiry}
-                className="space-y-4 p-6 sm:p-7"
+                className="space-y-4 p-5 sm:p-7"
               >
                 {/* Name */}
+
                 <div>
                   <label
                     htmlFor="inquiry-name"
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                    className="text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs"
                   >
                     Full Name
                   </label>
@@ -554,15 +643,16 @@ export default function AgentProfilePage({
                         name: event.target.value,
                       })
                     }
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10 sm:min-h-12"
                   />
                 </div>
 
                 {/* Email */}
+
                 <div>
                   <label
                     htmlFor="inquiry-email"
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                    className="text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs"
                   >
                     Email Address
                   </label>
@@ -579,15 +669,16 @@ export default function AgentProfilePage({
                         email: event.target.value,
                       })
                     }
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10 sm:min-h-12"
                   />
                 </div>
 
                 {/* Phone */}
+
                 <div>
                   <label
                     htmlFor="inquiry-phone"
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                    className="text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs"
                   >
                     Contact Number
                   </label>
@@ -604,15 +695,16 @@ export default function AgentProfilePage({
                         phone: event.target.value,
                       })
                     }
-                    className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-300 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10 sm:min-h-12"
                   />
                 </div>
 
                 {/* Message */}
+
                 <div>
                   <label
                     htmlFor="inquiry-message"
-                    className="text-xs font-bold uppercase tracking-wider text-slate-500"
+                    className="text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs"
                   >
                     Message
                   </label>
@@ -635,10 +727,11 @@ export default function AgentProfilePage({
                 </div>
 
                 {/* Error */}
+
                 {status === 'error' && (
                   <div
                     role="alert"
-                    className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm leading-5 text-red-700"
+                    className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs leading-5 text-red-700 sm:text-sm"
                   >
                     We could not send your inquiry. Please check
                     your details and try again.
@@ -646,10 +739,11 @@ export default function AgentProfilePage({
                 )}
 
                 {/* Submit */}
+
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#071936] px-4 py-3.5 text-xs font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-12 sm:text-sm"
                 >
                   {submitting ? (
                     <>
@@ -664,7 +758,7 @@ export default function AgentProfilePage({
                   )}
                 </button>
 
-                <p className="text-center text-[10px] leading-5 text-slate-400">
+                <p className="text-center text-[9px] leading-5 text-slate-400 sm:text-[10px]">
                   Your inquiry will be securely routed to this{' '}
                   {role.toLowerCase()} through BREA 88 REALTY.
                 </p>
@@ -675,18 +769,22 @@ export default function AgentProfilePage({
       )}
 
       {/* =========================================================
-          MAP ANIMATION CSS
+          PREMIUM ANIMATION CSS
       ========================================================== */}
 
       <style jsx global>{`
+        /* =====================================================
+           MAP
+        ====================================================== */
+
         .map-perspective {
           position: absolute;
           left: -20%;
           top: 20%;
           width: 140%;
           height: 100%;
-          transform: perspective(900px) rotateX(62deg) rotateZ(-7deg)
-            scale(1.15);
+          transform: perspective(900px) rotateX(62deg)
+            rotateZ(-7deg) scale(1.15);
           transform-origin: center center;
           opacity: 0.65;
         }
@@ -926,23 +1024,275 @@ export default function AgentProfilePage({
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
         }
 
+        /* =====================================================
+           PROFILE
+        ====================================================== */
+
+        .profile-card {
+          animation: profileEnter 0.95s
+            cubic-bezier(0.22, 1, 0.36, 1) both;
+          transform-origin: center top;
+        }
+
+        .profile-light-sweep {
+          animation: lightSweep 5.5s
+            cubic-bezier(0.22, 1, 0.36, 1) 1.1s both;
+        }
+
+        .profile-orbit {
+          animation: orbitFloat 5s ease-in-out infinite;
+        }
+
+        .profile-orbit-two {
+          animation-duration: 7s;
+          animation-delay: -2s;
+        }
+
         .profile-ring {
           background: conic-gradient(
             from 0deg,
             rgba(176, 138, 72, 0.2),
-            rgba(234, 217, 184, 0.9),
+            rgba(234, 217, 184, 0.95),
             rgba(176, 138, 72, 0.2),
-            rgba(234, 217, 184, 0.9),
+            rgba(234, 217, 184, 0.95),
             rgba(176, 138, 72, 0.2)
           );
           animation: ringRotate 8s linear infinite;
           filter: blur(1px);
         }
 
-        .profile-card {
-          animation: profileEnter 0.9s
-            cubic-bezier(0.22, 1, 0.36, 1)
-            both;
+        .profile-image {
+          animation: imageEnter 1s
+            cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+        }
+
+        .profile-name {
+          animation: nameReveal 0.8s
+            cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+        }
+
+        .profile-element {
+          opacity: 0;
+          animation: elementReveal 0.75s
+            cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .profile-element-1 {
+          animation-delay: 0.05s;
+        }
+
+        .profile-element-2 {
+          animation-delay: 0.2s;
+        }
+
+        .profile-element-3 {
+          animation-delay: 0.35s;
+        }
+
+        .profile-element-4 {
+          animation-delay: 0.45s;
+        }
+
+        .profile-element-5 {
+          animation-delay: 0.52s;
+        }
+
+        .profile-element-6 {
+          animation-delay: 0.59s;
+        }
+
+        .profile-element-7 {
+          animation-delay: 0.66s;
+        }
+
+        .profile-element-8 {
+          animation-delay: 0.72s;
+        }
+
+        .profile-element-9 {
+          animation-delay: 0.8s;
+        }
+
+        .profile-element-10 {
+          animation-delay: 0.88s;
+        }
+
+        .profile-element-11 {
+          animation-delay: 0.96s;
+        }
+
+        .profile-footer-text {
+          animation: footerReveal 1s
+            cubic-bezier(0.22, 1, 0.36, 1) 1.2s both;
+        }
+
+        .contact-card {
+          transform: translateZ(0);
+        }
+
+        .premium-button,
+        .premium-main-button {
+          transform: translateZ(0);
+        }
+
+        .premium-button:hover .button-shine,
+        .premium-main-button:hover .button-shine {
+          animation: buttonShine 0.9s
+            cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        /* =====================================================
+           KEYFRAMES
+        ====================================================== */
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(22px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes profileEnter {
+          0% {
+            opacity: 0;
+            transform:
+              translateY(45px)
+              scale(0.94)
+              rotateX(5deg);
+          }
+
+          60% {
+            opacity: 1;
+          }
+
+          100% {
+            opacity: 1;
+            transform:
+              translateY(0)
+              scale(1)
+              rotateX(0deg);
+          }
+        }
+
+        @keyframes imageEnter {
+          from {
+            opacity: 0;
+            transform: scale(0.72) rotate(-8deg);
+          }
+
+          to {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+          }
+        }
+
+        @keyframes nameReveal {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+            filter: blur(7px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+          }
+        }
+
+        @keyframes elementReveal {
+          from {
+            opacity: 0;
+            transform: translateY(22px) scale(0.98);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes footerReveal {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes ringRotate {
+          from {
+            transform: rotate(0deg);
+          }
+
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes orbitFloat {
+          0%,
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 0.45;
+          }
+
+          50% {
+            transform: scale(1.05) rotate(5deg);
+            opacity: 0.9;
+          }
+        }
+
+        @keyframes lightSweep {
+          0% {
+            transform: translateX(-20%) skewX(-18deg);
+            opacity: 0;
+          }
+
+          15% {
+            opacity: 1;
+          }
+
+          55% {
+            opacity: 0.6;
+          }
+
+          100% {
+            transform: translateX(250%) skewX(-18deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes buttonShine {
+          from {
+            transform: translateX(-120%);
+          }
+
+          to {
+            transform: translateX(120%);
+          }
+        }
+
+        @keyframes statusPulse {
+          0%,
+          100% {
+            transform: scale(0.8);
+            opacity: 0.7;
+          }
+
+          50% {
+            transform: scale(1.25);
+            opacity: 1;
+          }
         }
 
         @keyframes mapMove {
@@ -1016,34 +1366,19 @@ export default function AgentProfilePage({
           }
         }
 
-        @keyframes ringRotate {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes profileEnter {
-          from {
-            opacity: 0;
-            transform: translateY(30px) scale(0.97);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
+        /* =====================================================
+           MOBILE
+        ====================================================== */
 
         @media (max-width: 640px) {
           .map-perspective {
             left: -80%;
             width: 260%;
-            transform: perspective(700px) rotateX(62deg)
-              rotateZ(-7deg) scale(1);
+            transform:
+              perspective(700px)
+              rotateX(62deg)
+              rotateZ(-7deg)
+              scale(1);
           }
 
           .map-grid {
@@ -1057,7 +1392,28 @@ export default function AgentProfilePage({
           .map-block {
             opacity: 0.55;
           }
+
+          .map-glow {
+            transform: scale(0.7);
+          }
+
+          .profile-card {
+            box-shadow:
+              0 20px 65px rgba(0, 0, 0, 0.42);
+          }
+
+          .profile-light-sweep {
+            display: none;
+          }
+
+          .profile-orbit {
+            animation-duration: 6s;
+          }
         }
+
+        /* =====================================================
+           REDUCED MOTION
+        ====================================================== */
 
         @media (prefers-reduced-motion: reduce) {
           .map-grid,
@@ -1067,8 +1423,23 @@ export default function AgentProfilePage({
           .marker-ring,
           .map-glow,
           .profile-ring,
-          .profile-card {
+          .profile-orbit,
+          .profile-light-sweep,
+          .profile-card,
+          .profile-image,
+          .profile-name,
+          .profile-element,
+          .profile-footer-text,
+          .premium-button,
+          .premium-main-button,
+          .button-shine {
             animation: none !important;
+            transition: none !important;
+          }
+
+          .profile-element,
+          .profile-footer-text {
+            opacity: 1 !important;
           }
         }
       `}</style>
@@ -1085,9 +1456,11 @@ function MapBackground() {
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
 
       {/* Deep map background */}
+
       <div className="absolute inset-0 bg-[#061329]" />
 
       {/* Large atmospheric glows */}
+
       <div className="map-glow map-glow-one" />
       <div className="map-glow map-glow-two" />
       <div className="map-glow map-glow-three" />
@@ -1099,12 +1472,15 @@ function MapBackground() {
       <div className="map-perspective">
 
         {/* Main map grid */}
+
         <div className="map-grid" />
 
         {/* Smaller streets/grid */}
+
         <div className="map-grid-small" />
 
         {/* Roads */}
+
         <div className="road road-one" />
         <div className="road road-two" />
         <div className="road road-three" />
@@ -1112,12 +1488,14 @@ function MapBackground() {
         <div className="road road-five" />
 
         {/* City blocks */}
+
         <div className="map-block block-one" />
         <div className="map-block block-two" />
         <div className="map-block block-three" />
         <div className="map-block block-four" />
 
         {/* Property markers */}
+
         <div className="map-marker marker-one">
           <span className="marker-ring" />
         </div>
@@ -1137,18 +1515,26 @@ function MapBackground() {
         <div className="map-marker marker-five">
           <span className="marker-ring" />
         </div>
+
       </div>
 
       {/* Dark cinematic overlay */}
+
       <div className="map-vignette" />
 
       {/* Subtle texture */}
+
       <div className="map-noise" />
 
-      {/* Top/bottom cinematic fade */}
+      {/* Top cinematic fade */}
+
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#061329] via-[#061329]/40 to-transparent" />
 
+      {/* Bottom cinematic fade */}
+
       <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#061329] via-[#061329]/50 to-transparent" />
+
     </div>
   );
 }
+
