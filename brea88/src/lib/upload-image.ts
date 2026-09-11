@@ -6,7 +6,7 @@ export type ImageUploadType =
 
 export async function uploadImage(
   file: File,
-  type: ImageUploadType
+  type: ImageUploadType,
 ) {
   const allowedTypes = [
     'image/jpeg',
@@ -17,7 +17,7 @@ export async function uploadImage(
 
   if (!allowedTypes.includes(file.type)) {
     throw new Error(
-      'Please select a JPG, PNG, or WebP image.'
+      'Please select a JPG, PNG, or WebP image.',
     );
   }
 
@@ -25,7 +25,7 @@ export async function uploadImage(
 
   if (file.size > maxSize) {
     throw new Error(
-      'Image size must be less than 5MB.'
+      'Image size must be less than 5MB.',
     );
   }
 
@@ -40,18 +40,22 @@ export async function uploadImage(
       ? `profiles/${timestamp}-${safeName}`
       : `properties/${timestamp}-${safeName}`;
 
-  const blob = await upload(pathname, file, {
-    access: 'public',
+  const blob = await upload(
+    pathname,
+    file,
+    {
+      access: 'public',
 
-    handleUploadUrl:
-      '/api/blob/upload',
+      handleUploadUrl:
+        '/api/blob/upload',
 
-    clientPayload: JSON.stringify({
-      type,
-    }),
+      clientPayload: JSON.stringify({
+        type,
+      }),
 
-    multipart: true,
-  });
+      multipart: true,
+    },
+  );
 
   return blob;
 }

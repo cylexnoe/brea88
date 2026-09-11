@@ -670,37 +670,47 @@ export default function AdminDashboardPage() {
   }
 
   async function uploadImageToBlob(
-    file: File,
-  ) {
-    const body = new FormData();
+        file: File,
+      ) {
+        const body = new FormData();
 
-    body.append('file', file);
+        body.append(
+          'file',
+          file,
+        );
 
-    const response = await fetch(
-      '/api/blob/upload',
-      {
-        method: 'POST',
-        body,
-        credentials: 'include',
-      },
-    );
+        body.append(
+          'type',
+          'property',
+        );
 
-    const data =
-      await response.json();
+        const response = await fetch(
+          '/api/blob/upload',
+          {
+            method: 'POST',
+            body,
+            credentials: 'include',
+          },
+        );
 
-    if (
-      !response.ok ||
-      !data?.success ||
-      !data?.url
-    ) {
-      throw new Error(
-        data?.message ||
-          'Failed to upload image.',
-      );
-    }
+        const data =
+          await response
+            .json()
+            .catch(() => null);
 
-    return data.url as string;
-  }
+        if (
+          !response.ok ||
+          !data?.success ||
+          !data?.url
+        ) {
+          throw new Error(
+            data?.message ||
+              'Failed to upload image.',
+          );
+        }
+
+        return data.url as string;
+      }
 
   function resetForm() {
     images.forEach((image) => {
