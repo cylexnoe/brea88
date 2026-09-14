@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 
 function urlBase64ToUint8Array(
   base64String: string,
-): Uint8Array {
+): ArrayBuffer {
   const padding =
     '='.repeat(
       (4 - (base64String.length % 4)) % 4,
@@ -25,15 +25,20 @@ function urlBase64ToUint8Array(
 
   const rawData = window.atob(base64);
 
-  const outputArray =
-    new Uint8Array(rawData.length);
+  const outputArray = new Uint8Array(
+    rawData.length,
+  );
 
-  for (let index = 0; index < rawData.length; index += 1) {
+  for (
+    let index = 0;
+    index < rawData.length;
+    index += 1
+  ) {
     outputArray[index] =
       rawData.charCodeAt(index);
   }
 
-  return outputArray;
+  return outputArray.buffer;
 }
 
 export default function AgentPushNotifications() {
