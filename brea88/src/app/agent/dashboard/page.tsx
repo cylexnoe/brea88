@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ButterflyLoader from '@/components/ButterflyLoader';
+
 import AgentPushNotifications from '@/components/AgentPushNotifications';
 import {
   Building2,
@@ -79,6 +80,7 @@ type Inquiry = {
   updatedAt: string;
   property: InquiryProperty | null;
 };
+
 
 const INQUIRY_STATUSES = [
   'New',
@@ -214,6 +216,7 @@ function getPropertyTypeText(
 export default function AgentDashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [agent, setAgent] =
     useState<Agent | null>(null);
@@ -633,7 +636,61 @@ export default function AgentDashboardPage() {
       await markInquiryAsRead(inquiry);
     }
   };
+  /*
+   * =========================================================
+   * OPEN INQUIRY FROM PUSH NOTIFICATION
+   * =========================================================
+   *
+   * Push notification opens:
+   * /agent/dashboard?inquiry=123
+   *
+   * Once inquiries are loaded, find inquiry #123
+   * and open the existing inquiry modal.
+   */
 
+  useEffect(() => {
+    const inquiryParam =
+      searchParams.get('inquiry');
+
+    if (!inquiryParam) {
+      return;
+    }
+
+    const inquiryId = Number(inquiryParam);
+
+    if (
+      !Number.isInteger(inquiryId) ||
+      inquiryId <= 0
+    ) {
+      return;
+    }
+
+    const inquiry = inquiries.find(
+      (item) => item.id === inquiryId
+    );
+
+    if (!inquiry) {
+      // Inquiries may still be loading.
+      // The effect will run again when they arrive.
+      return;
+    }
+
+    handleOpenInquiry(inquiry);
+
+    /*
+     * Remove ?inquiry=123 from the URL after
+     * opening the modal so that refreshing the
+     * dashboard does not reopen it.
+     */
+    router.replace(pathname, {
+      scroll: false,
+    });
+  }, [
+    searchParams,
+    inquiries,
+    pathname,
+    router,
+  ]);
   /*
    * =========================================================
    * UPDATE STATUS
