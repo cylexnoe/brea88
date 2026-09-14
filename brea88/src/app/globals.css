@@ -424,3 +424,194 @@ body:has(aside[class*="bg-slate-950"]) main img { box-shadow:0 10px 26px rgba(15
 .animate-gradient {
   animation: gradient 4s ease infinite;
 }
+/* =========================================
+   BREA 88 TV POWER-ON EFFECT
+========================================= */
+
+.tv-cards {
+  position: relative;
+  transform-origin: center;
+  animation: tvScreenOn 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tv-cards::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 3px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.95),
+    0 0 25px rgba(59, 130, 246, 0.9),
+    0 0 55px rgba(59, 130, 246, 0.6);
+  pointer-events: none;
+  z-index: 50;
+  animation: tvLine 0.5s ease-out 0.08s both;
+}
+
+.tv-cards::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 40;
+  animation: tvFlash 0.75s ease-out 0.15s both;
+}
+
+.tv-cards > button:first-child {
+  animation: cardLeftOn 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tv-cards > button:last-child {
+  animation: cardRightOn 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes tvScreenOn {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.015) scaleX(0.82);
+    filter: brightness(3) blur(1px);
+  }
+
+  12% {
+    opacity: 1;
+    transform: scaleY(0.035) scaleX(0.9);
+    filter: brightness(4) blur(0.8px);
+  }
+
+  32% {
+    transform: scaleY(0.22) scaleX(0.96);
+    filter: brightness(2.2) blur(0.3px);
+  }
+
+  55% {
+    transform: scaleY(0.72) scaleX(0.99);
+    filter: brightness(1.35) blur(0);
+  }
+
+  72% {
+    transform: scaleY(1.04) scaleX(1.005);
+    filter: brightness(1.1);
+  }
+
+  86% {
+    transform: scaleY(0.985) scaleX(1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scaleY(1) scaleX(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes tvLine {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+
+  30% {
+    width: 25%;
+    opacity: 1;
+  }
+
+  65% {
+    width: 75%;
+    opacity: 0.95;
+  }
+
+  100% {
+    width: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes tvFlash {
+  0% {
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 0.85;
+  }
+
+  45% {
+    opacity: 0.15;
+  }
+
+  65% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes cardLeftOn {
+  0% {
+    opacity: 0;
+    transform: translateX(10px) scaleY(0.02);
+    filter: brightness(2.5);
+  }
+
+  35% {
+    opacity: 1;
+    transform: translateX(4px) scaleY(0.3);
+    filter: brightness(1.6);
+  }
+
+  70% {
+    transform: translateX(0) scaleY(1.03);
+    filter: brightness(1.15);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scaleY(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes cardRightOn {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px) scaleY(0.02);
+    filter: brightness(2.5);
+  }
+
+  35% {
+    opacity: 1;
+    transform: translateX(-4px) scaleY(0.3);
+    filter: brightness(1.6);
+  }
+
+  70% {
+    transform: translateX(0) scaleY(1.03);
+    filter: brightness(1.15);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scaleY(1);
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-cards,
+  .tv-cards::before,
+  .tv-cards::after,
+  .tv-cards > button:first-child,
+  .tv-cards > button:last-child {
+    animation: none !important;
+  }
+}
