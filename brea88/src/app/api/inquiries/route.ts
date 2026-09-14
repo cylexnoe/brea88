@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAgentFromSession } from '@/lib/agent-auth';
 import { Resend } from 'resend';
 import twilio from 'twilio';
+import { sendInquiryPushNotification } from '@/lib/push-notifications';
 
 function cleanString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -129,6 +130,29 @@ export async function POST(request: Request) {
       data: { name, email, phone, message, propertyId, agentId: agent.id, preferredViewingDate: isSiteViewing ? preferredViewingDate : null, status: 'New' },
       include: inquiryInclude,
     });
+    
+    let pushSent = 0;
+
+    try {
+      const pushResult =
+        await sendInquiryPushNotification(
+          agent.id,
+          {
+            inquiryId: inquiry.id,
+            clientName: name,
+            propertyTitle:
+              property?.title ?? null,
+            isViewingRequest: isSiteViewing,
+          },
+        );
+
+      pushSent = pushResult.sent;
+    } catch (pushError) {
+      console.error(
+        'Inquiry push notification failed:',
+        pushError,
+      );
+    }
 
     let smsSent = false;
     let emailSent = false;
