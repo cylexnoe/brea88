@@ -1369,7 +1369,9 @@ const confirmDeleteInquiry = async () => {
         =================================================== */}
 
         <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-
+          <div className="mb-6">
+              <AgentPushNotifications />
+            </div>
           {/* =================================================
               WELCOME / HERO
           ================================================= */}
