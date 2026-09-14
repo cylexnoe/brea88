@@ -615,3 +615,208 @@ body:has(aside[class*="bg-slate-950"]) main img { box-shadow:0 10px 26px rgba(15
     animation: none !important;
   }
 }
+.welcome-heading {
+  position: relative;
+}
+
+/* Welcome to */
+
+.welcome-to {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: welcomeToReveal 0.9s cubic-bezier(0.16, 1, 0.3, 1)
+    0.35s forwards;
+}
+
+@keyframes welcomeToReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+  }
+
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* BREA 88 */
+
+.brea-88 {
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(22px);
+  animation: brea88Reveal 1s cubic-bezier(0.16, 1, 0.3, 1)
+    0.7s forwards;
+}
+
+.brea-text {
+  position: relative;
+  display: inline-block;
+
+  background: linear-gradient(
+    90deg,
+    #c9a96e 0%,
+    #ead9b8 25%,
+    #ffffff 50%,
+    #ead9b8 75%,
+    #c9a96e 100%
+  );
+
+  background-size: 200% auto;
+  background-position: 0% center;
+
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  animation: goldTextShimmer 2.2s ease-in-out 1.4s both;
+}
+
+@keyframes brea88Reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+    filter: blur(8px);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Gold light moving through the text */
+
+@keyframes goldTextShimmer {
+  0% {
+    background-position: 0% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Underline */
+
+.welcome-line {
+  position: relative;
+  overflow: hidden;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #c9a96e,
+    #ead9b8,
+    #c9a96e,
+    transparent
+  );
+
+  transform: scaleX(0);
+  transform-origin: center;
+
+  animation: welcomeLineReveal 0.9s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    1.35s forwards;
+}
+
+@keyframes welcomeLineReveal {
+  0% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scaleX(1.3);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Subtle glow under the title */
+
+.welcome-heading::after {
+  content: '';
+  position: absolute;
+
+  left: 50%;
+  bottom: -18px;
+
+  width: 100px;
+  height: 20px;
+
+  transform: translateX(-50%) scale(0.5);
+
+  border-radius: 999px;
+
+  background: rgba(201, 169, 110, 0.22);
+
+  filter: blur(18px);
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  animation: welcomeGlow 1.3s ease-out 1.35s forwards;
+}
+
+@keyframes welcomeGlow {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.5);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.15);
+  }
+
+  100% {
+    opacity: 0.25;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-to,
+  .brea-88,
+  .brea-text,
+  .welcome-line,
+  .welcome-heading::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .brea-text {
+    background-position: 50% center;
+  }
+
+  .welcome-line {
+    transform: scaleX(1) !important;
+  }
+}
+
