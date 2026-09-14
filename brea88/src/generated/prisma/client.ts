@@ -56,3 +56,8 @@ export type Property = Prisma.PropertyModel
  * 
  */
 export type Inquiry = Prisma.InquiryModel
+/**
+ * Model PushSubscription
+ * 
+ */
+export type PushSubscription = Prisma.PushSubscriptionModel
