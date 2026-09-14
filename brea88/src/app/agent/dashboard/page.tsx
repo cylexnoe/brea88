@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import ButterflyLoader from '@/components/ButterflyLoader';
+import AgentPushNotifications from '@/components/AgentPushNotifications';
 import {
   Building2,
   Home,
