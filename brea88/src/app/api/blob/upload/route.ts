@@ -1,6 +1,9 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs/promises';
+import { randomUUID } from 'crypto';
 
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import {
@@ -9,397 +12,358 @@ import {
 } from '@/lib/security';
 import { getClientKey, rateLimit } from '@/lib/rate-limit';
 
-const MAX_UPLOAD_SIZE = 6 * 1024 * 1024;
+export const runtime = 'nodejs';
 
-/*
- * Creates the BREA 88 REALTY watermark.
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+
+/**
+ * Creates the BREA 88 watermark using the actual logo image.
  *
- * The watermark is generated dynamically based on the
- * uploaded image dimensions, so it looks appropriate on
- * both portrait and landscape property photos.
+ * IMPORTANT:
+ * - No SVG text
+ * - No server-side font rendering
+ * - No generated text
+ *
+ * This prevents missing-font characters such as:
+ * □□□□□
  */
-function createWatermarkSvg(
+async function createWatermark(
   width: number,
   height: number,
 ) {
-  /*
-   * Scale the watermark according to the image size.
-   *
-   * Example:
-   * 1920px image -> larger watermark
-   * 800px image  -> smaller watermark
-   */
-  const scale = Math.max(
-    0.75,
-    Math.min(width, height) / 900,
-  );
-
-  const padding = Math.round(28 * scale);
-
-  const titleSize = Math.max(
-    18,
-    Math.round(30 * scale),
-  );
-
-  const subtitleSize = Math.max(
-    10,
-    Math.round(15 * scale),
-  );
-
-  const boxWidth = Math.max(
-    220,
-    Math.round(300 * scale),
-  );
-
-  const boxHeight = Math.max(
-    62,
-    Math.round(78 * scale),
-  );
-
-  const x = Math.max(
-    padding,
-    width - boxWidth - padding,
-  );
-
-  const y = Math.max(
-    padding,
-    height - boxHeight - padding,
-  );
-
-  const radius = Math.max(
-    10,
-    Math.round(16 * scale),
-  );
-
-  const strokeWidth = Math.max(
-    1,
-    Math.round(scale),
-  );
-
-  const titleLetterSpacing = Math.max(
-    1,
-    Math.round(1.5 * scale),
-  );
-
-  const subtitleLetterSpacing = Math.max(
-    0.5,
-    Math.round(0.8 * scale),
+  const logoPath = path.join(
+    process.cwd(),
+    'public',
+    'img',
+    'LOGO.png',
   );
 
   /*
-   * Escape XML characters.
+   * Make sure the logo exists.
    */
-  const escapeXml = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+  try {
+    await fs.access(logoPath);
+  } catch {
+    throw new Error(
+      'BREA 88 watermark logo was not found at public/img/LOGO.png',
+    );
+  }
 
-  const title = escapeXml(
-    'BREA 88 REALTY',
-  );
+  const logoBuffer = await fs.readFile(logoPath);
 
-  const subtitle = escapeXml(
-    'Service with a Heart',
-  );
+  const logoMetadata = await sharp(
+    logoBuffer,
+  ).metadata();
 
-  return Buffer.from(`
-    <svg
-      width="${width}"
-      height="${height}"
-      viewBox="0 0 ${width} ${height}"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+  if (
+    !logoMetadata.width ||
+    !logoMetadata.height
+  ) {
+    throw new Error(
+      'Unable to determine BREA 88 logo dimensions.',
+    );
+  }
 
-      <defs>
-
-        <linearGradient
-          id="brea88Watermark"
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="100%"
-        >
-          <stop
-            offset="0%"
-            stop-color="#071936"
-            stop-opacity="0.88"
-          />
-
-          <stop
-            offset="100%"
-            stop-color="#10294e"
-            stop-opacity="0.76"
-          />
-        </linearGradient>
-
-        <filter
-          id="watermarkShadow"
-          x="-30%"
-          y="-30%"
-          width="160%"
-          height="160%"
-        >
-          <feDropShadow
-            dx="0"
-            dy="5"
-            stdDeviation="7"
-            flood-color="#000000"
-            flood-opacity="0.35"
-          />
-        </filter>
-
-      </defs>
-
-      <g filter="url(#watermarkShadow)">
-
-        <!-- Watermark background -->
-
-        <rect
-          x="${x}"
-          y="${y}"
-          width="${boxWidth}"
-          height="${boxHeight}"
-          rx="${radius}"
-          fill="url(#brea88Watermark)"
-          stroke="#ead9b8"
-          stroke-opacity="0.7"
-          stroke-width="${strokeWidth}"
-        />
-
-        <!-- Gold accent -->
-
-        <line
-          x1="${x + Math.round(18 * scale)}"
-          y1="${y + Math.round(17 * scale)}"
-          x2="${x + Math.round(62 * scale)}"
-          y2="${y + Math.round(17 * scale)}"
-          stroke="#d6b77a"
-          stroke-width="${Math.max(
-            2,
-            Math.round(2.5 * scale),
-          )}"
-          stroke-linecap="round"
-        />
-
-        <!-- Company name -->
-
-        <text
-          x="${x + Math.round(18 * scale)}"
-          y="${y + Math.round(48 * scale)}"
-          font-family="Arial, Helvetica, sans-serif"
-          font-size="${titleSize}px"
-          font-weight="800"
-          letter-spacing="${titleLetterSpacing}px"
-          fill="#ffffff"
-        >
-          ${title}
-        </text>
-
-        <!-- Tagline -->
-
-        <text
-          x="${x + Math.round(18 * scale)}"
-          y="${y + Math.round(68 * scale)}"
-          font-family="Arial, Helvetica, sans-serif"
-          font-size="${subtitleSize}px"
-          font-weight="500"
-          letter-spacing="${subtitleLetterSpacing}px"
-          fill="#ead9b8"
-        >
-          ${subtitle}
-        </text>
-
-      </g>
-
-    </svg>
-  `);
-}
-
-/*
- * Adds the BREA 88 watermark directly into the image.
- *
- * JPG  -> JPG
- * PNG  -> PNG
- * WEBP -> WEBP
- */
-
-async function watermarkPropertyImage(
-  file: File,
-  extension: 'jpg' | 'png' | 'webp',
-) {
-  const inputBuffer = Buffer.from(
-    await file.arrayBuffer(),
-  );
-
-  const image = sharp(inputBuffer);
-
-  const metadata = await image.metadata();
-
-  const width = metadata.width || 1600;
-  const height = metadata.height || 1000;
-
-  const watermark = createWatermarkSvg(
+  const shortestSide = Math.min(
     width,
     height,
   );
 
-  let processed = image.composite([
+  /*
+   * Watermark size.
+   *
+   * Approximately 18% of the shortest image
+   * dimension, with sensible minimum/maximum
+   * limits.
+   *
+   * This keeps the watermark visible without
+   * covering too much of the property photo.
+   */
+  const targetLogoWidth = Math.max(
+    120,
+    Math.min(
+      280,
+      Math.round(shortestSide * 0.18),
+    ),
+  );
+
+  const originalRatio =
+    logoMetadata.height /
+    logoMetadata.width;
+
+  const targetLogoHeight = Math.max(
+    1,
+    Math.round(
+      targetLogoWidth * originalRatio,
+    ),
+  );
+
+  /*
+   * Resize the real BREA 88 logo.
+   */
+  const resizedLogo = sharp(
+    logoBuffer,
+  )
+    .resize({
+      width: targetLogoWidth,
+      height: targetLogoHeight,
+      fit: 'inside',
+      withoutEnlargement: false,
+    })
+    .ensureAlpha();
+
+  /*
+   * Reduce only the opacity of the logo.
+   *
+   * The original logo colors remain intact.
+   */
+  const logoAlpha = await resizedLogo
+    .clone()
+    .extractChannel('alpha')
+    .linear(0.30, 0)
+    .toBuffer();
+
+  const logoRgb = await resizedLogo
+    .clone()
+    .removeAlpha()
+    .toBuffer();
+
+  /*
+   * Recombine RGB + modified alpha.
+   */
+  const finalLogo = await sharp(logoRgb)
+    .joinChannel(logoAlpha, {
+      raw: {
+        width: targetLogoWidth,
+        height: targetLogoHeight,
+        channels: 1,
+      },
+    })
+    .png()
+    .toBuffer();
+
+  /*
+   * Bottom-right position.
+   */
+  const margin = Math.max(
+    20,
+    Math.round(shortestSide * 0.035),
+  );
+
+  const left = Math.max(
+    0,
+    width -
+      targetLogoWidth -
+      margin,
+  );
+
+  const top = Math.max(
+    0,
+    height -
+      targetLogoHeight -
+      margin,
+  );
+
+  return {
+    input: finalLogo,
+    left,
+    top,
+  };
+}
+
+/**
+ * Applies the BREA 88 logo watermark
+ * to property images only.
+ */
+async function watermarkPropertyImage(
+  input: Buffer,
+  extension: string,
+) {
+  const image = sharp(input);
+
+  const metadata = await image.metadata();
+
+  const width = metadata.width;
+  const height = metadata.height;
+
+  if (!width || !height) {
+    throw new Error(
+      'Unable to determine uploaded image dimensions.',
+    );
+  }
+
+  const watermark =
+    await createWatermark(
+      width,
+      height,
+    );
+
+  /*
+   * Composite ONLY the actual logo.
+   *
+   * There is intentionally no generated
+   * text or background rectangle here.
+   */
+  const output = image.composite([
     {
-      input: watermark,
-      top: 0,
-      left: 0,
+      input: watermark.input,
+      left: watermark.left,
+      top: watermark.top,
     },
   ]);
 
-  if (extension === 'png') {
-    processed = processed.png();
-
-    return {
-      buffer: await processed.toBuffer(),
-      contentType: 'image/png',
-      extension: 'png' as const,
-    };
+  /*
+   * Preserve the uploaded image format.
+   */
+  if (
+    extension === 'jpg' ||
+    extension === 'jpeg'
+  ) {
+    return output
+      .jpeg({
+        quality: 90,
+        mozjpeg: true,
+      })
+      .toBuffer();
   }
 
   if (extension === 'webp') {
-    processed = processed.webp();
-
-    return {
-      buffer: await processed.toBuffer(),
-      contentType: 'image/webp',
-      extension: 'webp' as const,
-    };
+    return output
+      .webp({
+        quality: 90,
+      })
+      .toBuffer();
   }
 
-  processed = processed.jpeg({
-    quality: 90,
-    mozjpeg: true,
-  });
-
-  return {
-    buffer: await processed.toBuffer(),
-    contentType: 'image/jpeg',
-    extension: 'jpg' as const,
-  };
+  return output
+    .png({
+      compressionLevel: 6,
+    })
+    .toBuffer();
 }
 
 export async function POST(
   request: Request,
 ) {
-  /*
-   * ============================================================
-   * RATE LIMIT
-   * ============================================================
-   */
-
-  const limit = rateLimit(
-    getClientKey(
-      request,
-      'blob-upload',
-    ),
-    20,
-  );
-
-  if (!limit.allowed) {
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          'Too many uploads. Please try again later.',
-      },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(
-            limit.retryAfterSeconds,
-          ),
-        },
-      },
-    );
-  }
-
-  /*
-   * ============================================================
-   * ADMIN AUTHENTICATION
-   * ============================================================
-   */
-
-  if (
-    !(await isAdminAuthenticated())
-  ) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Unauthorized.',
-      },
-      {
-        status: 401,
-      },
-    );
-  }
-
-  /*
-   * ============================================================
-   * REQUEST SIZE
-   * ============================================================
-   */
-
-  if (
-    !hasValidContentLength(
-      request,
-      MAX_UPLOAD_SIZE,
-    )
-  ) {
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          'Upload is too large.',
-      },
-      {
-        status: 413,
-      },
-    );
-  }
-
   try {
     /*
-     * ==========================================================
-     * READ FORM DATA
-     * ==========================================================
+     * ----------------------------------------
+     * RATE LIMIT
+     * ----------------------------------------
      */
+    const clientKey = getClientKey(
+      request,
+      'blob-upload',
+    );
 
+    const rateLimitResult = rateLimit(
+      clientKey,
+      20,
+      60_000,
+    );
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Too many upload attempts. Please try again later.',
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(
+              rateLimitResult.retryAfterSeconds,
+            ),
+          },
+        },
+      );
+    }
+
+    /*
+     * ----------------------------------------
+     * ADMIN AUTHENTICATION
+     * ----------------------------------------
+     */
+    const authenticated =
+      await isAdminAuthenticated();
+
+    if (!authenticated) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized.',
+        },
+        { status: 401 },
+      );
+    }
+
+    /*
+     * ----------------------------------------
+     * REQUEST SIZE
+     * ----------------------------------------
+     */
+    if (
+      !hasValidContentLength(
+        request,
+        MAX_UPLOAD_SIZE,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Upload is too large or invalid.',
+        },
+        { status: 413 },
+      );
+    }
+
+    /*
+     * ----------------------------------------
+     * FORM DATA
+     * ----------------------------------------
+     */
     const formData =
       await request.formData();
 
     const file =
       formData.get('file');
 
-    const uploadType =
+    const typeValue =
       formData.get('type');
 
+    const uploadType =
+      typeof typeValue === 'string'
+        ? typeValue
+        : 'property';
+
+    /*
+     * ----------------------------------------
+     * FILE CHECK
+     * ----------------------------------------
+     */
     if (!(file instanceof File)) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            'No image file was provided.',
+          error:
+            'No image file provided.',
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
     /*
-     * ==========================================================
-     * VALIDATE IMAGE
-     * ==========================================================
+     * ----------------------------------------
+     * IMAGE VALIDATION
+     *
+     * validateImageFile checks:
+     * - MIME type
+     * - file size
+     * - actual image signature
+     * ----------------------------------------
      */
-
     const validation =
       await validateImageFile(file);
 
@@ -407,146 +371,130 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message:
-            validation.message,
+          error: validation.message,
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
     /*
-     * ==========================================================
-     * PROPERTY UPLOAD
-     * ==========================================================
-     *
-     * Only property uploads receive the watermark.
-     *
-     * Profile images remain untouched.
+     * At this point TypeScript knows that
+     * validation.ok === true.
      */
-
-    const isPropertyUpload =
-        uploadType === 'property';
-
-      let finalBuffer: Buffer;
-      let finalContentType: string;
-      let finalExtension: 'jpg' | 'png' | 'webp';
-
-      const uploadExtension: 'jpg' | 'png' | 'webp' =
-        validation.extension === 'png'
-          ? 'png'
-          : validation.extension === 'webp'
-            ? 'webp'
-            : 'jpg';
-
-      if (isPropertyUpload) {
-        /*
-        * Property images are permanently watermarked
-        * before being uploaded to Vercel Blob.
-        */
-        const processed =
-          await watermarkPropertyImage(
-            file,
-            uploadExtension,
-          );
-
-        finalBuffer =
-          processed.buffer;
-
-        finalContentType =
-          processed.contentType;
-
-        finalExtension =
-          processed.extension;
-      } else {
-        /*
-        * Non-property uploads remain unchanged.
-        */
-        finalBuffer = Buffer.from(
-          await file.arrayBuffer(),
-        );
-
-        finalContentType =
-          file.type;
-
-        finalExtension =
-          uploadExtension;
-      }
+    const finalExtension =
+      validation.extension;
 
     /*
-     * ==========================================================
-     * STORAGE FOLDER
-     * ==========================================================
+     * ----------------------------------------
+     * BUFFER
+     * ----------------------------------------
      */
+    const originalBuffer =
+      Buffer.from(
+        await file.arrayBuffer(),
+      );
 
+    let finalBuffer =
+      originalBuffer;
+
+    /*
+     * ----------------------------------------
+     * WATERMARK
+     *
+     * ONLY property images receive the
+     * BREA 88 logo watermark.
+     *
+     * Profile images and other upload types
+     * remain unchanged.
+     * ----------------------------------------
+     */
+    if (
+      uploadType === 'property'
+    ) {
+      finalBuffer =
+        await watermarkPropertyImage(
+          originalBuffer,
+          finalExtension,
+        );
+    }
+
+    /*
+     * ----------------------------------------
+     * BLOB FOLDER
+     * ----------------------------------------
+     */
     const folder =
-      isPropertyUpload
+      uploadType === 'property'
         ? 'properties'
         : 'uploads';
 
+    /*
+     * ----------------------------------------
+     * UNIQUE FILE NAME
+     * ----------------------------------------
+     */
     const filename =
-      `${folder}/${crypto.randomUUID()}.${finalExtension}`;
+      `${folder}/${randomUUID()}.${finalExtension}`;
 
     /*
-     * ==========================================================
-     * UPLOAD FINAL IMAGE TO VERCEL BLOB
-     * ==========================================================
-     *
-     * The important part:
-     *
-     * finalBuffer is uploaded instead of the original File.
-     *
-     * Therefore the stored property image already contains
-     * the BREA 88 watermark.
+     * ----------------------------------------
+     * CONTENT TYPE
+     * ----------------------------------------
      */
+    let contentType =
+      'image/jpeg';
 
+    if (
+      finalExtension === 'png'
+    ) {
+      contentType =
+        'image/png';
+    } else if (
+      finalExtension === 'webp'
+    ) {
+      contentType =
+        'image/webp';
+    }
+
+    /*
+     * ----------------------------------------
+     * VERCEL BLOB UPLOAD
+     * ----------------------------------------
+     */
     const blob = await put(
       filename,
       finalBuffer,
       {
         access: 'public',
         addRandomSuffix: true,
-        contentType:
-          finalContentType,
+        contentType,
       },
     );
 
     /*
-     * ==========================================================
+     * ----------------------------------------
      * RESPONSE
-     * ==========================================================
+     * ----------------------------------------
      */
-
-    return NextResponse.json(
-      {
-        success: true,
-        url: blob.url,
-      },
-      {
-        status: 200,
-      },
-    );
+    return NextResponse.json({
+      success: true,
+      url: blob.url,
+    });
   } catch (error) {
     console.error(
-      'Blob upload failed:',
-      error instanceof Error
-        ? error.message
-        : 'Unknown error',
+      'POST /api/blob/upload error:',
+      error,
     );
 
     return NextResponse.json(
       {
         success: false,
-        message:
-          'Image upload failed.',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to upload image.',
       },
-      {
-        status: 500,
-      },
+      { status: 500 },
     );
   }
 }
-
-
-
