@@ -15,22 +15,20 @@ import { getClientKey, rateLimit } from '@/lib/rate-limit';
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 
 /**
- * Creates a BREA 88 watermark using the actual
- * LOGO.png image.
+ * Creates the BREA 88 watermark using the actual
+ * public/img/LOGO.png image.
  *
- * IMPORTANT:
- * - No SVG
- * - No text rendering
- * - No fonts
- * - No generated characters
+ * No SVG text.
+ * No fonts.
+ * No server-side text rendering.
  *
- * This completely avoids the □□□□ problem.
+ * This prevents the □□□□ problem.
  */
 async function createWatermark(
   width: number,
   height: number,
 ): Promise<{
-  input: Buffer;
+  input: Buffer<ArrayBufferLike>;
   left: number;
   top: number;
 }> {
@@ -42,7 +40,9 @@ async function createWatermark(
   );
 
   /*
-   * Make sure the logo exists.
+   * ----------------------------------------
+   * CHECK LOGO
+   * ----------------------------------------
    */
   try {
     await fs.access(logoPath);
@@ -52,11 +52,14 @@ async function createWatermark(
     );
   }
 
-  const logoBuffer = await fs.readFile(logoPath);
-
   /*
-   * Read the REAL logo dimensions.
+   * ----------------------------------------
+   * READ LOGO
+   * ----------------------------------------
    */
+  const logoBuffer =
+    await fs.readFile(logoPath);
+
   const logoMetadata =
     await sharp(logoBuffer).metadata();
 
@@ -70,26 +73,33 @@ async function createWatermark(
   }
 
   /*
-   * Determine watermark size based on the
-   * uploaded property's dimensions.
+   * ----------------------------------------
+   * CALCULATE WATERMARK SIZE
+   * ----------------------------------------
    */
   const shortestSide =
     Math.min(width, height);
 
-  const desiredWidth = Math.round(
-    shortestSide * 0.20,
-  );
+  const desiredWidth =
+    Math.round(shortestSide * 0.20);
 
-  const logoWidth = Math.max(
-    140,
-    Math.min(320, desiredWidth),
-  );
+  const logoWidth =
+    Math.max(
+      140,
+      Math.min(
+        320,
+        desiredWidth,
+      ),
+    );
 
   /*
-   * Let Sharp calculate the actual height.
+   * ----------------------------------------
+   * RESIZE LOGO
    *
-   * This is important because we must use
-   * the REAL output dimensions later.
+   * Sharp determines the correct height
+   * automatically while preserving the
+   * original logo aspect ratio.
+   * ----------------------------------------
    */
   const resizedLogoBuffer =
     await sharp(logoBuffer)
@@ -103,13 +113,14 @@ async function createWatermark(
       .toBuffer();
 
   /*
-   * Get the ACTUAL resized dimensions.
-   *
-   * Do not assume they are the same as the
-   * requested dimensions.
+   * ----------------------------------------
+   * GET ACTUAL OUTPUT DIMENSIONS
+   * ----------------------------------------
    */
   const resizedMetadata =
-    await sharp(resizedLogoBuffer).metadata();
+    await sharp(
+      resizedLogoBuffer,
+    ).metadata();
 
   if (
     !resizedMetadata.width ||
@@ -127,20 +138,45 @@ async function createWatermark(
     resizedMetadata.height;
 
   /*
-   * Reduce the opacity of the entire logo.
+   * ----------------------------------------
+   * CREATE SUBTLE LOGO OPACITY
+   * ----------------------------------------
    *
-   * We modify only the alpha channel.
-   * The original BREA 88 logo design remains intact.
+   * IMPORTANT:
+   *
+   * We first REMOVE the existing alpha
+   * channel and then JOIN our modified
+   * alpha channel.
+   *
+   * This prevents Sharp from creating an
+   * invalid 5-channel image.
+   * ----------------------------------------
    */
-  const logoWithOpacity =
-    await sharp(resizedLogoBuffer)
+
+  const logoRgb =
+    await sharp(
+      resizedLogoBuffer,
+    )
+      .removeAlpha()
+      .png()
+      .toBuffer();
+
+  const originalAlpha =
+    await sharp(
+      resizedLogoBuffer,
+    )
       .ensureAlpha()
+      .extractChannel('alpha')
+      .linear(0.38, 0)
+      .toBuffer();
+
+  /*
+   * Combine RGB + ONE alpha channel.
+   */
+  const finalLogo =
+    await sharp(logoRgb)
       .joinChannel(
-        await sharp(resizedLogoBuffer)
-          .ensureAlpha()
-          .extractChannel('alpha')
-          .linear(0.38, 0)
-          .toBuffer(),
+        originalAlpha,
         {
           raw: {
             width: actualWidth,
@@ -153,30 +189,36 @@ async function createWatermark(
       .toBuffer();
 
   /*
-   * Position the watermark in the
-   * bottom-right corner.
+   * ----------------------------------------
+   * POSITION WATERMARK
+   * ----------------------------------------
    */
-  const margin = Math.max(
-    20,
-    Math.round(shortestSide * 0.035),
-  );
+  const margin =
+    Math.max(
+      20,
+      Math.round(
+        shortestSide * 0.035,
+      ),
+    );
 
-  const left = Math.max(
-    0,
-    width -
-      actualWidth -
-      margin,
-  );
+  const left =
+    Math.max(
+      0,
+      width -
+        actualWidth -
+        margin,
+    );
 
-  const top = Math.max(
-    0,
-    height -
-      actualHeight -
-      margin,
-  );
+  const top =
+    Math.max(
+      0,
+      height -
+        actualHeight -
+        margin,
+    );
 
   return {
-    input: logoWithOpacity,
+    input: finalLogo,
     left,
     top,
   };
@@ -187,16 +229,20 @@ async function createWatermark(
  * property images only.
  */
 async function watermarkPropertyImage(
-  input: Buffer,
+  input: Buffer<ArrayBufferLike>,
   extension: string,
-): Promise<Buffer> {
-  const image = sharp(input);
+): Promise<Buffer<ArrayBufferLike>> {
+  const image =
+    sharp(input);
 
   const metadata =
     await image.metadata();
 
-  const width = metadata.width;
-  const height = metadata.height;
+  const width =
+    metadata.width;
+
+  const height =
+    metadata.height;
 
   if (!width || !height) {
     throw new Error(
@@ -204,6 +250,9 @@ async function watermarkPropertyImage(
     );
   }
 
+  /*
+   * Create watermark.
+   */
   const watermark =
     await createWatermark(
       width,
@@ -211,25 +260,36 @@ async function watermarkPropertyImage(
     );
 
   /*
-   * Composite ONLY the real logo.
+   * ----------------------------------------
+   * COMPOSITE LOGO
+   * ----------------------------------------
    *
-   * There is deliberately NO:
+   * There is intentionally NO:
+   *
    * - SVG
    * - text
-   * - rectangle
    * - font
+   * - generated characters
+   * - rectangle
+   *
+   * Only the real BREA 88 logo is added.
    */
   const output =
     image.composite([
       {
-        input: watermark.input,
-        left: watermark.left,
-        top: watermark.top,
+        input:
+          watermark.input,
+        left:
+          watermark.left,
+        top:
+          watermark.top,
       },
     ]);
 
   /*
-   * Keep the uploaded image format.
+   * ----------------------------------------
+   * OUTPUT FORMAT
+   * ----------------------------------------
    */
   if (
     extension === 'jpg' ||
@@ -243,7 +303,9 @@ async function watermarkPropertyImage(
       .toBuffer();
   }
 
-  if (extension === 'webp') {
+  if (
+    extension === 'webp'
+  ) {
     return output
       .webp({
         quality: 90,
@@ -263,9 +325,9 @@ export async function POST(
 ) {
   try {
     /*
-     * ----------------------------------------
+     * ========================================
      * RATE LIMIT
-     * ----------------------------------------
+     * ========================================
      */
     const clientKey =
       getClientKey(
@@ -280,7 +342,9 @@ export async function POST(
         60_000,
       );
 
-    if (!rateLimitResult.allowed) {
+    if (
+      !rateLimitResult.allowed
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -290,18 +354,19 @@ export async function POST(
         {
           status: 429,
           headers: {
-            'Retry-After': String(
-              rateLimitResult.retryAfterSeconds,
-            ),
+            'Retry-After':
+              String(
+                rateLimitResult.retryAfterSeconds,
+              ),
           },
         },
       );
     }
 
     /*
-     * ----------------------------------------
+     * ========================================
      * ADMIN AUTHENTICATION
-     * ----------------------------------------
+     * ========================================
      */
     const authenticated =
       await isAdminAuthenticated();
@@ -310,16 +375,19 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized.',
+          error:
+            'Unauthorized.',
         },
-        { status: 401 },
+        {
+          status: 401,
+        },
       );
     }
 
     /*
-     * ----------------------------------------
+     * ========================================
      * REQUEST SIZE
-     * ----------------------------------------
+     * ========================================
      */
     if (
       !hasValidContentLength(
@@ -333,14 +401,16 @@ export async function POST(
           error:
             'Upload is too large or invalid.',
         },
-        { status: 413 },
+        {
+          status: 413,
+        },
       );
     }
 
     /*
-     * ----------------------------------------
+     * ========================================
      * FORM DATA
-     * ----------------------------------------
+     * ========================================
      */
     const formData =
       await request.formData();
@@ -357,36 +427,47 @@ export async function POST(
         : 'property';
 
     /*
-     * ----------------------------------------
+     * ========================================
      * FILE CHECK
-     * ----------------------------------------
+     * ========================================
      */
-    if (!(file instanceof File)) {
+    if (
+      !(file instanceof File)
+    ) {
       return NextResponse.json(
         {
           success: false,
           error:
             'No image file provided.',
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
     /*
-     * ----------------------------------------
+     * ========================================
      * IMAGE VALIDATION
-     * ----------------------------------------
+     * ========================================
      */
     const validation =
-      await validateImageFile(file);
+      await validateImageFile(
+        file,
+      );
 
-    if (!validation.ok) {
+    if (
+      !validation.ok
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: validation.message,
+          error:
+            validation.message,
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -394,28 +475,34 @@ export async function POST(
       validation.extension;
 
     /*
-     * ----------------------------------------
+     * ========================================
      * ORIGINAL BUFFER
-     * ----------------------------------------
+     * ========================================
      */
-    const originalBuffer =
+    const originalBuffer:
+      Buffer<ArrayBufferLike> =
       Buffer.from(
         await file.arrayBuffer(),
       );
 
-    let finalBuffer: Buffer<ArrayBufferLike> =
-     originalBuffer;
+    let finalBuffer:
+      Buffer<ArrayBufferLike> =
+      originalBuffer;
 
     /*
-     * ----------------------------------------
-     * WATERMARK
+     * ========================================
+     * WATERMARK PROPERTY IMAGES
+     * ========================================
      *
-     * Only property images receive the
-     * BREA 88 watermark.
+     * Property images:
+     *     watermark = YES
      *
-     * Agent/profile/other uploads remain
-     * unchanged.
-     * ----------------------------------------
+     * Profile images:
+     *     watermark = NO
+     *
+     * Other uploads:
+     *     watermark = NO
+     * ========================================
      */
     if (
       uploadType === 'property'
@@ -428,9 +515,9 @@ export async function POST(
     }
 
     /*
-     * ----------------------------------------
+     * ========================================
      * BLOB FOLDER
-     * ----------------------------------------
+     * ========================================
      */
     const folder =
       uploadType === 'property'
@@ -438,17 +525,17 @@ export async function POST(
         : 'uploads';
 
     /*
-     * ----------------------------------------
+     * ========================================
      * UNIQUE FILE NAME
-     * ----------------------------------------
+     * ========================================
      */
     const filename =
       `${folder}/${crypto.randomUUID()}.${finalExtension}`;
 
     /*
-     * ----------------------------------------
+     * ========================================
      * CONTENT TYPE
-     * ----------------------------------------
+     * ========================================
      */
     let contentType =
       'image/jpeg';
@@ -466,9 +553,9 @@ export async function POST(
     }
 
     /*
-     * ----------------------------------------
+     * ========================================
      * VERCEL BLOB UPLOAD
-     * ----------------------------------------
+     * ========================================
      */
     const blob =
       await put(
@@ -482,9 +569,9 @@ export async function POST(
       );
 
     /*
-     * ----------------------------------------
-     * RESPONSE
-     * ----------------------------------------
+     * ========================================
+     * SUCCESS
+     * ========================================
      */
     return NextResponse.json({
       success: true,
@@ -504,7 +591,9 @@ export async function POST(
             ? error.message
             : 'Failed to upload image.',
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 }
