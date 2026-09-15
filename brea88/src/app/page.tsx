@@ -39,7 +39,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.32em] text-[#d8bc87] sm:text-xs">
-            BREA 88 REALTY
+            BREA 88 REALTY OPC
           </p>
 
           <h1 className="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl md:text-5xl">
@@ -148,7 +148,7 @@ export default function LandingPage() {
           <Building2 className="h-4 w-4 text-[#c9a96e]/70" />
 
           <p className="text-xs sm:text-sm">
-            BREA 88 Realty • Your Property. Your Future.
+            BREA 88 Realty OPC • Your Property. Your Future.
           </p>
         </footer>
       </div>
