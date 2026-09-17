@@ -2847,141 +2847,141 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid min-w-0 gap-5 sm:grid-cols-3">
-                      {showHouseDetails && (
-                        <>
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="beds"
-                              className="text-sm font-semibold text-slate-700"
-                            >
-                              Bedrooms
-                            </label>
-
-                            <div className="relative">
-                              <BedDouble
-                                size={17}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                              />
-
-                              <input
-                                id="beds"
-                                name="beds"
-                                type="number"
-                                min="0"
-                                value={
-                                  formData.beds
-                                }
-                                onChange={
-                                  handleInputChange
-                                }
-                                placeholder="4"
-                                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="baths"
-                              className="text-sm font-semibold text-slate-700"
-                            >
-                              Bathrooms
-                            </label>
-
-                            <div className="relative">
-                              <Bath
-                                size={17}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                              />
-
-                              <input
-                                id="baths"
-                                name="baths"
-                                type="number"
-                                min="0"
-                                value={
-                                  formData.baths
-                                }
-                                onChange={
-                                  handleInputChange
-                                }
-                                placeholder="3"
-                                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                              />
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="grid min-w-0 gap-5 sm:grid-cols-2">
-                        {/* Sqm */}
-                        <div className="space-y-2">
+                  <div
+                    className={`grid min-w-0 gap-5 ${
+                      showHouseDetails
+                        ? "sm:grid-cols-2 lg:grid-cols-4"
+                        : "sm:grid-cols-2"
+                    }`}
+                  >
+                    {showHouseDetails && (
+                      <>
+                        {/* Bedrooms */}
+                        <div className="min-w-0 space-y-2">
                           <label
-                            htmlFor="sqft"
-                            className="text-sm font-semibold text-slate-700"
+                            htmlFor="beds"
+                            className="block text-sm font-semibold text-slate-700"
                           >
-                            Floor Area
+                            Bedrooms
                           </label>
 
-                          <div className="relative">
-                            <Maximize
+                          <div className="relative min-w-0">
+                            <BedDouble
                               size={17}
                               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                             />
 
                             <input
-                              id="sqft"
-                              name="sqft"
+                              id="beds"
+                              name="beds"
                               type="number"
                               min="0"
-                              step="0.01"
-                              value={formData.sqft}
+                              value={formData.beds}
                               onChange={handleInputChange}
-                              placeholder="250.00"
-                              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                              placeholder="4"
+                              className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                             />
                           </div>
-
-                          <p className="text-xs text-slate-400">
-                            Floor area in square meters
-                          </p>
                         </div>
 
-                        {/* Lot Area */}
-                        <div className="space-y-2">
+                        {/* Bathrooms */}
+                        <div className="min-w-0 space-y-2">
                           <label
-                            htmlFor="lotArea"
-                            className="text-sm font-semibold text-slate-700"
+                            htmlFor="baths"
+                            className="block text-sm font-semibold text-slate-700"
                           >
-                            Lot Area
+                            Bathrooms
                           </label>
 
-                          <div className="relative">
-                            <Maximize
+                          <div className="relative min-w-0">
+                            <Bath
                               size={17}
                               className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                             />
 
                             <input
-                              id="lotArea"
-                              name="lotArea"
+                              id="baths"
+                              name="baths"
                               type="number"
                               min="0"
-                              step="0.01"
-                              value={formData.lotArea}
+                              value={formData.baths}
                               onChange={handleInputChange}
-                              placeholder="120.00"
-                              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                              placeholder="3"
+                              className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                             />
                           </div>
-
-                          <p className="text-xs text-slate-400">
-                            Lot area in square meters
-                          </p>
                         </div>
+                      </>
+                    )}
+
+                    {/* Floor Area */}
+                    <div className="min-w-0 space-y-2">
+                      <label
+                        htmlFor="sqft"
+                        className="block text-sm font-semibold text-slate-700"
+                      >
+                        Floor Area
+                      </label>
+
+                      <div className="relative min-w-0">
+                        <Maximize
+                          size={17}
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          id="sqft"
+                          name="sqft"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.sqft}
+                          onChange={handleInputChange}
+                          placeholder="250.00"
+                          className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        />
                       </div>
+
+                      <p className="text-xs leading-5 text-slate-400">
+                        Floor area in square meters
+                      </p>
                     </div>
+
+                    {/* Lot Area */}
+                    <div className="min-w-0 space-y-2">
+                      <label
+                        htmlFor="lotArea"
+                        className="block text-sm font-semibold text-slate-700"
+                      >
+                        Lot Area
+                      </label>
+
+                      <div className="relative min-w-0">
+                        <Maximize
+                          size={17}
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          id="lotArea"
+                          name="lotArea"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.lotArea}
+                          onChange={handleInputChange}
+                          placeholder="120.00"
+                          className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        />
+                      </div>
+
+                      <p className="text-xs leading-5 text-slate-400">
+                        Lot area in square meters
+                      </p>
+                    </div>
+                  </div>
+
+
 
                 {/* Images */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
