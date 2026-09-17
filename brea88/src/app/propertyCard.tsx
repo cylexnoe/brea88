@@ -1764,7 +1764,7 @@ export default function PropertyCard({
                         </span>
 
                         <span className="text-slate-400">
-                          Sqm
+                          Floor Area
                         </span>
                       </span>
                     )}
