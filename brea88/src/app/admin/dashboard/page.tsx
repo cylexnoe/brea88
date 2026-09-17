@@ -2921,7 +2921,7 @@ export default function AdminDashboardPage() {
                             htmlFor="sqft"
                             className="text-sm font-semibold text-slate-700"
                           >
-                            Sqm
+                            Floor Area
                           </label>
 
                           <div className="relative">
