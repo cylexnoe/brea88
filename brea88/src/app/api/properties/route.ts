@@ -5,7 +5,7 @@ import { getAgentFromSession } from '@/lib/agent-auth';
 import { hasValidContentLength, isSafeHttpUrl } from '@/lib/security';
 
 const ALLOWED_TAGS = new Set(['Residential', 'Commercial', 'Investment', 'All']);
-const MAX_IMAGES = 10;
+const MAX_IMAGES = 20;
 const MAX_JSON_BYTES = 256 * 1024;
 const MAX_BANK_FINANCING = 20;
 
