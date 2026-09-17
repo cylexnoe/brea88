@@ -10,7 +10,7 @@ const ALLOWED_TAGS = new Set([
   'All',
 ]);
 
-const MAX_IMAGES = 10;
+const MAX_IMAGES = 20;
 
 function cleanString(
   value: unknown,
