@@ -2847,139 +2847,152 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                  <div
-                    className={`grid min-w-0 gap-5 ${
-                      showHouseDetails
-                        ? "sm:grid-cols-2 lg:grid-cols-4"
-                        : "sm:grid-cols-2"
-                    }`}
-                  >
-                    {showHouseDetails && (
-                      <>
-                        {/* Bedrooms */}
-                        <div className="min-w-0 space-y-2">
-                          <label
-                            htmlFor="beds"
-                            className="block text-sm font-semibold text-slate-700"
-                          >
-                            Bedrooms
-                          </label>
 
-                          <div className="relative min-w-0">
-                            <BedDouble
-                              size={17}
-                              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                            />
+<div
+  className={`grid min-w-0 gap-5 ${
+    showHouseDetails
+      ? "sm:grid-cols-2 lg:grid-cols-4"
+      : "sm:grid-cols-2"
+  }`}
+>
+  {showHouseDetails && (
+    <>
+      {/* Bedrooms */}
+      <div className="min-w-0 space-y-2">
+        <label
+          htmlFor="beds"
+          className="block text-sm font-semibold text-slate-700"
+        >
+          Bedrooms
+        </label>
 
-                            <input
-                              id="beds"
-                              name="beds"
-                              type="number"
-                              min="0"
-                              value={formData.beds}
-                              onChange={handleInputChange}
-                              placeholder="4"
-                              className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                            />
-                          </div>
-                        </div>
+        <div className="relative">
+          <BedDouble
+            size={17}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          />
 
-                        {/* Bathrooms */}
-                        <div className="min-w-0 space-y-2">
-                          <label
-                            htmlFor="baths"
-                            className="block text-sm font-semibold text-slate-700"
-                          >
-                            Bathrooms
-                          </label>
+          <input
+            id="beds"
+            name="beds"
+            type="number"
+            min="0"
+            value={formData.beds}
+            onChange={handleInputChange}
+            placeholder="4"
+            className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          />
+        </div>
 
-                          <div className="relative min-w-0">
-                            <Bath
-                              size={17}
-                              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                            />
+        {/* Keeps the vertical height equal to the area fields */}
+        <div className="h-5" aria-hidden="true" />
+      </div>
 
-                            <input
-                              id="baths"
-                              name="baths"
-                              type="number"
-                              min="0"
-                              value={formData.baths}
-                              onChange={handleInputChange}
-                              placeholder="3"
-                              className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
+      {/* Bathrooms */}
+      <div className="min-w-0 space-y-2">
+        <label
+          htmlFor="baths"
+          className="block text-sm font-semibold text-slate-700"
+        >
+          Bathrooms
+        </label>
 
-                    {/* Floor Area */}
-                    <div className="min-w-0 space-y-2">
-                      <label
-                        htmlFor="sqft"
-                        className="block text-sm font-semibold text-slate-700"
-                      >
-                        Floor Area
-                      </label>
+        <div className="relative">
+          <Bath
+            size={17}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          />
 
-                      <div className="relative min-w-0">
-                        <Maximize
-                          size={17}
-                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
+          <input
+            id="baths"
+            name="baths"
+            type="number"
+            min="0"
+            value={formData.baths}
+            onChange={handleInputChange}
+            placeholder="3"
+            className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          />
+        </div>
 
-                        <input
-                          id="sqft"
-                          name="sqft"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={formData.sqft}
-                          onChange={handleInputChange}
-                          placeholder="250.00"
-                          className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        />
-                      </div>
+        {/* Keeps the vertical height equal to the area fields */}
+        <div className="h-5" aria-hidden="true" />
+      </div>
+    </>
+  )}
 
-                      <p className="text-xs leading-5 text-slate-400">
-                        Floor area in square meters
-                      </p>
-                    </div>
+  {/* Floor Area */}
+  <div className="min-w-0 space-y-2">
+    <label
+      htmlFor="sqft"
+      className="block text-sm font-semibold text-slate-700"
+    >
+      Floor Area
+    </label>
 
-                    {/* Lot Area */}
-                    <div className="min-w-0 space-y-2">
-                      <label
-                        htmlFor="lotArea"
-                        className="block text-sm font-semibold text-slate-700"
-                      >
-                        Lot Area
-                      </label>
+    <div className="relative">
+      <Maximize
+        size={17}
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+      />
 
-                      <div className="relative min-w-0">
-                        <Maximize
-                          size={17}
-                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
+      <input
+        id="sqft"
+        name="sqft"
+        type="number"
+        min="0"
+        step="0.01"
+        value={formData.sqft}
+        onChange={handleInputChange}
+        placeholder="250.00"
+        className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-14 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+      />
 
-                        <input
-                          id="lotArea"
-                          name="lotArea"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={formData.lotArea}
-                          onChange={handleInputChange}
-                          placeholder="120.00"
-                          className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        />
-                      </div>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
+        sqm
+      </span>
+    </div>
 
-                      <p className="text-xs leading-5 text-slate-400">
-                        Lot area in square meters
-                      </p>
-                    </div>
-                  </div>
+    {/* Reserved helper space */}
+    <div className="h-5" aria-hidden="true" />
+  </div>
+
+  {/* Lot Area */}
+  <div className="min-w-0 space-y-2">
+    <label
+      htmlFor="lotArea"
+      className="block text-sm font-semibold text-slate-700"
+    >
+      Lot Area
+    </label>
+
+    <div className="relative">
+      <Maximize
+        size={17}
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+      />
+
+      <input
+        id="lotArea"
+        name="lotArea"
+        type="number"
+        min="0"
+        step="0.01"
+        value={formData.lotArea}
+        onChange={handleInputChange}
+        placeholder="120.00"
+        className="h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white pl-11 pr-14 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+      />
+
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
+        sqm
+      </span>
+    </div>
+
+    {/* Reserved helper space */}
+    <div className="h-5" aria-hidden="true" />
+  </div>
+</div>
 
 
 
