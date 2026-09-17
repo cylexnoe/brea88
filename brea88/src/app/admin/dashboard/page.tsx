@@ -51,7 +51,7 @@ const ReactQuill = dynamic(
   }
 );
 
-const MAX_IMAGES = 10;
+const MAX_IMAGES = 20;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const CATEGORY_OPTIONS = [
