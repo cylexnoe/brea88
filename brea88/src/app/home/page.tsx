@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Home,
   Check,
+  MessageCircle,
 } from 'lucide-react';
 
 import AgentPicker from '../../components/AgentPicker';
@@ -67,12 +68,32 @@ interface Property {
 
 export default function HomePage() {
   // =========================================================
+  // FEEDBACK & SUGGESTIONS
+  // =========================================================
+
+  const [feedbackMessage, setFeedbackMessage] =
+    useState('');
+
+  const [feedbackSubmitting, setFeedbackSubmitting] =
+    useState(false);
+
+  const [feedbackStatus, setFeedbackStatus] =
+    useState<'idle' | 'success' | 'error'>(
+      'idle',
+    );
+
+  // =========================================================
   // PROPERTIES
   // =========================================================
 
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [propertiesLoading, setPropertiesLoading] = useState(true);
-  const [propertiesError, setPropertiesError] = useState('');
+  const [properties, setProperties] =
+    useState<Property[]>([]);
+
+  const [propertiesLoading, setPropertiesLoading] =
+    useState(true);
+
+  const [propertiesError, setPropertiesError] =
+    useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -82,34 +103,46 @@ export default function HomePage() {
         setPropertiesLoading(true);
         setPropertiesError('');
 
-        const response = await fetch('/api/properties', {
-          method: 'GET',
-          cache: 'no-store',
-          credentials: 'include',
-        });
+        const response = await fetch(
+          '/api/properties',
+          {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'include',
+          },
+        );
 
-        const data = await response.json().catch(() => null);
+        const data =
+          await response
+            .json()
+            .catch(() => null);
 
         if (!response.ok) {
           throw new Error(
-            data?.message || 'Failed to load properties.',
+            data?.message ||
+              'Failed to load properties.',
           );
         }
 
-        const propertyList = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.properties)
-            ? data.properties
-            : [];
+        const propertyList =
+          Array.isArray(data)
+            ? data
+            : Array.isArray(data?.properties)
+              ? data.properties
+              : [];
 
         if (mounted) {
           setProperties(propertyList);
         }
       } catch (error) {
-        console.error('Failed fetching properties:', error);
+        console.error(
+          'Failed fetching properties:',
+          error,
+        );
 
         if (mounted) {
           setProperties([]);
+
           setPropertiesError(
             error instanceof Error
               ? error.message
@@ -148,19 +181,25 @@ export default function HomePage() {
     isActive: boolean;
   } | null>(null);
 
-  const [agentLoading, setAgentLoading] = useState(true);
-  const [agentLoggingOut, setAgentLoggingOut] = useState(false);
+  const [agentLoading, setAgentLoading] =
+    useState(true);
+
+  const [agentLoggingOut, setAgentLoggingOut] =
+    useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     const checkAgentSession = async () => {
       try {
-        const response = await fetch('/api/agent/me', {
-          method: 'GET',
-          credentials: 'include',
-          cache: 'no-store',
-        });
+        const response = await fetch(
+          '/api/agent/me',
+          {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-store',
+          },
+        );
 
         if (!response.ok) {
           if (mounted) {
@@ -171,7 +210,8 @@ export default function HomePage() {
           return;
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
         if (
           mounted &&
@@ -184,7 +224,10 @@ export default function HomePage() {
           setAgent(null);
         }
       } catch (error) {
-        console.error('Agent session check failed:', error);
+        console.error(
+          'Agent session check failed:',
+          error,
+        );
 
         if (mounted) {
           setAgent(null);
@@ -204,17 +247,25 @@ export default function HomePage() {
   }, []);
 
   const handleAgentLogout = async () => {
-    if (agentLoggingOut) return;
+    if (agentLoggingOut) {
+      return;
+    }
 
     setAgentLoggingOut(true);
 
     try {
-      await fetch('/api/agent/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await fetch(
+        '/api/agent/logout',
+        {
+          method: 'POST',
+          credentials: 'include',
+        },
+      );
     } catch (error) {
-      console.error('Agent logout error:', error);
+      console.error(
+        'Agent logout error:',
+        error,
+      );
     } finally {
       window.location.href = '/home';
     }
@@ -224,13 +275,15 @@ export default function HomePage() {
   // MOBILE MENU
   // =========================================================
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] =
+    useState(false);
 
   // =========================================================
   // AGENT LINK
   // =========================================================
 
-  const [agentSlug, setAgentSlug] = useState('');
+  const [agentSlug, setAgentSlug] =
+    useState('');
 
   const [selectedInquiryAgent, setSelectedInquiryAgent] =
     useState<{
@@ -242,7 +295,8 @@ export default function HomePage() {
       lastSeen?: string | null;
     } | null>(null);
 
-  const [showAgentPicker, setShowAgentPicker] = useState(false);
+  const [showAgentPicker, setShowAgentPicker] =
+    useState(false);
 
   const [pendingInquiry, setPendingInquiry] =
     useState<{
@@ -254,8 +308,13 @@ export default function HomePage() {
     } | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const slug = params.get('agent') || '';
+    const params =
+      new URLSearchParams(
+        window.location.search,
+      );
+
+    const slug =
+      params.get('agent') || '';
 
     setAgentSlug(slug);
   }, []);
@@ -264,41 +323,53 @@ export default function HomePage() {
   // PROPERTY FILTER
   // =========================================================
 
-  const [filter, setFilter] = useState<string>('All');
+  const [filter, setFilter] =
+    useState<string>('All');
 
   const filteredProperties =
     filter === 'All'
       ? properties
       : properties.filter(
-          (property) => property.tag === filter,
+          (property) =>
+            property.tag === filter,
         );
 
   // =========================================================
   // FORM
   // =========================================================
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const formRef =
+    useRef<HTMLFormElement>(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
 
-  const [submitStatus, setSubmitStatus] = useState<
-    'idle' | 'success' | 'error'
-  >('idle');
+  const [submitStatus, setSubmitStatus] =
+    useState<
+      'idle' | 'success' | 'error'
+    >('idle');
 
   // =========================================================
   // ADMIN LOGIN
   // =========================================================
 
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [adminUsername, setAdminUsername] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [showLoginModal, setShowLoginModal] =
+    useState(false);
 
-  // =========================================================
-  // EMAILJS
-  // =========================================================
+  const [adminUsername, setAdminUsername] =
+    useState('');
+
+  const [adminPassword, setAdminPassword] =
+    useState('');
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [authError, setAuthError] =
+    useState('');
+
+  const [isAuthenticating, setIsAuthenticating] =
+    useState(false);
 
   // =========================================================
   // HOME INQUIRY
@@ -312,20 +383,26 @@ export default function HomePage() {
     agentSlug?: string;
   }) => {
     try {
-      const response = await fetch('/api/inquiries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        '/api/inquiries',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(payload),
         },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
+      );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.error || 'Failed to send inquiry',
+          data.error ||
+            'Failed to send inquiry',
         );
       }
 
@@ -339,7 +416,11 @@ export default function HomePage() {
       setPendingInquiry(null);
       setShowAgentPicker(false);
     } catch (error) {
-      console.error('Inquiry Error:', error);
+      console.error(
+        'Inquiry Error:',
+        error,
+      );
+
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -351,52 +432,63 @@ export default function HomePage() {
   ) => {
     e.preventDefault();
 
-    if (!formRef.current || isSubmitting) {
+    if (
+      !formRef.current ||
+      isSubmitting
+    ) {
       return;
     }
 
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-    const formData = new FormData(formRef.current);
+    const formData =
+      new FormData(
+        formRef.current,
+      );
 
-    const name = String(
-      formData.get('name') || '',
-    ).trim();
+    const name =
+      String(
+        formData.get('name') ||
+          '',
+      ).trim();
 
-    const email = String(
-      formData.get('email') || '',
-    ).trim();
+    const email =
+      String(
+        formData.get('email') ||
+          '',
+      ).trim();
 
-    const phone = String(
-      formData.get('contact_number') || '',
-    ).trim();
+    const phone =
+      String(
+        formData.get(
+          'contact_number',
+        ) || '',
+      ).trim();
 
-    const message = String(
-      formData.get('message') || '',
-    ).trim();
+    const message =
+      String(
+        formData.get('message') ||
+          '',
+      ).trim();
 
-    const preferLocation = String(
-      formData.get('prefer_location') || '',
-    ).trim();
+    const preferLocation =
+      String(
+        formData.get(
+          'prefer_location',
+        ) || '',
+      ).trim();
 
-    const fullMessage = preferLocation
-      ? `${message}\n\nPreferred Location: ${preferLocation}`
-      : message;
+    const fullMessage =
+      preferLocation
+        ? `${message}\n\nPreferred Location: ${preferLocation}`
+        : message;
 
-    /*
-     * If this page was opened through a permanent
-     * agent link, use that agent automatically.
-     */
     const resolvedAgentSlug =
       agentSlug ||
       selectedInquiryAgent?.slug ||
       undefined;
 
-    /*
-     * Direct website:
-     * client must choose an agent first.
-     */
     if (!resolvedAgentSlug) {
       setPendingInquiry({
         name,
@@ -416,8 +508,72 @@ export default function HomePage() {
       email,
       phone,
       message: fullMessage,
-      agentSlug: resolvedAgentSlug,
+      agentSlug:
+        resolvedAgentSlug,
     });
+  };
+
+  // =========================================================
+  // FEEDBACK SUBMISSION
+  // =========================================================
+
+  const submitFeedback = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault();
+
+    if (
+      feedbackSubmitting ||
+      !feedbackMessage.trim()
+    ) {
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    setFeedbackStatus('idle');
+
+    try {
+      const response = await fetch(
+        '/api/feedback',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            message:
+              feedbackMessage.trim(),
+            page:
+              window.location.pathname,
+          }),
+        },
+      );
+
+      const data =
+        await response
+          .json()
+          .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            'Failed to submit feedback.',
+        );
+      }
+
+      setFeedbackMessage('');
+      setFeedbackStatus('success');
+    } catch (error) {
+      console.error(
+        'Feedback submission error:',
+        error,
+      );
+
+      setFeedbackStatus('error');
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
 
   // =========================================================
@@ -433,21 +589,33 @@ export default function HomePage() {
     setIsAuthenticating(true);
 
     try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        '/api/admin/login',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            username:
+              adminUsername,
+            password:
+              adminPassword,
+          }),
         },
-        body: JSON.stringify({
-          username: adminUsername,
-          password: adminPassword,
-        }),
-      });
+      );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      if (response.ok && data.success) {
-        window.location.href = '/admin';
+      if (
+        response.ok &&
+        data.success
+      ) {
+        window.location.href =
+          '/admin';
+
         return;
       }
 
@@ -607,10 +775,10 @@ export default function HomePage() {
 
             {/* Contact */}
             <a
-              href="#contact"
+              href="#feedback"
               className="ml-2 inline-flex items-center rounded-xl bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_7px_22px_rgba(30,64,175,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-900 hover:to-blue-700 hover:shadow-[0_10px_30px_rgba(30,64,175,0.30)]"
             >
-              Contact Us
+              Feedback & Suggestions
             </a>
 
           </div>
@@ -984,12 +1152,12 @@ export default function HomePage() {
                 </a>
 
                 <a
-                  href="#contact"
+                  href="#feedback"
                   onClick={() => setMobileMenuOpen(false)}
                   className="group flex w-full items-center rounded-xl bg-blue-950 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-blue-900"
                 >
                   <span className="flex-1">
-                    Contact Us
+                    Feedback & Suggestions
                   </span>
 
                   <ChevronRight size={17} className="opacity-50" />
@@ -1503,6 +1671,7 @@ export default function HomePage() {
                     src="/img/CEO.png"
                     alt="Rodesa E Estremos, Chief Executive Officer of BREA 88 Realty OPC"
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
 
@@ -1796,7 +1965,7 @@ export default function HomePage() {
                       </p>
 
                       <a
-                        href="#contact"
+                        href="#feedback"
                         className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                       >
                         Market Your Property
@@ -1833,7 +2002,7 @@ export default function HomePage() {
                       </p>
 
                       <a
-                        href="#contact"
+                        href="#feedback"
                         className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                       >
                         Discuss an Investment
@@ -1870,7 +2039,7 @@ export default function HomePage() {
                       </p>
 
                       <a
-                        href="#contact"
+                        href="#feedback"
                         className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                       >
                         Get Assistance
@@ -1907,7 +2076,7 @@ export default function HomePage() {
                       </p>
 
                       <a
-                        href="#contact"
+                        href="#feedback"
                         className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-blue-900 transition-all duration-300 group-hover:gap-3"
                       >
                         Schedule a Viewing
@@ -1946,10 +2115,10 @@ export default function HomePage() {
                       </p>
 
                       <a
-                        href="#contact"
+                        href="#feedback"
                         className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-blue-950 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-50"
                       >
-                        Talk to Us
+                        Feedback & Suggestions
                         <span aria-hidden="true">→</span>
                       </a>
 
@@ -2004,10 +2173,10 @@ export default function HomePage() {
                       </a>
 
                       <a
-                        href="#contact"
+                        href="#feedback"
                         className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/15"
                       >
-                        Contact Us
+                        Feedback & Suggestions
                       </a>
 
                     </div>
@@ -2266,292 +2435,257 @@ export default function HomePage() {
           </section>
 
       {/* =====================================================
-          CONTACT
-      ====================================================== */}
-      <section
-            id="contact"
-            className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32"
-          >
-            {/* Background decoration */}
-            <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-100/50 blur-3xl" />
-            <div className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-cyan-100/40 blur-3xl" />
+    FEEDBACK & SUGGESTIONS
+====================================================== */}
 
-            <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+<section
+  id="feedback"
+  className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32"
+>
+  {/* Background decoration */}
+  <div className="pointer-events-none absolute -left-40 top-20 h-96 w-96 rounded-full bg-blue-100/50 blur-3xl" />
+  <div className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-cyan-100/40 blur-3xl" />
 
-              {/* =====================================================
-                  SECTION HEADER
-              ====================================================== */}
-              <div className="mx-auto max-w-3xl text-center">
+  <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
 
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-3.5 py-1.5 shadow-sm backdrop-blur-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+    {/* =====================================================
+        SECTION HEADER
+    ====================================================== */}
 
-                  <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-blue-900 sm:text-[10px]">
-                    Property Inquiry
-                  </span>
-                </div>
+    <div className="mx-auto max-w-3xl text-center">
 
-                <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-slate-950 sm:text-4xl md:text-5xl">
-                  Tell Us What
-                  <br />
-                  <span className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                    You're Looking For.
-                  </span>
-                </h2>
+      <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-3.5 py-1.5 shadow-sm backdrop-blur-sm">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
 
-                {/* Accent */}
-                <div className="mt-5 flex items-center justify-center gap-3">
-                  <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-400" />
-                  <span className="h-1 w-1 rounded-full bg-amber-500" />
-                  <span className="h-px w-16 bg-slate-300" />
-                </div>
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-blue-900 sm:text-[10px]">
+          Your Voice Matters
+        </span>
+      </div>
 
-                <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base sm:leading-8">
-                  Share your property needs with us and our team will help you
-                  find the right opportunities based on your goals.
+      <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-slate-950 sm:text-4xl md:text-5xl">
+        Help Us Improve
+        <br />
+        <span className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
+          BREA 88.
+        </span>
+      </h2>
+
+      {/* Accent */}
+      <div className="mt-5 flex items-center justify-center gap-3">
+        <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-400" />
+        <span className="h-1 w-1 rounded-full bg-amber-500" />
+        <span className="h-px w-16 bg-slate-300" />
+      </div>
+
+      <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base sm:leading-8">
+        Have a suggestion, noticed something we can improve, or simply
+        want to share your thoughts? Send us your feedback anonymously.
+      </p>
+
+    </div>
+
+
+    {/* =====================================================
+        FEEDBACK CARD
+    ====================================================== */}
+
+    <div className="relative mt-12 overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.09)] backdrop-blur-xl sm:p-8 lg:p-10">
+
+      {/* Glass decorations */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-100/50 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-cyan-100/40 blur-3xl" />
+
+      {/* Top glass line */}
+      <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/60 to-transparent" />
+
+      <div className="relative">
+
+        {/* FORM INTRO */}
+        <div className="mb-8 text-center">
+
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-950 text-white shadow-[0_10px_30px_rgba(7,25,54,0.16)]">
+            <MessageCircle className="h-6 w-6" />
+          </div>
+
+          <div className="mt-5 flex items-center justify-center gap-3">
+            <span className="h-[2px] w-7 bg-gradient-to-r from-blue-800 to-blue-500" />
+
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-blue-700 sm:text-[10px]">
+              Anonymous Feedback
+            </p>
+
+            <span className="h-[2px] w-7 bg-gradient-to-l from-blue-800 to-blue-500" />
+          </div>
+
+          <h3 className="mt-3 text-2xl font-black tracking-[-0.03em] text-slate-950 sm:text-3xl">
+            What Can We Improve?
+          </h3>
+
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+            Tell us what you think. Your feedback helps us improve the
+            BREA 88 website and the experience we provide.
+          </p>
+
+        </div>
+
+
+        {/* FEEDBACK FORM */}
+
+        <form
+          onSubmit={submitFeedback}
+          className="space-y-5"
+        >
+
+          {/* MESSAGE */}
+
+          <div>
+
+            <label
+              htmlFor="feedback-message"
+              className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-700"
+            >
+              Feedback or Suggestion
+            </label>
+
+            <textarea
+              id="feedback-message"
+              name="message"
+              value={feedbackMessage}
+              onChange={(e) =>
+                setFeedbackMessage(e.target.value)
+              }
+              required
+              rows={8}
+              placeholder="Share your thoughts, suggestions, ideas, or anything you think we can improve..."
+              className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4 text-sm leading-7 text-slate-900 outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100/70"
+            />
+
+          </div>
+
+
+          {/* ANONYMOUS NOTICE */}
+
+          <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-800 shadow-sm">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-blue-950">
+                Anonymous Feedback
+              </p>
+
+              <p className="mt-1 text-[11px] leading-5 text-blue-900/60">
+                No name, email address, or contact information is required.
+                We only save your message and the page where the feedback
+                was submitted.
+              </p>
+            </div>
+
+          </div>
+
+
+          {/* SUBMIT */}
+
+          <div className="pt-1">
+
+            <button
+              type="submit"
+              disabled={
+                feedbackSubmitting ||
+                !feedbackMessage.trim()
+              }
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 px-5 py-4 text-sm font-bold text-white shadow-[0_10px_30px_rgba(30,64,175,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-900 hover:to-cyan-700 hover:shadow-[0_14px_35px_rgba(30,64,175,0.25)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+
+              {feedbackSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending Feedback...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+
+                  Send Feedback
+
+                  <ChevronRight
+                    className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                  />
+                </>
+              )}
+
+            </button>
+
+          </div>
+
+
+          {/* SUCCESS */}
+
+          {feedbackStatus === 'success' && (
+            <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
+
+              <div>
+                <p>Thank you for your feedback!</p>
+
+                <p className="mt-0.5 text-xs font-medium text-green-600/80">
+                  Your suggestion has been submitted anonymously.
                 </p>
-
-              </div>
-
-
-              {/* =====================================================
-                  INQUIRY FORM
-              ====================================================== */}
-              <div className="relative mt-12 overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.09)] backdrop-blur-xl sm:p-8 lg:p-10">
-
-                {/* Glass decoration */}
-                <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-100/50 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-cyan-100/40 blur-3xl" />
-
-                {/* Top glass line */}
-                <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/60 to-transparent" />
-
-                <div className="relative">
-
-                  {/* FORM INTRO */}
-                  <div className="mb-8 text-center">
-
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="h-[2px] w-7 bg-gradient-to-r from-blue-800 to-blue-500" />
-
-                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-blue-700 sm:text-[10px]">
-                        Let's Connect
-                      </p>
-
-                      <span className="h-[2px] w-7 bg-gradient-to-l from-blue-800 to-blue-500" />
-                    </div>
-
-                    <h3 className="mt-3 text-2xl font-black tracking-[-0.03em] text-slate-950 sm:text-3xl">
-                      Start Your Property Journey
-                    </h3>
-
-                    <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                      Complete the form below and let us know how we can assist you.
-                    </p>
-
-                  </div>
-
-
-                  {/* FORM */}
-                  <form
-                    ref={formRef}
-                    onSubmit={sendEmail}
-                    className="space-y-5"
-                  >
-
-                    {/* NAME + EMAIL */}
-                    <div className="grid gap-5 sm:grid-cols-2">
-
-                      {/* FULL NAME */}
-                      <div>
-                        <label
-                          htmlFor="contact-name"
-                          className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-700"
-                        >
-                          Full Name
-                        </label>
-
-                        <input
-                          id="contact-name"
-                          type="text"
-                          name="name"
-                          required
-                          placeholder="Enter your full name"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100/70"
-                        />
-                      </div>
-
-
-                      {/* EMAIL */}
-                      <div>
-                        <label
-                          htmlFor="contact-email"
-                          className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-700"
-                        >
-                          Email Address
-                        </label>
-
-                        <input
-                          id="contact-email"
-                          type="email"
-                          name="email"
-                          required
-                          placeholder="Enter your email"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100/70"
-                        />
-                      </div>
-
-                    </div>
-
-
-                    {/* CONTACT + LOCATION */}
-                    <div className="grid gap-5 sm:grid-cols-2">
-
-                      {/* CONTACT NUMBER */}
-                      <div>
-                        <label
-                          htmlFor="contact-number"
-                          className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-700"
-                        >
-                          Contact Number
-                        </label>
-
-                        <input
-                          id="contact-number"
-                          type="tel"
-                          name="contact_number"
-                          required
-                          placeholder="09XX XXX XXXX"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100/70"
-                        />
-                      </div>
-
-
-                      {/* PREFERRED LOCATION */}
-                      <div>
-                        <label
-                          htmlFor="prefer-location"
-                          className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-700"
-                        >
-                          Preferred Location
-                        </label>
-
-                        <input
-                          id="prefer-location"
-                          type="text"
-                          name="prefer_location"
-                          required
-                          placeholder="e.g. Cebu City, Mandaue, Lapu-Lapu"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100/70"
-                        />
-                      </div>
-
-                    </div>
-
-
-                    {/* MESSAGE */}
-                    <div>
-                      <label
-                        htmlFor="contact-message"
-                        className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-700"
-                      >
-                        Message
-                      </label>
-
-                      <textarea
-                        id="contact-message"
-                        name="message"
-                        required
-                        rows={6}
-                        placeholder="Tell us what type of property you're looking for, your budget, preferred area, or any other details..."
-                        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm leading-6 text-slate-900 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100/70"
-                      />
-                    </div>
-
-
-                    {/* SUBMIT */}
-                    <div className="pt-2">
-
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 px-5 py-4 text-sm font-bold text-white shadow-[0_10px_30px_rgba(30,64,175,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-900 hover:to-cyan-700 hover:shadow-[0_14px_35px_rgba(30,64,175,0.25)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            Send Inquiry
-
-                            <span
-                              aria-hidden="true"
-                              className="transition-transform duration-300 group-hover:translate-x-1"
-                            >
-                              →
-                            </span>
-                          </>
-                        )}
-                      </button>
-
-                    </div>
-
-
-                    {/* SUCCESS */}
-                    {submitStatus === 'success' && !isSubmitting && (
-                      <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-center text-sm font-semibold text-green-700">
-                        ✓ Inquiry sent successfully! We'll get back to you soon.
-                      </div>
-                    )}
-
-
-                    {/* ERROR */}
-                    {submitStatus === 'error' && !isSubmitting && (
-                      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
-                        ✕ Failed to send your inquiry. Please try again.
-                      </div>
-                    )}
-
-
-                    {/* PRIVACY */}
-                    <div className="flex items-start justify-center gap-2 pt-1">
-
-                      <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-
-                      <p className="text-center text-[11px] leading-5 text-slate-400">
-                        By submitting this form, you agree to be contacted regarding
-                        your inquiry.
-                      </p>
-
-                    </div>
-
-                  </form>
-
-                </div>
-              </div>
-
-
-              {/* BOTTOM TRUST MESSAGE */}
-              <div className="mt-7 flex flex-col items-center justify-center gap-2 text-center">
-
-                <div className="flex items-center gap-2">
-                  <span className="h-1 w-1 rounded-full bg-amber-500" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                    BREA 88 REALTY OPC
-                  </span>
-                  <span className="h-1 w-1 rounded-full bg-amber-500" />
-                </div>
-
-                <p className="text-xs text-slate-400">
-                  Service with a Heart
-                </p>
-
               </div>
 
             </div>
-          </section>
+          )}
+
+
+          {/* ERROR */}
+
+          {feedbackStatus === 'error' && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+
+              <X className="mt-0.5 h-4 w-4 shrink-0" />
+
+              <div>
+                <p>We couldn't submit your feedback.</p>
+
+                <p className="mt-0.5 text-xs font-medium text-red-600/80">
+                  Please try again in a moment.
+                </p>
+              </div>
+
+            </div>
+          )}
+
+        </form>
+
+      </div>
+    </div>
+
+
+    {/* BOTTOM TRUST MESSAGE */}
+
+    <div className="mt-7 flex flex-col items-center justify-center gap-2 text-center">
+
+      <div className="flex items-center gap-2">
+        <span className="h-1 w-1 rounded-full bg-amber-500" />
+
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
+          BREA 88 REALTY OPC
+        </span>
+
+        <span className="h-1 w-1 rounded-full bg-amber-500" />
+      </div>
+
+      <p className="text-xs text-slate-400">
+        Service with a Heart
+      </p>
+
+    </div>
+
+  </div>
+</section>
         {/* =====================================================
             DIRECT WEBSITE — AGENT SELECTION
         ====================================================== */}
