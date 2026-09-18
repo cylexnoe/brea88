@@ -8,7 +8,9 @@ import { getClientKey, rateLimit } from '@/lib/rate-limit';
 function safeCompare(a: string, b: string): boolean {
   const left = Buffer.from(a, 'utf8');
   const right = Buffer.from(b, 'utf8');
+
   if (left.length !== right.length) return false;
+
   return crypto.timingSafeEqual(left, right);
 }
 
@@ -17,14 +19,26 @@ export async function POST(request: Request) {
 
   if (!limit.allowed) {
     return NextResponse.json(
-      { success: false, message: 'Too many login attempts. Please try again later.' },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      {
+        success: false,
+        message:
+          'Too many login attempts. Please try again later.',
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(limit.retryAfterSeconds),
+        },
+      },
     );
   }
 
   if (!hasValidContentLength(request, 16 * 1024)) {
     return NextResponse.json(
-      { success: false, message: 'Request is too large.' },
+      {
+        success: false,
+        message: 'Request is too large.',
+      },
       { status: 413 },
     );
   }
@@ -32,41 +46,98 @@ export async function POST(request: Request) {
   try {
     const body: unknown = await request.json().catch(() => null);
 
-    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-      return NextResponse.json({ success: false, message: 'Invalid login data.' }, { status: 400 });
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      Array.isArray(body)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid login data.',
+        },
+        { status: 400 },
+      );
     }
 
     const data = body as Record<string, unknown>;
-    const username = typeof data.username === 'string' ? data.username.trim() : '';
-    const password = typeof data.password === 'string' ? data.password : '';
 
-    if (!username || !password || username.length > 100 || password.length > 128) {
-      return NextResponse.json({ success: false, message: 'Invalid username or password.' }, { status: 401 });
+    const username =
+      typeof data.username === 'string'
+        ? data.username.trim()
+        : '';
+
+    const password =
+      typeof data.password === 'string'
+        ? data.password
+        : '';
+
+    if (
+      !username ||
+      !password ||
+      username.length > 100 ||
+      password.length > 128
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid username or password.',
+        },
+        { status: 401 },
+      );
     }
 
     const adminUsername = process.env.ADMIN_USERNAME?.trim();
     const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (!adminUsername || !adminPassword || adminUsername.length > 100 || adminPassword.length > 128) {
-      console.error('Admin authentication is not configured correctly.');
-      return NextResponse.json({ success: false, message: 'Unable to process login.' }, { status: 500 });
+    if (
+      !adminUsername ||
+      !adminPassword ||
+      adminUsername.length > 100 ||
+      adminPassword.length > 128
+    ) {
+      console.error(
+        'Admin authentication is not configured correctly.',
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unable to process login.',
+        },
+        { status: 500 },
+      );
     }
 
-    const usernameMatches = safeCompare(username, adminUsername);
-    const passwordMatches = safeCompare(password, adminPassword);
+    const usernameMatches = safeCompare(
+      username,
+      adminUsername,
+    );
+
+    const passwordMatches = safeCompare(
+      password,
+      adminPassword,
+    );
 
     if (!usernameMatches || !passwordMatches) {
       return NextResponse.json(
-        { success: false, message: 'Invalid username or password.' },
+        {
+          success: false,
+          message: 'Invalid username or password.',
+        },
         { status: 401 },
       );
     }
 
     const token = createAdminSessionToken();
+
     const response = NextResponse.json({
       success: true,
       message: 'Admin login successful.',
-      admin: { username: adminUsername, role: 'Admin' },
+      admin: {
+        username: adminUsername,
+        role: 'Admin',
+      },
     });
 
     response.cookies.set({
@@ -75,16 +146,37 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 2,
+
+      /*
+       * Persistent admin session.
+       *
+       * The cookie will remain stored by the browser
+       * instead of expiring after 2 hours.
+       *
+       * 10 years gives the session a very long lifetime.
+       * The actual session can still be invalidated by
+       * the Logout function or by changing the secret.
+       */
+      maxAge: 60 * 60 * 24 * 365 * 10,
+
       path: '/',
       priority: 'high',
     });
 
     return response;
   } catch (error) {
-    console.error('Admin login failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      'Admin login failed:',
+      error instanceof Error
+        ? error.message
+        : 'Unknown error',
+    );
+
     return NextResponse.json(
-      { success: false, message: 'Unable to process login.' },
+      {
+        success: false,
+        message: 'Unable to process login.',
+      },
       { status: 500 },
     );
   }
