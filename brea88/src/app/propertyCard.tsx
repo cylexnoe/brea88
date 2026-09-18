@@ -79,7 +79,11 @@ interface PropertyCardProps {
   agentSlug?: string;
 }
 
-type ModalType = 'details' | 'inquiry' | 'viewing' | null;
+type ModalType =
+  | 'details'
+  | 'inquiry'
+  | 'viewing'
+  | null;
 
 interface InquiryForm {
   name: string;
@@ -154,8 +158,12 @@ function isDirectVideoUrl(value?: string | null) {
   }
 }
 
-function getVideoEmbedUrl(value?: string | null) {
-  if (!value || !isSafeHttpUrl(value)) return null;
+function getVideoEmbedUrl(
+  value?: string | null,
+) {
+  if (!value || !isSafeHttpUrl(value)) {
+    return null;
+  }
 
   try {
     const url = new URL(value);
@@ -167,7 +175,8 @@ function getVideoEmbedUrl(value?: string | null) {
       hostname === 'm.youtube.com'
     ) {
       if (url.pathname === '/watch') {
-        const videoId = url.searchParams.get('v');
+        const videoId =
+          url.searchParams.get('v');
 
         if (videoId) {
           return `https://www.youtube.com/embed/${encodeURIComponent(
@@ -177,7 +186,8 @@ function getVideoEmbedUrl(value?: string | null) {
       }
 
       if (url.pathname.startsWith('/shorts/')) {
-        const videoId = url.pathname.split('/')[2];
+        const videoId =
+          url.pathname.split('/')[2];
 
         if (videoId) {
           return `https://www.youtube.com/embed/${encodeURIComponent(
@@ -191,7 +201,8 @@ function getVideoEmbedUrl(value?: string | null) {
       }
 
       if (url.pathname.startsWith('/live/')) {
-        const videoId = url.pathname.split('/')[2];
+        const videoId =
+          url.pathname.split('/')[2];
 
         if (videoId) {
           return `https://www.youtube.com/embed/${encodeURIComponent(
@@ -202,7 +213,8 @@ function getVideoEmbedUrl(value?: string | null) {
     }
 
     if (hostname === 'youtu.be') {
-      const videoId = url.pathname.replace('/', '');
+      const videoId =
+        url.pathname.replace('/', '');
 
       if (videoId) {
         return `https://www.youtube.com/embed/${encodeURIComponent(
@@ -221,13 +233,18 @@ function getVideoEmbedUrl(value?: string | null) {
 
       const videoId = parts[0];
 
-      if (videoId && /^\d+$/.test(videoId)) {
+      if (
+        videoId &&
+        /^\d+$/.test(videoId)
+      ) {
         return `https://player.vimeo.com/video/${videoId}`;
       }
     }
 
     if (hostname === 'player.vimeo.com') {
-      if (url.pathname.startsWith('/video/')) {
+      if (
+        url.pathname.startsWith('/video/')
+      ) {
         return value;
       }
     }
@@ -287,10 +304,14 @@ function getInitials(name: string) {
   }
 
   if (words.length === 1) {
-    return words[0].slice(0, 2).toUpperCase();
+    return words[0]
+      .slice(0, 2)
+      .toUpperCase();
   }
 
-  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+  return `${words[0][0]}${
+    words[words.length - 1][0]
+  }`.toUpperCase();
 }
 
 export default function PropertyCard({
@@ -300,23 +321,35 @@ export default function PropertyCard({
   const [modal, setModal] =
     useState<ModalType>(null);
 
-  const [selectedImageIndex, setSelectedImageIndex] =
-    useState(0);
+  const [
+    selectedImageIndex,
+    setSelectedImageIndex,
+  ] = useState(0);
 
-  const [galleryPreviewOpen, setGalleryPreviewOpen] =
-    useState(false);
+  const [
+    galleryPreviewOpen,
+    setGalleryPreviewOpen,
+  ] = useState(false);
 
-  const [availableAgents, setAvailableAgents] =
-    useState<AvailableAgent[]>([]);
+  const [
+    availableAgents,
+    setAvailableAgents,
+  ] = useState<AvailableAgent[]>([]);
 
-  const [selectedAgentSlug, setSelectedAgentSlug] =
-    useState('');
+  const [
+    selectedAgentSlug,
+    setSelectedAgentSlug,
+  ] = useState('');
 
-  const [loadingAgents, setLoadingAgents] =
-    useState(false);
+  const [
+    loadingAgents,
+    setLoadingAgents,
+  ] = useState(false);
 
-  const [agentDropdownOpen, setAgentDropdownOpen] =
-    useState(false);
+  const [
+    agentDropdownOpen,
+    setAgentDropdownOpen,
+  ] = useState(false);
 
   const agentSelectorRef =
     useRef<HTMLDivElement | null>(null);
@@ -550,9 +583,6 @@ export default function PropertyCard({
     setSubmitError('');
     setAgentDropdownOpen(false);
 
-    /*
-     * Open the details modal.
-     */
     setModal('details');
 
     loadAgents();
@@ -1681,6 +1711,7 @@ export default function PropertyCard({
 
             <div className="w-full min-w-0 bg-white">
               <div className="space-y-8 p-5 sm:p-7 lg:p-9">
+                {/* PROPERTY SUMMARY */}
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     {property.category && (
@@ -1696,100 +1727,180 @@ export default function PropertyCard({
                     )}
                   </div>
 
-                  <p className="mt-3 text-2xl font-black tracking-tight text-slate-900">
+                  <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                     {formatPrice(
                       property.price,
                     )}
                   </p>
 
-                  <h1 className="mt-1 text-xl font-bold text-slate-800">
+                  <h1 className="mt-1 text-xl font-bold text-slate-800 sm:text-2xl">
                     {property.title}
                   </h1>
 
-                  <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+                  <div className="mt-2 flex items-start gap-1.5 text-sm leading-6 text-slate-500">
                     <MapPin
                       size={16}
-                      className="text-[#b08b4f]"
+                      className="mt-1 shrink-0 text-[#b08b4f]"
                     />
-                    {property.location}
+
+                    <span>
+                      {property.location}
+                    </span>
                   </div>
+
+                  {(property.beds != null ||
+                    property.baths != null ||
+                    property.sqft != null ||
+                    property.lotArea != null) && (
+                    <div className="mt-5 grid grid-cols-2 gap-2 border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-5">
+                      {property.beds != null && (
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                          <BedDouble
+                            size={15}
+                            className="shrink-0 text-slate-400"
+                          />
+
+                          <span className="font-bold text-slate-700">
+                            {property.beds}
+                          </span>
+
+                          <span className="text-slate-400">
+                            Beds
+                          </span>
+                        </span>
+                      )}
+
+                      {property.baths != null && (
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                          <Bath
+                            size={15}
+                            className="shrink-0 text-slate-400"
+                          />
+
+                          <span className="font-bold text-slate-700">
+                            {property.baths}
+                          </span>
+
+                          <span className="text-slate-400">
+                            Baths
+                          </span>
+                        </span>
+                      )}
+
+                      {property.sqft != null && (
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                          <Maximize
+                            size={15}
+                            className="shrink-0 text-slate-400"
+                          />
+
+                          <span className="font-bold text-slate-700">
+                            {Number(
+                              property.sqft,
+                            ).toFixed(2)}
+                          </span>
+
+                          <span className="text-slate-400">
+                            Floor Area
+                          </span>
+                        </span>
+                      )}
+
+                      {property.lotArea != null && (
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                          <Maximize
+                            size={15}
+                            className="shrink-0 text-slate-400"
+                          />
+
+                          <span className="font-bold text-slate-700">
+                            {Number(
+                              property.lotArea,
+                            ).toFixed(2)}
+                          </span>
+
+                          <span className="text-slate-400">
+                            Lot Area
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {(property.beds != null ||
-                  property.baths != null ||
-                  property.sqft != null ||
-                  property.lotArea != null) && (
-                  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3.5 sm:flex sm:items-center sm:gap-4">
-                    {property.beds != null && (
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                        <BedDouble
-                          size={14}
-                          className="shrink-0 text-slate-400"
+                {/* QUICK ACTIONS
+                    Moved near the top so users do not
+                    need to scroll to the bottom. */}
+                <section>
+                  <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
+                    <div className="mb-3 px-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+                        Interested in this property?
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Connect with an Agent or
+                        Broker for more information.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {/* SEND PROPERTY INQUIRY */}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openInquiry();
+                        }}
+                        className="brea88-mobile-premium group relative flex min-h-[62px] items-center justify-center gap-2.5 rounded-[18px] px-5 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition-transform duration-150 active:scale-[0.97]"
+                      >
+                        {/* Continuous outer glow */}
+                        <span className="brea88-mobile-glow pointer-events-none absolute -inset-2 -z-10 rounded-[22px] bg-[#c9a96e]/20 blur-lg" />
+
+                        <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                          <MessageCircle size={17} />
+                        </span>
+
+                        <span className="relative z-10">
+                          Send Property Inquiry
+                        </span>
+
+                        <ChevronRight
+                          size={15}
+                          className="relative z-10 text-[#d9bd82]"
                         />
-                        <span>
-                          {property.beds}
-                        </span>
-                        <span className="text-slate-400">
-                          Beds
-                        </span>
-                      </span>
-                    )}
+                      </button>
 
-                    {property.baths != null && (
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                        <Bath
-                          size={14}
-                          className="shrink-0 text-slate-400"
+                      {/* REQUEST SITE VIEWING */}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openViewing();
+                        }}
+                        className="brea88-mobile-premium brea88-mobile-premium-light group relative flex min-h-[62px] items-center justify-center gap-2.5 rounded-[18px] px-5 py-4 text-sm font-bold text-slate-700 shadow-[0_8px_25px_rgba(15,23,42,0.07)] transition-transform duration-150 active:scale-[0.97]"
+                      >
+                        {/* Continuous outer glow */}
+                        <span className="brea88-mobile-glow pointer-events-none absolute -inset-2 -z-10 rounded-[22px] bg-[#c9a96e]/15 blur-lg" />
+
+                        <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#c9a96e]/10 text-[#a47d3c]">
+                          <CalendarDays size={17} />
+                        </span>
+
+                        <span className="relative z-10">
+                          Request Site Viewing
+                        </span>
+
+                        <ChevronRight
+                          size={15}
+                          className="relative z-10 text-[#a47d3c]"
                         />
-                        <span>
-                          {property.baths}
-                        </span>
-                        <span className="text-slate-400">
-                          Baths
-                        </span>
-                      </span>
-                    )}
-
-                    {property.sqft != null && (
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                        <Maximize
-                          size={14}
-                          className="shrink-0 text-slate-400"
-                        />
-
-                        <span>
-                          {Number(
-                            property.sqft,
-                          ).toFixed(2)}
-                        </span>
-
-                        <span className="text-slate-400">
-                          Floor Area
-                        </span>
-                      </span>
-                    )}
-
-                    {property.lotArea != null && (
-                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                        <Maximize
-                          size={14}
-                          className="shrink-0 text-slate-400"
-                        />
-
-                        <span>
-                          {Number(
-                            property.lotArea,
-                          ).toFixed(2)}
-                        </span>
-
-                        <span className="text-slate-400">
-                          Lot Area
-                        </span>
-                      </span>
-                    )}
+                      </button>
+                    </div>
                   </div>
-                )}
+                </section>
 
+                {/* PROPERTY DETAILS */}
                 <section>
                   <SectionTitle
                     icon={
@@ -1829,6 +1940,7 @@ export default function PropertyCard({
                   </div>
                 </section>
 
+                {/* DEVELOPER */}
                 {property.developer && (
                   <section>
                     <SectionTitle
@@ -1846,6 +1958,7 @@ export default function PropertyCard({
                   </section>
                 )}
 
+                {/* DESCRIPTION */}
                 {property.description && (
                   <section>
                     <SectionTitle
@@ -1881,6 +1994,7 @@ export default function PropertyCard({
                   </section>
                 )}
 
+                {/* BANK FINANCING */}
                 {(property.totalcp ||
                   property.bankFinancing
                     ?.length) && (
@@ -1894,12 +2008,12 @@ export default function PropertyCard({
 
                     <div className="mt-4 space-y-3">
                       {property.totalcp && (
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4">
+                        <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4">
                           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                             Total Contract Price
                           </span>
 
-                          <span className="text-sm font-bold text-slate-800">
+                          <span className="text-right text-sm font-bold text-slate-800">
                             {formatPrice(
                               property.totalcp,
                             )}
@@ -1936,6 +2050,7 @@ export default function PropertyCard({
                   </section>
                 )}
 
+                {/* PROPERTY VIDEO */}
                 <section>
                   <SectionTitle
                     icon={<Video size={17} />}
@@ -1947,6 +2062,7 @@ export default function PropertyCard({
                   </div>
                 </section>
 
+                {/* PROPERTY GALLERY */}
                 {galleryImages.length > 0 && (
                   <section>
                     <SectionTitle
@@ -1993,42 +2109,16 @@ export default function PropertyCard({
                   </section>
                 )}
 
-                <section className="border-t border-slate-100 pt-6">
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openInquiry();
-                      }}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-slate-900/10 transition hover:-translate-y-0.5 hover:bg-slate-800"
-                    >
-                      <MessageCircle
-                        size={18}
-                      />
-                      Send Property Inquiry
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openViewing();
-                      }}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 transition hover:border-[#c9a96e] hover:bg-[#c9a96e]/5 hover:text-slate-900"
-                    >
-                      <CalendarDays
-                        size={18}
-                      />
-                      Request Site Viewing
-                    </button>
-                  </div>
-                </section>
+                {/* BOTTOM SPACING
+                    Actions are intentionally no longer
+                    placed here. */}
+                <div className="h-1" />
               </div>
             </div>
           </div>
         </div>
 
+        {/* FULLSCREEN GALLERY PREVIEW */}
         {galleryPreviewOpen && (
           <div
             className="fixed inset-0 z-[200000] flex items-center justify-center bg-black/95 p-3 sm:p-6"
@@ -2330,4 +2420,3 @@ function DetailRow({
     </div>
   );
 }
-
