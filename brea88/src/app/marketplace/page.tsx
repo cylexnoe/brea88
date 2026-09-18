@@ -55,7 +55,7 @@ const PROPERTY_CATEGORIES = [
   'House & Lot',
   'Condominiums',
   'For Rent',
-  'For Sale by Owner',
+  'For Sale',
 ];
 
 const PROPERTY_TYPES = [
