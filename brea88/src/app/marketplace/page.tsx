@@ -102,7 +102,6 @@ function useScrollReveal<T extends HTMLElement>(
 
     if (!element) return;
 
-    // Respect users who prefer reduced motion.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setIsVisible(true);
       return;
@@ -112,8 +111,6 @@ function useScrollReveal<T extends HTMLElement>(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-
-          // Reveal only once.
           observer.unobserve(entry.target);
         }
       },
@@ -178,7 +175,11 @@ export default function MarketplacePage() {
   const [selectedPropertyType, setSelectedPropertyType] = useState('All');
   const [selectedHouseType, setSelectedHouseType] = useState('All');
   const [selectedStorey, setSelectedStorey] = useState('All');
-  const [maxPrice, setMaxPrice] = useState(500000000);
+
+  // Budget filters
+  const [minimumBudget, setMinimumBudget] = useState('');
+  const [maximumBudget, setMaximumBudget] = useState('');
+
   const [sortBy, setSortBy] = useState<
     'default' | 'price-asc' | 'price-desc'
   >('default');
@@ -230,6 +231,15 @@ export default function MarketplacePage() {
   const filteredProperties = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
+    // Convert formatted input values back to numbers.
+    const minBudget = minimumBudget
+      ? Number(minimumBudget.replace(/,/g, ''))
+      : null;
+
+    const maxBudget = maximumBudget
+      ? Number(maximumBudget.replace(/,/g, ''))
+      : null;
+
     const result = properties.filter((property) => {
       const searchableText = [
         property.title,
@@ -262,13 +272,22 @@ export default function MarketplacePage() {
         property.storey === selectedStorey ||
         (selectedStorey === '4+' && Number(property.storey) >= 4);
 
+      const propertyPrice = parsePrice(property.price);
+
+      const minimumBudgetMatches =
+        minBudget === null || propertyPrice >= minBudget;
+
+      const maximumBudgetMatches =
+        maxBudget === null || propertyPrice <= maxBudget;
+
       return (
         (!query || searchableText.includes(query)) &&
         categoryMatches &&
         typeMatches &&
         houseTypeMatches &&
         storeyMatches &&
-        parsePrice(property.price) <= maxPrice
+        minimumBudgetMatches &&
+        maximumBudgetMatches
       );
     });
 
@@ -292,7 +311,8 @@ export default function MarketplacePage() {
     selectedPropertyType,
     selectedHouseType,
     selectedStorey,
-    maxPrice,
+    minimumBudget,
+    maximumBudget,
     sortBy,
   ]);
 
@@ -302,7 +322,8 @@ export default function MarketplacePage() {
     setSelectedPropertyType('All');
     setSelectedHouseType('All');
     setSelectedStorey('All');
-    setMaxPrice(500000000);
+    setMinimumBudget('');
+    setMaximumBudget('');
     setSortBy('default');
   };
 
@@ -312,9 +333,9 @@ export default function MarketplacePage() {
     selectedPropertyType !== 'All' ||
     selectedHouseType !== 'All' ||
     selectedStorey !== 'All' ||
-    maxPrice < 500000000 ||
+    minimumBudget !== '' ||
+    maximumBudget !== '' ||
     sortBy !== 'default';
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.08),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_45%,_#f8fafc)] text-slate-900">
       {/* ------------------------------------------------------------------ */}
@@ -504,43 +525,78 @@ export default function MarketplacePage() {
             </div>
 
             <div className="mt-6 flex flex-col gap-5 border-t border-slate-100 pt-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="w-full lg:max-w-md">
+              {/* Budget Range */}
+              <div className="w-full lg:max-w-xl">
                 <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 sm:text-xs">
-                  Maximum Budget
+                  Budget Range
                 </label>
 
-                <div className="flex items-center gap-4">
-                  <div className="min-w-[85px]">
-                    <p className="text-xl font-black text-slate-950">
-                      {formatBudget(maxPrice)}
-                    </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {/* Minimum Budget */}
+                  <div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#a47d3c]">
+                        ₱
+                      </span>
 
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={minimumBudget}
+                        onChange={(event) => {
+                          const value = event.target.value.replace(/\D/g, '');
+
+                          setMinimumBudget(
+                            value ? Number(value).toLocaleString('en-PH') : '',
+                          );
+                        }}
+                        placeholder="Minimum Budget"
+                        aria-label="Minimum Budget"
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pl-10 text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                      />
+                    </div>
+
+                    <p className="mt-1.5 pl-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      Minimum
+                    </p>
+                  </div>
+
+                  {/* Maximum Budget */}
+                  <div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#a47d3c]">
+                        ₱
+                      </span>
+
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={maximumBudget}
+                        onChange={(event) => {
+                          const value = event.target.value.replace(/\D/g, '');
+
+                          setMaximumBudget(
+                            value ? Number(value).toLocaleString('en-PH') : '',
+                          );
+                        }}
+                        placeholder="Maximum Budget"
+                        aria-label="Maximum Budget"
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pl-10 text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
+                      />
+                    </div>
+
+                    <p className="mt-1.5 pl-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
                       Maximum
                     </p>
                   </div>
-
-                  <div className="w-full">
-                    <input
-                      type="range"
-                      min={1000}
-                      max={500000000}
-                      step={1000000}
-                      value={maxPrice}
-                      onChange={(event) =>
-                        setMaxPrice(Number(event.target.value))
-                      }
-                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-900"
-                    />
-
-                    <div className="mt-2 flex justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
-                      <span>₱1K</span>
-                      <span>₱500M+</span>
-                    </div>
-                  </div>
                 </div>
+
+                <p className="mt-2 text-[10px] font-medium text-slate-400">
+                  Enter your preferred property price range.
+                </p>
               </div>
 
+              {/* Sort Listings */}
               <div className="w-full lg:w-64">
                 <label className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 sm:text-xs">
                   <ArrowUpDown className="h-4 w-4" />
