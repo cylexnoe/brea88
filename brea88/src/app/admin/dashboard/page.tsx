@@ -2573,42 +2573,88 @@ export default function AdminDashboardPage() {
                             );
                           })}
                         </div>
-                        {formData.bankFinancing.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {formData.bankFinancing.map((bank) => (
-                              <span key={bank} className="rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-700">
-                                {bank}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                          <input
-                            type="text"
-                            value={formData.customBank}
-                            onChange={(event) => setFormData((current) => ({ ...current, customBank: event.target.value }))}
-                            placeholder="Add another bank or financing provider"
-                            className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const custom = formData.customBank.trim();
-                              if (!custom) return;
-                              const exists = formData.bankFinancing.some((item) => item.toLowerCase() === custom.toLowerCase());
-                              if (exists) {
-                                setFormData((current) => ({ ...current, customBank: '' }));
-                                return;
-                              }
-                              setFormData((current) => ({ ...current, bankFinancing: [...current.bankFinancing, custom], customBank: '' }));
-                            }}
-                            className="h-11 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white transition hover:bg-blue-700"
-                          >
-                            Add Provider
-                          </button>
+                    
+                      {formData.bankFinancing.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.bankFinancing.map((bank) => (
+                            <span
+                              key={bank}
+                              className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 pl-3 pr-1.5 py-1.5 text-[11px] font-bold text-blue-700"
+                            >
+                              <span>{bank}</span>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData((current) => ({
+                                    ...current,
+                                    bankFinancing: current.bankFinancing.filter(
+                                      (item) => item !== bank
+                                    ),
+                                  }));
+                                }}
+                                aria-label={`Remove ${bank}`}
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-blue-400 transition hover:bg-red-100 hover:text-red-600"
+                              >
+                                <X size={13} strokeWidth={2.5} />
+                              </button>
+                            </span>
+                          ))}
                         </div>
+                      )}
+
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <input
+                          type="text"
+                          value={formData.customBank}
+                          onChange={(event) =>
+                            setFormData((current) => ({
+                              ...current,
+                              customBank: event.target.value,
+                            }))
+                          }
+                          placeholder="Add another bank or financing provider"
+                          className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const custom = formData.customBank.trim();
+
+                            if (!custom) return;
+
+                            const exists = formData.bankFinancing.some(
+                              (item) =>
+                                item.toLowerCase() === custom.toLowerCase()
+                            );
+
+                            if (exists) {
+                              setFormData((current) => ({
+                                ...current,
+                                customBank: '',
+                              }));
+                              return;
+                            }
+
+                            setFormData((current) => ({
+                              ...current,
+                              bankFinancing: [
+                                ...current.bankFinancing,
+                                custom,
+                              ],
+                              customBank: '',
+                            }));
+                          }}
+                          className="h-11 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white transition hover:bg-blue-700"
+                        >
+                          Add Provider
+                        </button>
                       </div>
-                    </div>
+                      </div>
+                      </div>
+
+
 
                     <div className="w-full min-w-0 space-y-2.5">
                       <div className="flex items-center justify-between">
