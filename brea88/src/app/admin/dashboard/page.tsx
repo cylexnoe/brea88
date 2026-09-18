@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
+  CopyPlus,
   LogOut,
   Upload,
   Link as LinkIcon,
@@ -324,6 +325,24 @@ export default function AdminDashboardPage() {
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const router = useRouter();
+
+  const [
+  duplicateTarget,
+  setDuplicateTarget,
+] = useState<Property | null>(null);
+
+const [
+  duplicatingProperty,
+  setDuplicatingProperty,
+] = useState(false);
+
+const [
+  duplicateToast,
+  setDuplicateToast,
+] = useState<{
+  type: 'success' | 'error';
+  message: string;
+} | null>(null);
 
   const [activeAccounts, setActiveAccounts] =
     useState(0);
@@ -894,6 +913,95 @@ export default function AdminDashboardPage() {
       );
     }
   }
+
+      async function duplicateProperty() {
+  if (!duplicateTarget) {
+    return;
+  }
+
+  const id =
+    duplicateTarget.id ??
+    duplicateTarget._id;
+
+  if (
+    id === undefined ||
+    id === null
+  ) {
+    setDuplicateToast({
+      type: 'error',
+      message:
+        'Property ID is missing.',
+    });
+
+    return;
+  }
+
+  try {
+    setDuplicatingProperty(true);
+
+    const response = await fetch(
+      '/api/properties',
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify({
+          action: 'duplicate',
+          id: Number(id),
+        }),
+      },
+    );
+
+    const data =
+      await response
+        .json()
+        .catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          `Failed to duplicate property. HTTP ${response.status}`,
+      );
+    }
+
+    await fetchProperties();
+
+    setDuplicateTarget(null);
+
+    setDuplicateToast({
+      type: 'success',
+      message:
+        data?.message ||
+        `"${duplicateTarget.title} (Copy)" was created successfully.`,
+    });
+
+    setTimeout(() => {
+      setDuplicateToast(null);
+    }, 4500);
+  } catch (error) {
+    console.error(
+      '[Duplicate Property] Error:',
+      error,
+    );
+
+    setDuplicateToast({
+      type: 'error',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Failed to duplicate property.',
+    });
+
+    setTimeout(() => {
+      setDuplicateToast(null);
+    }, 4500);
+  } finally {
+    setDuplicatingProperty(false);
+  }
+}
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -2196,31 +2304,40 @@ export default function AdminDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    editProperty(
-                                      property,
-                                    )
+                                    editProperty(property)
                                   }
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                                   title="Edit property"
+                                  aria-label="Edit property"
                                 >
-                                  <Pencil
+                                  <Pencil size={15} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDuplicateTarget(property)
+                                  }
+                                  className="group flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-sm"
+                                  title="Duplicate property"
+                                  aria-label={`Duplicate ${property.title}`}
+                                >
+                                  <CopyPlus
                                     size={15}
+                                    className="transition-transform duration-200 group-hover:scale-110"
                                   />
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    deleteProperty(
-                                      property,
-                                    )
+                                    deleteProperty(property)
                                   }
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                   title="Delete property"
+                                  aria-label="Delete property"
                                 >
-                                  <Trash2
-                                    size={15}
-                                  />
+                                  <Trash2 size={15} />
                                 </button>
                               </div>
                             </div>
@@ -3522,7 +3639,6 @@ export default function AdminDashboardPage() {
                       Your administration workspace is designed to keep your property marketplace organized, secure, and easy to manage.
                     </p>
                   </div>
-
                   <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white shadow-xl">
                     <img
                       src="/img/LOGO.png"
@@ -3535,9 +3651,266 @@ export default function AdminDashboardPage() {
             </section>
           )}
         </div>
+
+        {/* Duplicate Property Confirmation Modal */}
+        {duplicateTarget && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                !duplicatingProperty
+              ) {
+                setDuplicateTarget(null);
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-md overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl shadow-slate-950/30"
+              style={{
+                animation:
+                  'duplicateModalIn 220ms ease-out',
+              }}
+            >
+              {/* Header */}
+              <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 px-6 py-7 text-white">
+                <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                <div className="absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 backdrop-blur-md">
+                      <CopyPlus
+                        size={24}
+                        strokeWidth={2}
+                      />
+                    </div>
+
+                    <h2 className="text-xl font-bold tracking-tight">
+                      Duplicate Property
+                    </h2>
+
+                    <p className="mt-1 text-sm text-violet-100">
+                      Create a new copy of this property.
+                    </p>
+                  </div>
+
+                  {!duplicatingProperty && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDuplicateTarget(null)
+                      }
+                      className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+                      aria-label="Close duplicate confirmation"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-6">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                      {duplicateTarget.image ? (
+                        <img
+                          src={duplicateTarget.image}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Building2
+                          size={18}
+                          className="text-slate-400"
+                        />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                        Property
+                      </p>
+
+                      <p className="mt-0.5 break-words text-sm font-bold text-slate-900">
+                        {duplicateTarget.title}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        A new copy will be created.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-2.5">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <CheckCircle2
+                      size={16}
+                      className="shrink-0 text-emerald-500"
+                    />
+                    Property details will be copied
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <CheckCircle2
+                      size={16}
+                      className="shrink-0 text-emerald-500"
+                    />
+                    Photos will be copied
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <CheckCircle2
+                      size={16}
+                      className="shrink-0 text-emerald-500"
+                    />
+                    Agent assignment will be preserved
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <CheckCircle2
+                      size={16}
+                      className="shrink-0 text-emerald-500"
+                    />
+                    Existing inquiries will not be copied
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-xl bg-violet-50 px-4 py-3 text-xs leading-relaxed text-violet-700">
+                  The duplicate will automatically receive a
+                  new property ID and will be named{' '}
+                  <span className="font-bold">
+                    "{duplicateTarget.title} (Copy)"
+                  </span>
+                  .
+                </div>
+
+                {/* Buttons */}
+                <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={duplicatingProperty}
+                    onClick={() =>
+                      setDuplicateTarget(null)
+                    }
+                    className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={duplicatingProperty}
+                    onClick={duplicateProperty}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-600/25 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+                  >
+                    {duplicatingProperty ? (
+                      <>
+                        <Loader2
+                          size={17}
+                          className="animate-spin"
+                        />
+                        Duplicating...
+                      </>
+                    ) : (
+                      <>
+                        <CopyPlus size={17} />
+                        Duplicate Property
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Duplicate Property Toast */}
+        {duplicateToast && (
+          <div
+            className="fixed bottom-5 right-5 z-[110] w-[calc(100%-2rem)] max-w-sm"
+            style={{
+              animation:
+                'duplicateToastIn 260ms ease-out',
+            }}
+          >
+            <div
+              className={`flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-2xl ${
+                duplicateToast.type === 'success'
+                  ? 'border-emerald-200 shadow-emerald-950/10'
+                  : 'border-red-200 shadow-red-950/10'
+              }`}
+            >
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  duplicateToast.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'bg-red-50 text-red-600'
+                }`}
+              >
+                {duplicateToast.type === 'success' ? (
+                  <CheckCircle2 size={20} />
+                ) : (
+                  <AlertCircle size={20} />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-900">
+                  {duplicateToast.type === 'success'
+                    ? 'Property duplicated'
+                    : 'Duplication failed'}
+                </p>
+
+                <p className="mt-0.5 break-words text-xs leading-relaxed text-slate-500">
+                  {duplicateToast.message}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setDuplicateToast(null)
+                }
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Dismiss notification"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <style jsx global>{`
+          @keyframes duplicateModalIn {
+            from {
+              opacity: 0;
+              transform: translateY(12px) scale(0.97);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @keyframes duplicateToastIn {
+            from {
+              opacity: 0;
+              transform: translateY(12px) scale(0.97);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}</style>
         
       </main>
     </div>
   );
 }
-
