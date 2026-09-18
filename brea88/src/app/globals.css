@@ -820,3 +820,73 @@ body:has(aside[class*="bg-slate-950"]) main img { box-shadow:0 10px 26px rgba(15
   }
 }
 
+@keyframes brea88RotateBorder {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes brea88GlowPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.brea88-mobile-premium {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.brea88-mobile-premium::before {
+  content: '';
+  position: absolute;
+  width: 70%;
+  height: 180%;
+  left: 15%;
+  top: -40%;
+  background: linear-gradient(
+    180deg,
+    #8f6b32,
+    #c9a96e,
+    #f8e8b8,
+    #c9a96e,
+    #8f6b32
+  );
+  animation: brea88RotateBorder 3.8s linear infinite;
+  z-index: -2;
+}
+
+.brea88-mobile-premium::after {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  border-radius: 16.5px;
+  background: #0f172a;
+  z-index: -1;
+}
+
+.brea88-mobile-premium-light::after {
+  background: #ffffff;
+}
+
+.brea88-mobile-glow {
+  animation: brea88GlowPulse 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brea88-mobile-premium::before,
+  .brea88-mobile-glow {
+    animation: none;
+  }
+}
