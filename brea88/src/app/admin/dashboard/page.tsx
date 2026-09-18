@@ -58,7 +58,7 @@ const CATEGORY_OPTIONS = [
   'House & Lot',
   'Condominiums',
   'For Rent',
-  'For Sale by Owner',
+  'For Sale',
 ];
 
 const HOUSE_LOT_TYPES = [
@@ -185,7 +185,7 @@ const INITIAL_FORM: FormData = {
  * - House & Lot: show except Lot Only Subdivision
  * - Condominiums: never show
  * - For Rent: show
- * - For Sale by Owner: show for house/residential property types
+ * - For Sale: show for house/residential property types
  */
 function requiresHouseDetails(
   category: string,
@@ -199,7 +199,7 @@ function requiresHouseDetails(
     return propertyType === 'House For Rent';
   }
 
-  if (category === 'For Sale by Owner') {
+  if (category === 'For Sale') {
     return true;
   }
 
@@ -374,7 +374,7 @@ export default function AdminDashboardPage() {
       case 'For Rent':
         return RENT_TYPES;
 
-      case 'For Sale by Owner':
+      case 'For Sale':
         return [
           'House & Lot',
           'Lot Only',
@@ -1184,7 +1184,7 @@ export default function AdminDashboardPage() {
     properties.filter(
       (property) =>
         property.category ===
-        'For Sale by Owner',
+        'For Sale',
     ).length;
 
   function navigate(
