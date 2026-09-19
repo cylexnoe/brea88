@@ -8,10 +8,12 @@ import {
 } from '@/lib/security';
 
 const ALLOWED_TAGS = new Set([
+  'All',
   'Residential',
   'Commercial',
   'Investment',
-  'All',
+  'For Rent',
+  'Brokerage',
 ]);
 
 const MAX_IMAGES = 20;
