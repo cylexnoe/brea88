@@ -898,9 +898,7 @@ Service with a Heart`,
       </div>
 
       <p style="color:#64748b;font-size:13px;margin-top:24px">
-        Inquiry #${inquiry.id}.
-        You can reply directly to this email
-        to contact the client.
+        You can reply directly to this email to contact the client.
       </p>
 
     </div>
