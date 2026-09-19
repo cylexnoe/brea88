@@ -2483,6 +2483,7 @@ const [
                         handleInputChange
                       }
                       options={[
+                        'All',
                         'Residential',
                         'Commercial',
                         'Investment',
