@@ -473,7 +473,6 @@ export default function AdminAgentsPage() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400"><ShieldCheck size={20} /></div>
             <div>
-              <div className="flex items-center gap-2"><span className="h-px w-5 bg-[#c9a96e]" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#c9a96e]">Security</span></div>
               <h3 className="mt-2 text-base font-bold text-white">Team access control</h3>
               <p className="mt-2 max-w-4xl text-xs leading-6 text-slate-400">Only administrators can change Agent/Broker roles or activate and deactivate accounts. Agents and Brokers cannot manage properties.</p>
               <div className="mt-5 flex flex-wrap gap-2">
