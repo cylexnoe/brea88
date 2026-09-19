@@ -2486,6 +2486,7 @@ const [
                         'Residential',
                         'Commercial',
                         'Investment',
+                        'Brokerage',
                         'All',
                       ]}
                       required
