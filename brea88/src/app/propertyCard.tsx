@@ -2319,7 +2319,7 @@ export default function PropertyCard({
                   ).toFixed(2)}
 
                   <span className="hidden sm:inline">
-                    m²
+                    sqft
                   </span>
                 </span>
               )}
