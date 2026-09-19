@@ -1047,9 +1047,9 @@ BREA 88 REALTY OPC
 
         <!-- SUCCESS MESSAGE -->
 
-        <div style="margin-top:26px;padding:20px;background:#faf7ef;border:1px solid #ead9b8;border-radius:15px">
+        <div style="margin-top:26px;padding:20px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:15px">
 
-          <div style="font-size:13px;font-weight:bold;letter-spacing:1.2px;text-transform:uppercase;color:#8f6b32">
+          <div style="font-size:13px;font-weight:bold;letter-spacing:1.2px;text-transform:uppercase;color:#15803d">
             Request Received
           </div>
 
