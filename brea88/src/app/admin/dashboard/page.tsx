@@ -2487,7 +2487,7 @@ const [
                         'Commercial',
                         'Investment',
                         'For Rent',
-                        'For Sale',
+                        'Brokerage',
                       ]}
                       required
                     />
