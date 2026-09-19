@@ -1136,20 +1136,6 @@ BREA 88 REALTY OPC
 
         </div>
 
-        <!-- REFERENCE -->
-
-        <div style="margin-top:22px;text-align:center">
-
-          <div style="font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#94a3b8">
-            Inquiry Reference
-          </div>
-
-          <div style="margin-top:6px;font-size:16px;font-weight:700;color:#071936">
-            #${inquiry.id}
-          </div>
-
-        </div>
-
         <!-- AGENT -->
 
         <div style="margin-top:25px;padding-top:22px;border-top:1px solid #e2e8f0">
