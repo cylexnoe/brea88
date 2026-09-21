@@ -196,8 +196,12 @@ function requiresHouseDetails(
     return propertyType !== 'Lot Only Subdivision';
   }
 
+  if (category === 'Condominiums') {
+    return true;
+  }
+
   if (category === 'For Rent') {
-    return propertyType === 'House For Rent';
+    return true;
   }
 
   if (category === 'For Sale') {
