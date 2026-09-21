@@ -62,9 +62,72 @@ function cleanBankFinancing(
     )
     .map((item) => item.trim())
     .filter(
-      (item) => item.length > 0 && item.length <= 100,
+      (item) =>
+        item.length > 0 &&
+        item.length <= 100,
     )
     .slice(0, 20);
+}
+
+/**
+ * Per Month rules:
+ *
+ * House & Lot     -> allowed
+ * Condominiums    -> allowed
+ * For Sale        -> allowed
+ * For Rent        -> always null
+ * Brokerage       -> always null
+ */
+function cleanPerMonth(
+  value: unknown,
+  category: string,
+  propertyType: string,
+): string | null {
+  const normalizedCategory =
+    category.trim().toLowerCase();
+
+  const normalizedPropertyType =
+    propertyType.trim().toLowerCase();
+
+  const isForRent =
+    normalizedCategory === 'for rent' ||
+    normalizedPropertyType === 'for rent' ||
+    normalizedPropertyType.includes('for rent');
+
+  const isBrokerage =
+    normalizedCategory === 'brokerage' ||
+    normalizedPropertyType === 'brokerage' ||
+    normalizedPropertyType.includes('brokerage');
+
+  if (isForRent || isBrokerage) {
+    return null;
+  }
+
+  const isHouseAndLot =
+    normalizedCategory === 'house & lot' ||
+    normalizedPropertyType === 'house & lot' ||
+    normalizedPropertyType.includes('house & lot');
+
+  const isCondominium =
+    normalizedCategory === 'condominiums' ||
+    normalizedCategory === 'condominium' ||
+    normalizedPropertyType === 'condominiums' ||
+    normalizedPropertyType === 'condominium' ||
+    normalizedPropertyType.includes('condominium');
+
+  const isForSale =
+    normalizedCategory === 'for sale' ||
+    normalizedPropertyType === 'for sale';
+
+  if (
+    isHouseAndLot ||
+    isCondominium ||
+    isForSale
+  ) {
+    return cleanString(value, 100) || null;
+  }
+
+  return null;
 }
 
 function optionalNumber(
@@ -112,58 +175,120 @@ function validateMeasurements(
   );
 }
 
-function getPropertyData(data: Record<string, unknown>) {
-  const title = cleanString(data.title, 200);
-  const tag = cleanString(data.tag, 30);
-  const location = cleanString(data.location, 300);
-  const price = cleanString(data.price, 100);
-  const category = cleanString(data.category, 100);
+function getPropertyData(
+  data: Record<string, unknown>,
+) {
+  const title = cleanString(
+    data.title,
+    200,
+  );
+
+  const tag = cleanString(
+    data.tag,
+    30,
+  );
+
+  const location = cleanString(
+    data.location,
+    300,
+  );
+
+  const price = cleanString(
+    data.price,
+    100,
+  );
+
+  const category = cleanString(
+    data.category,
+    100,
+  );
+
   const propertyType = cleanString(
     data.propertyType,
     100,
   );
+
   const houseType = cleanString(
     data.houseType,
     100,
   );
-  const storey = cleanString(data.storey, 30);
+
+  const storey = cleanString(
+    data.storey,
+    30,
+  );
+
   const developer = cleanString(
     data.developer,
     200,
   );
+
   const description = cleanString(
     data.description,
     10000,
   );
+
   const totalcp = cleanString(
     data.totalcp,
     100,
   );
+
   const videoUrl = cleanOptionalUrl(
     data.videoUrl,
   );
-  const bankFinancing = cleanBankFinancing(
-    data.bankFinancing,
+
+  const bankFinancing =
+    cleanBankFinancing(
+      data.bankFinancing,
+    );
+
+  const images = cleanImages(
+    data.images,
   );
-  const images = cleanImages(data.images);
+
   const singleImage = cleanString(
     data.image,
     2048,
   );
+
   const image =
-    singleImage && isSafeHttpUrl(singleImage)
+    singleImage &&
+    isSafeHttpUrl(singleImage)
       ? singleImage
       : '';
-  const beds = optionalNumber(data.beds);
-  const baths = optionalNumber(data.baths);
-  const sqft = optionalNumber(data.sqft);
-  const lotArea = optionalNumber(data.lotArea);
+
+  const beds = optionalNumber(
+    data.beds,
+  );
+
+  const baths = optionalNumber(
+    data.baths,
+  );
+
+  const sqft = optionalNumber(
+    data.sqft,
+  );
+
+  const lotArea = optionalNumber(
+    data.lotArea,
+  );
+
+  /**
+   * IMPORTANT:
+   * Per Month is normalized on the server.
+   */
+  const perMonth = cleanPerMonth(
+    data.perMonth,
+    category,
+    propertyType,
+  );
 
   return {
     title,
     tag,
     location,
     price,
+    perMonth,
     category,
     propertyType,
     houseType,
@@ -205,16 +330,18 @@ function validatePropertyData(
       data.beds,
       data.baths,
       data.sqft,
-      data.lotArea
+      data.lotArea,
     )
   ) {
     return 'Invalid property measurements.';
   }
 
-  if (raw.videoUrl !== undefined &&
-      raw.videoUrl !== null &&
-      raw.videoUrl !== '' &&
-      !data.videoUrl) {
+  if (
+    raw.videoUrl !== undefined &&
+    raw.videoUrl !== null &&
+    raw.videoUrl !== '' &&
+    !data.videoUrl
+  ) {
     return 'Property video URL must be a valid HTTPS URL.';
   }
 
@@ -235,7 +362,9 @@ export async function GET() {
 
     const properties =
       await prisma.property.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
     return NextResponse.json({
@@ -260,7 +389,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request,
+) {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json(
       {
@@ -273,7 +404,9 @@ export async function POST(request: Request) {
 
   try {
     const body: unknown =
-      await request.json().catch(() => null);
+      await request.json().catch(
+        () => null,
+      );
 
     if (
       typeof body !== 'object' ||
@@ -289,10 +422,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const raw = body as Record<string, unknown>;
-    const data = getPropertyData(raw);
+    const raw =
+      body as Record<string, unknown>;
+
+    const data =
+      getPropertyData(raw);
+
     const validationError =
-      validatePropertyData(data, raw);
+      validatePropertyData(
+        data,
+        raw,
+      );
 
     if (validationError) {
       return NextResponse.json(
@@ -327,36 +467,80 @@ export async function POST(request: Request) {
         data: {
           title: data.title,
           tag: data.tag,
-          category: data.category,
-          propertyType: data.propertyType,
-          houseType: data.houseType,
-          storey: data.storey,
-          price: data.price,
-          location: data.location,
-          image: finalImages[0],
-          images: finalImages,
+
+          category:
+            data.category,
+
+          propertyType:
+            data.propertyType,
+
+          houseType:
+            data.houseType,
+
+          storey:
+            data.storey,
+
+          price:
+            data.price,
+
+          /**
+           * NEW:
+           * Save Per Month.
+           */
+          perMonth:
+            data.perMonth,
+
+          location:
+            data.location,
+
+          image:
+            finalImages[0],
+
+          images:
+            finalImages,
+
           beds:
             data.beds === null
               ? null
-              : Math.floor(data.beds),
+              : Math.floor(
+                  data.beds,
+                ),
+
           baths:
             data.baths === null
               ? null
-              : Math.floor(data.baths),
-          sqft: data.sqft,
-          lotArea: data.lotArea,
-          developer: data.developer,
-          bankFinancing: data.bankFinancing,
-          description: data.description,
-          videoUrl: data.videoUrl,
-          totalcp: data.totalcp,
+              : Math.floor(
+                  data.baths,
+                ),
+
+          sqft:
+            data.sqft,
+
+          lotArea:
+            data.lotArea,
+
+          developer:
+            data.developer,
+
+          bankFinancing:
+            data.bankFinancing,
+
+          description:
+            data.description,
+
+          videoUrl:
+            data.videoUrl,
+
+          totalcp:
+            data.totalcp,
         },
       });
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Property saved successfully.',
+        message:
+          'Property saved successfully.',
         property,
       },
       { status: 201 },
@@ -372,14 +556,17 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create property.',
+        message:
+          'Failed to create property.',
       },
       { status: 500 },
     );
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(
+  request: Request,
+) {
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json(
       {
@@ -392,7 +579,9 @@ export async function PUT(request: Request) {
 
   try {
     const body: unknown =
-      await request.json().catch(() => null);
+      await request.json().catch(
+        () => null,
+      );
 
     if (
       typeof body !== 'object' ||
@@ -402,28 +591,41 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid property data.',
+          message:
+            'Invalid property data.',
         },
         { status: 400 },
       );
     }
 
-    const raw = body as Record<string, unknown>;
-    const id = Number(raw.id);
+    const raw =
+      body as Record<string, unknown>;
 
-    if (!Number.isInteger(id) || id <= 0) {
+    const id =
+      Number(raw.id);
+
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: 'A valid property ID is required.',
+          message:
+            'A valid property ID is required.',
         },
         { status: 400 },
       );
     }
 
-    const data = getPropertyData(raw);
+    const data =
+      getPropertyData(raw);
+
     const validationError =
-      validatePropertyData(data, raw);
+      validatePropertyData(
+        data,
+        raw,
+      );
 
     if (validationError) {
       return NextResponse.json(
@@ -455,39 +657,89 @@ export async function PUT(request: Request) {
 
     const property =
       await prisma.property.update({
-        where: { id },
+        where: {
+          id,
+        },
+
         data: {
-          title: data.title,
-          tag: data.tag,
-          category: data.category,
-          propertyType: data.propertyType,
-          houseType: data.houseType,
-          storey: data.storey,
-          price: data.price,
-          location: data.location,
-          image: finalImages[0],
-          images: finalImages,
+          title:
+            data.title,
+
+          tag:
+            data.tag,
+
+          category:
+            data.category,
+
+          propertyType:
+            data.propertyType,
+
+          houseType:
+            data.houseType,
+
+          storey:
+            data.storey,
+
+          price:
+            data.price,
+
+          /**
+           * NEW:
+           * Update Per Month.
+           */
+          perMonth:
+            data.perMonth,
+
+          location:
+            data.location,
+
+          image:
+            finalImages[0],
+
+          images:
+            finalImages,
+
           beds:
             data.beds === null
               ? null
-              : Math.floor(data.beds),
+              : Math.floor(
+                  data.beds,
+                ),
+
           baths:
             data.baths === null
               ? null
-              : Math.floor(data.baths),
-          sqft: data.sqft,
-          lotArea: data.lotArea,
-          developer: data.developer,
-          bankFinancing: data.bankFinancing,
-          description: data.description,
-          videoUrl: data.videoUrl,
-          totalcp: data.totalcp,
+              : Math.floor(
+                  data.baths,
+                ),
+
+          sqft:
+            data.sqft,
+
+          lotArea:
+            data.lotArea,
+
+          developer:
+            data.developer,
+
+          bankFinancing:
+            data.bankFinancing,
+
+          description:
+            data.description,
+
+          videoUrl:
+            data.videoUrl,
+
+          totalcp:
+            data.totalcp,
         },
       });
 
     return NextResponse.json({
       success: true,
-      message: 'Property updated successfully.',
+      message:
+        'Property updated successfully.',
       property,
     });
   } catch (error) {
@@ -501,7 +753,8 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update property.',
+        message:
+          'Failed to update property.',
       },
       { status: 500 },
     );

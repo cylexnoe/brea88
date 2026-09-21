@@ -119,6 +119,7 @@ interface Property {
   title: string;
   tag?: string | null;
   price: string | number;
+  perMonth?: string | null;
   location: string;
   image?: string | null;
   images?: string[] | null;
@@ -146,6 +147,7 @@ interface FormData {
   storey: string;
   tag: string;
   price: string;
+  perMonth: string;
   location: string;
   beds: string;
   baths: string;
@@ -166,6 +168,7 @@ const INITIAL_FORM: FormData = {
   storey: '',
   tag: 'Residential',
   price: '',
+  perMonth: '',
   location: '',
   beds: '',
   baths: '',
@@ -416,6 +419,40 @@ const [
       formData.propertyType,
     );
 
+    const normalizedCategory = formData.category.trim().toLowerCase();
+    const normalizedPropertyType = formData.propertyType.trim().toLowerCase();
+
+    const isForRent =
+      normalizedCategory === 'for rent' ||
+      normalizedPropertyType === 'for rent' ||
+      normalizedPropertyType.includes('for rent');
+
+    const isBrokerage =
+      normalizedCategory === 'brokerage' ||
+      normalizedPropertyType === 'brokerage' ||
+      normalizedPropertyType.includes('brokerage');
+
+    const isHouseAndLot =
+      normalizedCategory === 'house & lot' ||
+      normalizedPropertyType === 'house & lot' ||
+      normalizedPropertyType.includes('house & lot');
+
+    const isCondominium =
+      normalizedCategory === 'condominiums' ||
+      normalizedCategory === 'condominium' ||
+      normalizedPropertyType === 'condominiums' ||
+      normalizedPropertyType === 'condominium' ||
+      normalizedPropertyType.includes('condominium');
+
+    const isForSale =
+      normalizedCategory === 'for sale' ||
+      normalizedPropertyType === 'for sale';
+
+    const showPerMonth =
+      !isForRent &&
+      !isBrokerage &&
+      (isHouseAndLot || isCondominium || isForSale);
+
   async function fetchProperties() {
       try {
         const response = await fetch('/admin/api/properties', {
@@ -507,51 +544,48 @@ const [
     };
   }, []);
 
-  function handleInputChange(
-      event:
-        | ChangeEvent<HTMLInputElement>
-        | ChangeEvent<HTMLSelectElement>
-        | ChangeEvent<HTMLTextAreaElement>,
-    ) {
+  const handleInputChange = (
+      event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
       const { name, value } = event.target;
 
-      if (name === 'category') {
-        setFormData((current) => ({
+      setFormData((current) => {
+        const next = {
           ...current,
-          category: value,
-          propertyType: '',
-          houseType: '',
-          storey: '',
-        }));
+          [name]: value,
+        };
 
-        return;
-      }
+        const category = (
+          name === 'category'
+            ? value
+            : current.category
+        )
+          .trim()
+          .toLowerCase();
 
-      if (name === 'propertyType') {
-        const shouldShowHouseDetails = requiresHouseDetails(
-          formData.category,
-          value,
-        );
+        const propertyType = (
+          name === 'propertyType'
+            ? value
+            : current.propertyType
+        )
+          .trim()
+          .toLowerCase();
 
-        setFormData((current) => ({
-          ...current,
-          propertyType: value,
-          houseType: shouldShowHouseDetails
-            ? current.houseType
-            : '',
-          storey: shouldShowHouseDetails
-            ? current.storey
-            : '',
-        }));
+        const shouldClearPerMonth =
+          category === 'for rent' ||
+          category === 'brokerage' ||
+          propertyType === 'for rent' ||
+          propertyType.includes('for rent') ||
+          propertyType === 'brokerage' ||
+          propertyType.includes('brokerage');
 
-        return;
-      }
+        if (shouldClearPerMonth) {
+          next.perMonth = '';
+        }
 
-      setFormData((current) => ({
-        ...current,
-        [name]: value,
-      }));
-    }
+        return next;
+      });
+    };
 
   function handleImageUpload(
     event: ChangeEvent<HTMLInputElement>,
@@ -791,6 +825,12 @@ const [
         property.price !== null &&
         property.price !== undefined
           ? String(property.price)
+          : '',
+
+      perMonth:
+        property.perMonth !== null &&
+        property.perMonth !== undefined
+          ? String(property.perMonth)
           : '',
 
       location:
@@ -1123,6 +1163,10 @@ const [
             price: formData.price.trim(),
             location: formData.location.trim(),
 
+            perMonth: showPerMonth
+              ? formData.perMonth.trim()
+              : null,
+
             beds: formData.beds
               ? Number(formData.beds)
               : null,
@@ -1169,7 +1213,13 @@ const [
               ),
           },
         );
-
+console.log('🔥 ADMIN PER MONTH PAYLOAD', {
+  category: formData.category,
+  propertyType: formData.propertyType,
+  perMonth: formData.perMonth,
+  showPerMonth,
+  payloadPerMonth: payload.perMonth,
+});
       const data =
         await response
           .json()
@@ -2555,12 +2605,8 @@ const [
                         <input
                           id="title"
                           name="title"
-                          value={
-                            formData.title
-                          }
-                          onChange={
-                            handleInputChange
-                          }
+                          value={formData.title}
+                          onChange={handleInputChange}
                           placeholder="e.g. Premium Residential Villa"
                           required
                           className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
@@ -2579,7 +2625,7 @@ const [
                         </label>
 
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
                             ₱
                           </span>
 
@@ -2588,7 +2634,8 @@ const [
                             name="price"
                             value={formData.price}
                             onChange={(event) => {
-                              const rawValue = event.target.value.replace(/\D/g, '');
+                              const rawValue =
+                                event.target.value.replace(/\D/g, '');
 
                               const formattedValue = rawValue
                                 ? Number(rawValue).toLocaleString('en-US')
@@ -2612,6 +2659,61 @@ const [
                       </div>
                     </div>
 
+                    <div
+                      className={`grid gap-5 ${
+                        showPerMonth
+                          ? 'sm:grid-cols-2'
+                          : 'sm:grid-cols-1'
+                      }`}
+                    >
+                      {showPerMonth && (
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="perMonth"
+                            className="text-sm font-semibold text-slate-700"
+                          >
+                            Per Month
+                          </label>
+
+                          <div className="relative">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                              ₱
+                            </span>
+
+                            <input
+                              id="perMonth"
+                              name="perMonth"
+                              type="text"
+                              value={formData.perMonth}
+                              onChange={(event) => {
+                                const rawValue =
+                                  event.target.value.replace(/\D/g, '');
+
+                                const formattedValue = rawValue
+                                  ? Number(rawValue).toLocaleString('en-US')
+                                  : '';
+
+                                handleInputChange({
+                                  ...event,
+                                  target: {
+                                    ...event.target,
+                                    name: 'perMonth',
+                                    value: formattedValue,
+                                  },
+                                } as React.ChangeEvent<HTMLInputElement>);
+                              }}
+                              placeholder="20,000"
+                              inputMode="numeric"
+                              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                            />
+                          </div>
+
+                          <p className="text-xs text-slate-400">
+                            Optional monthly payment or installment amount.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                     <div className="space-y-2">
                       <label
                         htmlFor="location"

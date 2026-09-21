@@ -8,26 +8,25 @@ datasource db {
 }
 
 model Agent {
-  id           Int       @id @default(autoincrement())
-  fullName     String
-  email        String    @unique
-  passwordHash String
-  role         String    @default("Agent")
-  slug         String    @unique
-  phone        String?
-  profileImage String?
-  bio          String?
-  facebook     String?
-  messenger    String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  address      String?
-  lastSeen     DateTime?
-
-  inquiries               Inquiry[]
-  properties              Property[]
-  pushSubscriptions       PushSubscription[]
+  id                Int                @id @default(autoincrement())
+  fullName          String
+  email             String             @unique
+  passwordHash      String
+  role              String             @default("Agent")
+  slug              String             @unique
+  phone             String?
+  profileImage      String?
+  bio               String?
+  facebook          String?
+  messenger         String?
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  address           String?
+  lastSeen          DateTime?
+  inquiries         Inquiry[]
+  properties        Property[]
+  pushSubscriptions PushSubscription[]
 
   @@index([slug])
   @@index([role])
@@ -36,7 +35,7 @@ model Agent {
 }
 
 model Property {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   title         String
   tag           String
   price         String
@@ -45,23 +44,23 @@ model Property {
   beds          Int?
   baths         Int?
   sqft          Float?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  images        String[] @default([])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  images        String[]  @default([])
   agentId       Int?
   category      String?
   propertyType  String?
   houseType     String?
   storey        String?
   developer     String?
-  bankFinancing String[] @default([])
+  bankFinancing String[]  @default([])
   description   String?
   videoUrl      String?
   totalcp       String?
   lotArea       Float?
-
-  inquiries Inquiry[]
-  agent     Agent?    @relation(fields: [agentId], references: [id])
+  perMonth      String?
+  inquiries     Inquiry[]
+  agent         Agent?    @relation(fields: [agentId], references: [id])
 
   @@index([tag])
   @@index([category])
@@ -84,9 +83,8 @@ model Inquiry {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   preferredViewingDate DateTime?
-
-  agent    Agent?    @relation(fields: [agentId], references: [id])
-  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  agent                Agent?    @relation(fields: [agentId], references: [id])
+  property             Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([agentId])
@@ -103,11 +101,8 @@ model PushSubscription {
   auth      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@index([agentId])
   @@map("push_subscriptions")
 }
-
-

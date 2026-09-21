@@ -42,6 +42,76 @@ function cleanOptionalString(
   return cleanString(value, maxLength) || null;
 }
 
+/**
+ * PER MONTH RULE
+ *
+ * Per Month is allowed for:
+ * - House & Lot
+ * - Condominiums
+ * - For Sale
+ *
+ * Per Month is NOT allowed for:
+ * - For Rent
+ * - Brokerage
+ *
+ * When not allowed, always save null.
+ */
+function cleanPerMonth(
+  value: unknown,
+  category: string | null,
+  propertyType: string | null,
+): string | null {
+  const normalizedCategory = String(category ?? '')
+    .trim()
+    .toLowerCase();
+
+  const normalizedPropertyType = String(propertyType ?? '')
+    .trim()
+    .toLowerCase();
+
+  // Never store Per Month for rental or brokerage listings.
+  if (
+    normalizedCategory === 'for rent' ||
+    normalizedCategory === 'brokerage' ||
+    normalizedPropertyType === 'for rent' ||
+    normalizedPropertyType.includes('for rent') ||
+    normalizedPropertyType === 'brokerage' ||
+    normalizedPropertyType.includes('brokerage')
+  ) {
+    return null;
+  }
+
+  // House & Lot
+  if (
+    normalizedCategory === 'house & lot' ||
+    normalizedPropertyType === 'house & lot' ||
+    normalizedPropertyType.includes('house & lot')
+  ) {
+    return cleanOptionalString(value, 100);
+  }
+
+  // Condominium
+  if (
+    normalizedCategory === 'condominium' ||
+    normalizedCategory === 'condominiums' ||
+    normalizedPropertyType === 'condominium' ||
+    normalizedPropertyType === 'condominiums' ||
+    normalizedPropertyType.includes('condominium')
+  ) {
+    return cleanOptionalString(value, 100);
+  }
+
+  // For Sale
+  if (
+    normalizedCategory === 'for sale' ||
+    normalizedPropertyType === 'for sale'
+  ) {
+    return cleanOptionalString(value, 100);
+  }
+
+  return null;
+}
+
 function cleanImages(
   value: unknown,
 ): string[] {
@@ -282,6 +352,13 @@ function parsePropertyBody(
       100,
     );
 
+  const perMonth =
+    cleanPerMonth(
+      data.perMonth,
+      category,
+      propertyType,
+    );
+
   const bankFinancing =
     cleanBankFinancing(
       data.bankFinancing,
@@ -357,6 +434,22 @@ function parsePropertyBody(
   }
 
   if (
+    data.perMonth !== undefined &&
+    data.perMonth !== null &&
+    data.perMonth !== ''
+  ) {
+    if (
+      typeof data.perMonth !== 'string' ||
+      data.perMonth.trim().length > 100
+    ) {
+      return {
+        error:
+          'Invalid per month amount.',
+      };
+    }
+  }
+
+  if (
     data.beds !== undefined &&
     data.beds !== null &&
     data.beds !== '' &&
@@ -423,6 +516,7 @@ function parsePropertyBody(
       title,
       tag,
       price,
+      perMonth,
       location,
       category,
       propertyType,
@@ -666,8 +760,10 @@ export async function POST(
        *
        * agentId is copied exactly.
        *
-       * If original.agentId === null,
-       * duplicate.agentId will also be null.
+       * perMonth is copied exactly.
+       *
+       * If original.perMonth === null,
+       * duplicate.perMonth will also be null.
        */
 
       const duplicate =
@@ -681,6 +777,9 @@ export async function POST(
 
             price:
               original.price,
+
+            perMonth:
+              original.perMonth,
 
             location:
               original.location,

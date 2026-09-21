@@ -118,7 +118,8 @@ export const PropertyScalarFieldEnum = {
   description: 'description',
   videoUrl: 'videoUrl',
   totalcp: 'totalcp',
-  lotArea: 'lotArea'
+  lotArea: 'lotArea',
+  perMonth: 'perMonth'
 } as const
 
 export type PropertyScalarFieldEnum = (typeof PropertyScalarFieldEnum)[keyof typeof PropertyScalarFieldEnum]

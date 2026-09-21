@@ -53,7 +53,12 @@ interface Property {
   propertyType?: string | null;
   houseType?: string | null;
   storey?: string | null;
+
   price: string;
+
+  // NEW: Per Month
+  perMonth?: string | null;
+
   location: string;
   image: string;
   images?: string[];
@@ -156,7 +161,11 @@ function useScrollReveal<T extends HTMLElement>(
 
     if (!element) return;
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+    ) {
       setIsVisible(true);
       return;
     }
@@ -199,13 +208,16 @@ function Reveal({
   className?: string;
   delay?: number;
 }) {
-  const { ref, isVisible } = useScrollReveal<HTMLDivElement>();
+  const { ref, isVisible } =
+    useScrollReveal<HTMLDivElement>();
 
   return (
     <div
       ref={ref}
       style={{
-        transitionDelay: isVisible ? `${delay}ms` : '0ms',
+        transitionDelay: isVisible
+          ? `${delay}ms`
+          : '0ms',
       }}
       className={[
         'transform-gpu transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
@@ -225,64 +237,61 @@ function Reveal({
 /* -------------------------------------------------------------------------- */
 
 export default function MarketplacePage() {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] =
+    useState<Property[]>([]);
 
-  const [agentSlug, setAgentSlug] = useState('');
+  const [loading, setLoading] =
+    useState(true);
 
-  /* ------------------------------------------------------------------------ */
-  /* SEARCH                                                                    */
-  /* ------------------------------------------------------------------------ */
+  const [agentSlug, setAgentSlug] =
+    useState('');
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] =
+    useState('');
 
-  /* ------------------------------------------------------------------------ */
-  /* FILTERS                                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-  const [selectedPropertyType, setSelectedPropertyType] =
+  const [selectedCategory, setSelectedCategory] =
     useState('All');
 
-  const [selectedHouseType, setSelectedHouseType] =
-    useState('All');
+  const [
+    selectedPropertyType,
+    setSelectedPropertyType,
+  ] = useState('All');
+
+  const [
+    selectedHouseType,
+    setSelectedHouseType,
+  ] = useState('All');
 
   const [selectedStorey, setSelectedStorey] =
     useState('All');
 
-  const [minimumBudget, setMinimumBudget] = useState('');
+  const [minimumBudget, setMinimumBudget] =
+    useState('');
 
-  const [maximumBudget, setMaximumBudget] = useState('');
+  const [maximumBudget, setMaximumBudget] =
+    useState('');
 
   const [sortBy, setSortBy] = useState<
     'default' | 'price-asc' | 'price-desc'
   >('default');
 
-  /* ------------------------------------------------------------------------ */
-  /* MODAL                                                                     */
-  /* ------------------------------------------------------------------------ */
+  const [filterModalOpen, setFilterModalOpen] =
+    useState(false);
 
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-
-  const [mounted, setMounted] = useState(false);
-
-  /* ------------------------------------------------------------------------ */
-  /* MOUNT                                                                     */
-  /* ------------------------------------------------------------------------ */
+  const [mounted, setMounted] =
+    useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  /* ------------------------------------------------------------------------ */
-  /* AGENT SLUG                                                                */
-  /* ------------------------------------------------------------------------ */
-
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(
+      window.location.search,
+    );
 
-    const slug = params.get('agent')?.trim() || '';
+    const slug =
+      params.get('agent')?.trim() || '';
 
     setAgentSlug(slug);
   }, []);
@@ -296,19 +305,65 @@ export default function MarketplacePage() {
       try {
         setLoading(true);
 
-        const response = await fetch('/api/properties', {
-          cache: 'no-store',
-        });
+        const response = await fetch(
+          '/api/properties',
+          {
+            cache: 'no-store',
+          },
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to load properties.');
+          throw new Error(
+            'Failed to load properties.',
+          );
         }
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
-        setProperties(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+          const normalizedProperties: Property[] =
+            data.map((property) => ({
+              ...property,
+
+              /*
+               * Preserve the perMonth value coming
+               * from the API.
+               */
+              perMonth:
+                property.perMonth != null
+                  ? String(
+                      property.perMonth,
+                    ).trim()
+                  : null,
+            }));
+
+          console.log(
+            'Marketplace properties with perMonth:',
+            normalizedProperties.map(
+              (property) => ({
+                id: property.id,
+                title: property.title,
+                category:
+                  property.category,
+                price: property.price,
+                perMonth:
+                  property.perMonth,
+              }),
+            ),
+          );
+
+          setProperties(
+            normalizedProperties,
+          );
+        } else {
+          setProperties([]);
+        }
       } catch (error) {
-        console.error('Failed fetching properties:', error);
+        console.error(
+          'Failed fetching properties:',
+          error,
+        );
 
         setProperties([]);
       } finally {
@@ -326,12 +381,15 @@ export default function MarketplacePage() {
   useEffect(() => {
     if (!filterModalOpen) return;
 
-    const previousOverflow = document.body.style.overflow;
+    const previousOverflow =
+      document.body.style.overflow;
 
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow =
+      'hidden';
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow =
+        previousOverflow;
     };
   }, [filterModalOpen]);
 
@@ -342,16 +400,24 @@ export default function MarketplacePage() {
   useEffect(() => {
     if (!filterModalOpen) return;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (
+      event: KeyboardEvent,
+    ) => {
       if (event.key === 'Escape') {
         setFilterModalOpen(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    );
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      );
     };
   }, [filterModalOpen]);
 
@@ -360,112 +426,129 @@ export default function MarketplacePage() {
   /* ------------------------------------------------------------------------ */
 
   const parsePrice = (price: string) =>
-    Number(String(price).replace(/[^0-9.]/g, '')) || 0;
+    Number(
+      String(price).replace(
+        /[^0-9.]/g,
+        '',
+      ),
+    ) || 0;
 
   /* ------------------------------------------------------------------------ */
   /* FILTER PROPERTIES                                                         */
   /* ------------------------------------------------------------------------ */
 
   const filteredProperties = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const query =
+      searchQuery.trim().toLowerCase();
 
     const minBudget = minimumBudget
-      ? Number(minimumBudget.replace(/,/g, ''))
+      ? Number(
+          minimumBudget.replace(
+            /,/g,
+            '',
+          ),
+        )
       : null;
 
     const maxBudget = maximumBudget
-      ? Number(maximumBudget.replace(/,/g, ''))
+      ? Number(
+          maximumBudget.replace(
+            /,/g,
+            '',
+          ),
+        )
       : null;
 
-    const result = properties.filter((property) => {
-      const searchableText = [
-        property.title,
-        property.location,
-        property.tag,
-        property.category,
-        property.propertyType,
-        property.houseType,
-        property.storey,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+    const result =
+      properties.filter(
+        (property) => {
+          const searchableText = [
+            property.title,
+            property.location,
+            property.tag,
+            property.category,
+            property.propertyType,
+            property.houseType,
+            property.storey,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
 
-      /* -------------------------------------------------------------- */
-      /* CATEGORY                                                        */
-      /* -------------------------------------------------------------- */
+          const categoryMatches =
+            selectedCategory ===
+              'All' ||
+            property.category ===
+              selectedCategory ||
+            property.tag ===
+              selectedCategory;
 
-      const categoryMatches =
-        selectedCategory === 'All' ||
-        property.category === selectedCategory ||
-        property.tag === selectedCategory;
+          const typeMatches =
+            selectedPropertyType ===
+              'All' ||
+            property.propertyType ===
+              selectedPropertyType;
 
-      /* -------------------------------------------------------------- */
-      /* PROPERTY TYPE                                                   */
-      /* -------------------------------------------------------------- */
+          const houseTypeMatches =
+            selectedHouseType ===
+              'All' ||
+            property.houseType ===
+              selectedHouseType;
 
-      const typeMatches =
-        selectedPropertyType === 'All' ||
-        property.propertyType === selectedPropertyType;
+          const storeyMatches =
+            selectedStorey ===
+              'All' ||
+            property.storey ===
+              selectedStorey ||
+            (selectedStorey ===
+              '4+' &&
+              Number(
+                property.storey,
+              ) >= 4);
 
-      /* -------------------------------------------------------------- */
-      /* HOUSE TYPE                                                      */
-      /* -------------------------------------------------------------- */
+          const propertyPrice =
+            parsePrice(
+              property.price,
+            );
 
-      const houseTypeMatches =
-        selectedHouseType === 'All' ||
-        property.houseType === selectedHouseType;
+          const minimumBudgetMatches =
+            minBudget === null ||
+            propertyPrice >=
+              minBudget;
 
-      /* -------------------------------------------------------------- */
-      /* STOREY                                                          */
-      /* -------------------------------------------------------------- */
+          const maximumBudgetMatches =
+            maxBudget === null ||
+            propertyPrice <=
+              maxBudget;
 
-      const storeyMatches =
-        selectedStorey === 'All' ||
-        property.storey === selectedStorey ||
-        (selectedStorey === '4+' &&
-          Number(property.storey) >= 4);
-
-      /* -------------------------------------------------------------- */
-      /* BUDGET                                                          */
-      /* -------------------------------------------------------------- */
-
-      const propertyPrice = parsePrice(property.price);
-
-      const minimumBudgetMatches =
-        minBudget === null ||
-        propertyPrice >= minBudget;
-
-      const maximumBudgetMatches =
-        maxBudget === null ||
-        propertyPrice <= maxBudget;
-
-      return (
-        (!query || searchableText.includes(query)) &&
-        categoryMatches &&
-        typeMatches &&
-        houseTypeMatches &&
-        storeyMatches &&
-        minimumBudgetMatches &&
-        maximumBudgetMatches
+          return (
+            (!query ||
+              searchableText.includes(
+                query,
+              )) &&
+            categoryMatches &&
+            typeMatches &&
+            houseTypeMatches &&
+            storeyMatches &&
+            minimumBudgetMatches &&
+            maximumBudgetMatches
+          );
+        },
       );
-    });
-
-    /* -------------------------------------------------------------- */
-    /* SORTING                                                          */
-    /* -------------------------------------------------------------- */
 
     if (sortBy === 'price-asc') {
       return [...result].sort(
         (a, b) =>
-          parsePrice(a.price) - parsePrice(b.price),
+          parsePrice(a.price) -
+          parsePrice(b.price),
       );
     }
 
     if (sortBy === 'price-desc') {
       return [...result].sort(
         (a, b) =>
-          parsePrice(b.price) - parsePrice(a.price),
+          parsePrice(b.price) -
+          parsePrice(a.price),
       );
     }
 
@@ -501,7 +584,9 @@ export default function MarketplacePage() {
   /* SELECT CATEGORY                                                           */
   /* ------------------------------------------------------------------------ */
 
-  const handleCategorySelect = (category: string) => {
+  const handleCategorySelect = (
+    category: string,
+  ) => {
     setSelectedCategory(category);
   };
 
@@ -511,13 +596,17 @@ export default function MarketplacePage() {
 
   const activeCategory =
     PROPERTY_CATEGORIES.find(
-      (category) => category.value === selectedCategory,
-    ) || PROPERTY_CATEGORIES[0];
+      (category) =>
+        category.value ===
+        selectedCategory,
+    ) ||
+    PROPERTY_CATEGORIES[0];
 
-  const ActiveCategoryIcon = activeCategory.icon;
+  const ActiveCategoryIcon =
+    activeCategory.icon;
 
   /* ------------------------------------------------------------------------ */
-  /* FILTER COUNT / STATUS                                                    */
+  /* FILTER COUNT                                                              */
   /* ------------------------------------------------------------------------ */
 
   const activeFilterCount = [
@@ -529,16 +618,6 @@ export default function MarketplacePage() {
     maximumBudget !== '',
     sortBy !== 'default',
   ].filter(Boolean).length;
-
-  const filtersApplied =
-    searchQuery ||
-    selectedCategory !== 'All' ||
-    selectedPropertyType !== 'All' ||
-    selectedHouseType !== 'All' ||
-    selectedStorey !== 'All' ||
-    minimumBudget !== '' ||
-    maximumBudget !== '' ||
-    sortBy !== 'default';
 
   /* ------------------------------------------------------------------------ */
   /* FILTER MODAL                                                              */
@@ -553,22 +632,17 @@ export default function MarketplacePage() {
             aria-modal="true"
             aria-labelledby="marketplace-filter-title"
           >
-            {/* Backdrop */}
             <button
               type="button"
               aria-label="Close filters"
-              onClick={() => setFilterModalOpen(false)}
+              onClick={() =>
+                setFilterModalOpen(false)
+              }
               className="absolute inset-0 cursor-default bg-slate-950/75 backdrop-blur-md"
             />
 
-            {/* Modal */}
             <div className="relative z-10 flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border border-white/20 bg-white shadow-[0_35px_120px_rgba(2,12,27,0.5)]">
-              {/* Decorative background */}
               <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.15),transparent_70%)]" />
-
-              {/* ---------------------------------------------------------- */}
-              {/* MODAL HEADER                                                 */}
-              {/* ---------------------------------------------------------- */}
 
               <div className="relative shrink-0 border-b border-slate-100 bg-white/95 px-5 pb-5 pt-5 backdrop-blur-xl sm:px-7 sm:pb-6 sm:pt-7">
                 <div className="flex items-start justify-between gap-4">
@@ -593,7 +667,9 @@ export default function MarketplacePage() {
 
                   <button
                     type="button"
-                    onClick={() => setFilterModalOpen(false)}
+                    onClick={() =>
+                      setFilterModalOpen(false)
+                    }
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                     aria-label="Close filters"
                   >
@@ -602,20 +678,13 @@ export default function MarketplacePage() {
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-slate-500">
-                  Refine the properties displayed in the
-                  marketplace based on your preferences.
+                  Refine the properties
+                  displayed in the marketplace
+                  based on your preferences.
                 </p>
               </div>
 
-              {/* ---------------------------------------------------------- */}
-              {/* MODAL CONTENT                                                */}
-              {/* ---------------------------------------------------------- */}
-
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7 sm:py-6">
-                {/* ======================================================== */}
-                {/* PROPERTY CATEGORY                                         */}
-                {/* ======================================================== */}
-
                 <div>
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
@@ -640,89 +709,94 @@ export default function MarketplacePage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {PROPERTY_CATEGORIES.map((category) => {
-                      const Icon = category.icon;
+                    {PROPERTY_CATEGORIES.map(
+                      (category) => {
+                        const Icon =
+                          category.icon;
 
-                      const isSelected =
-                        selectedCategory === category.value;
+                        const isSelected =
+                          selectedCategory ===
+                          category.value;
 
-                      return (
-                        <button
-                          key={category.value}
-                          type="button"
-                          onClick={() =>
-                            handleCategorySelect(
-                              category.value,
-                            )
-                          }
-                          className={[
-                            'group relative overflow-hidden rounded-2xl border p-3.5 text-left transition-all duration-300',
-                            'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-                            isSelected
-                              ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-white shadow-md shadow-blue-900/10'
-                              : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md',
-                          ].join(' ')}
-                        >
-                          {isSelected && (
-                            <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-500/10 blur-2xl" />
-                          )}
+                        return (
+                          <button
+                            key={
+                              category.value
+                            }
+                            type="button"
+                            onClick={() =>
+                              handleCategorySelect(
+                                category.value,
+                              )
+                            }
+                            className={[
+                              'group relative overflow-hidden rounded-2xl border p-3.5 text-left transition-all duration-300',
+                              'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                              isSelected
+                                ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-white shadow-md shadow-blue-900/10'
+                                : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md',
+                            ].join(' ')}
+                          >
+                            {isSelected && (
+                              <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-500/10 blur-2xl" />
+                            )}
 
-                          <div className="relative flex items-center gap-3">
-                            <div
-                              className={[
-                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300',
-                                isSelected
-                                  ? 'bg-gradient-to-br from-blue-950 to-blue-600 text-white shadow-md'
-                                  : 'bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700',
-                              ].join(' ')}
-                            >
-                              <Icon className="h-4.5 w-4.5" />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p
+                            <div className="relative flex items-center gap-3">
+                              <div
                                 className={[
-                                  'truncate text-xs font-black',
+                                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300',
                                   isSelected
-                                    ? 'text-blue-950'
-                                    : 'text-slate-800',
+                                    ? 'bg-gradient-to-br from-blue-950 to-blue-600 text-white shadow-md'
+                                    : 'bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700',
                                 ].join(' ')}
                               >
-                                {category.label}
-                              </p>
+                                <Icon className="h-4.5 w-4.5" />
+                              </div>
 
-                              <p className="mt-0.5 truncate text-[10px] text-slate-400">
-                                {category.description}
-                              </p>
-                            </div>
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className={[
+                                    'truncate text-xs font-black',
+                                    isSelected
+                                      ? 'text-blue-950'
+                                      : 'text-slate-800',
+                                  ].join(' ')}
+                                >
+                                  {
+                                    category.label
+                                  }
+                                </p>
 
-                            <div
-                              className={[
-                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all',
-                                isSelected
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-50 text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600',
-                              ].join(' ')}
-                            >
-                              {isSelected ? (
-                                <Check className="h-3.5 w-3.5" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5" />
-                              )}
+                                <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                                  {
+                                    category.description
+                                  }
+                                </p>
+                              </div>
+
+                              <div
+                                className={[
+                                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all',
+                                  isSelected
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-slate-50 text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600',
+                                ].join(' ')}
+                              >
+                                {isSelected ? (
+                                  <Check className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ChevronRight className="h-3.5 w-3.5" />
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                          </button>
+                        );
+                      },
+                    )}
                   </div>
                 </div>
 
-                {/* Divider */}
                 <div className="my-6 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-                {/* ======================================================== */}
-                {/* PROPERTY TYPE / HOUSE TYPE / STOREY                     */}
-                {/* ======================================================== */}
 
                 <div>
                   <div className="mb-4 flex items-center gap-2">
@@ -736,7 +810,6 @@ export default function MarketplacePage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    {/* Property Type */}
                     <div>
                       <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
                         <Tag className="h-3.5 w-3.5" />
@@ -745,7 +818,9 @@ export default function MarketplacePage() {
 
                       <div className="relative">
                         <select
-                          value={selectedPropertyType}
+                          value={
+                            selectedPropertyType
+                          }
                           onChange={(event) =>
                             setSelectedPropertyType(
                               event.target.value,
@@ -757,18 +832,22 @@ export default function MarketplacePage() {
                             All Property Types
                           </option>
 
-                          {PROPERTY_TYPES.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
+                          {PROPERTY_TYPES.map(
+                            (type) => (
+                              <option
+                                key={type}
+                                value={type}
+                              >
+                                {type}
+                              </option>
+                            ),
+                          )}
                         </select>
 
                         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       </div>
                     </div>
 
-                    {/* House Type */}
                     <div>
                       <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
                         <Home className="h-3.5 w-3.5" />
@@ -777,7 +856,9 @@ export default function MarketplacePage() {
 
                       <div className="relative">
                         <select
-                          value={selectedHouseType}
+                          value={
+                            selectedHouseType
+                          }
                           onChange={(event) =>
                             setSelectedHouseType(
                               event.target.value,
@@ -789,18 +870,22 @@ export default function MarketplacePage() {
                             All House Types
                           </option>
 
-                          {HOUSE_TYPES.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
+                          {HOUSE_TYPES.map(
+                            (type) => (
+                              <option
+                                key={type}
+                                value={type}
+                              >
+                                {type}
+                              </option>
+                            ),
+                          )}
                         </select>
 
                         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       </div>
                     </div>
 
-                    {/* Storey */}
                     <div>
                       <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
                         <Layers3 className="h-3.5 w-3.5" />
@@ -809,7 +894,9 @@ export default function MarketplacePage() {
 
                       <div className="relative">
                         <select
-                          value={selectedStorey}
+                          value={
+                            selectedStorey
+                          }
                           onChange={(event) =>
                             setSelectedStorey(
                               event.target.value,
@@ -821,13 +908,19 @@ export default function MarketplacePage() {
                             All Storeys
                           </option>
 
-                          {STOREY_OPTIONS.map((storey) => (
-                            <option key={storey} value={storey}>
-                              {storey === '4+'
-                                ? '4 or more'
-                                : `${storey} Storey`}
-                            </option>
-                          ))}
+                          {STOREY_OPTIONS.map(
+                            (storey) => (
+                              <option
+                                key={storey}
+                                value={storey}
+                              >
+                                {storey ===
+                                '4+'
+                                  ? '4 or more'
+                                  : `${storey} Storey`}
+                              </option>
+                            ),
+                          )}
                         </select>
 
                         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -836,22 +929,15 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                {/* Divider */}
                 <div className="my-6 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-                {/* ======================================================== */}
-                {/* BUDGET + SORT                                             */}
-                {/* ======================================================== */}
-
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_250px]">
-                  {/* Budget Range */}
                   <div>
                     <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                       Budget Range
                     </label>
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {/* Minimum */}
                       <div>
                         <div className="relative">
                           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#a47d3c]">
@@ -861,7 +947,9 @@ export default function MarketplacePage() {
                           <input
                             type="text"
                             inputMode="numeric"
-                            value={minimumBudget}
+                            value={
+                              minimumBudget
+                            }
                             onChange={(event) => {
                               const value =
                                 event.target.value.replace(
@@ -890,7 +978,6 @@ export default function MarketplacePage() {
                         </p>
                       </div>
 
-                      {/* Maximum */}
                       <div>
                         <div className="relative">
                           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#a47d3c]">
@@ -900,7 +987,9 @@ export default function MarketplacePage() {
                           <input
                             type="text"
                             inputMode="numeric"
-                            value={maximumBudget}
+                            value={
+                              maximumBudget
+                            }
                             onChange={(event) => {
                               const value =
                                 event.target.value.replace(
@@ -931,11 +1020,11 @@ export default function MarketplacePage() {
                     </div>
 
                     <p className="mt-2 text-[10px] font-medium text-slate-400">
-                      Enter your preferred property price range.
+                      Enter your preferred
+                      property price range.
                     </p>
                   </div>
 
-                  {/* Sort */}
                   <div>
                     <label className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                       <ArrowUpDown className="h-3.5 w-3.5" />
@@ -947,7 +1036,8 @@ export default function MarketplacePage() {
                         value={sortBy}
                         onChange={(event) =>
                           setSortBy(
-                            event.target.value as
+                            event.target
+                              .value as
                               | 'default'
                               | 'price-asc'
                               | 'price-desc',
@@ -974,10 +1064,6 @@ export default function MarketplacePage() {
                 </div>
               </div>
 
-              {/* ---------------------------------------------------------- */}
-              {/* MODAL FOOTER                                                */}
-              {/* ---------------------------------------------------------- */}
-
               <div className="relative shrink-0 border-t border-slate-100 bg-slate-50/90 px-5 py-4 backdrop-blur-xl sm:px-7">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
@@ -991,9 +1077,11 @@ export default function MarketplacePage() {
                     />
 
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {activeFilterCount > 0
+                      {activeFilterCount >
+                      0
                         ? `${activeFilterCount} filter${
-                            activeFilterCount === 1
+                            activeFilterCount ===
+                            1
                               ? ''
                               : 's'
                           } selected`
@@ -1004,7 +1092,9 @@ export default function MarketplacePage() {
                   <div className="flex w-full gap-2 sm:w-auto">
                     <button
                       type="button"
-                      onClick={resetFilters}
+                      onClick={
+                        resetFilters
+                      }
                       className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 sm:flex-none"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
@@ -1014,7 +1104,9 @@ export default function MarketplacePage() {
                     <button
                       type="button"
                       onClick={() =>
-                        setFilterModalOpen(false)
+                        setFilterModalOpen(
+                          false,
+                        )
                       }
                       className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-950 to-blue-700 px-5 text-xs font-black text-white shadow-lg shadow-blue-950/20 transition hover:-translate-y-0.5 hover:shadow-xl sm:flex-none"
                     >
@@ -1039,12 +1131,7 @@ export default function MarketplacePage() {
       {filterModal}
 
       <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.08),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_45%,_#f8fafc)] text-slate-900">
-        {/* ================================================================== */}
-        {/* HERO                                                               */}
-        {/* ================================================================== */}
-
         <header className="relative overflow-hidden bg-[#06142d] text-white">
-          {/* Background effects */}
           <div className="absolute inset-0">
             <div className="absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-blue-600/20 blur-3xl" />
 
@@ -1056,7 +1143,6 @@ export default function MarketplacePage() {
           </div>
 
           <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
-            {/* Small heading */}
             <Reveal>
               <div className="flex items-center gap-3">
                 <span className="h-px w-10 bg-[#c9a96e]" />
@@ -1067,24 +1153,20 @@ export default function MarketplacePage() {
               </div>
             </Reveal>
 
-            {/* Main title */}
             <Reveal delay={100}>
               <h1 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.03em] sm:text-5xl">
                 Property Marketplace
               </h1>
             </Reveal>
 
-            {/* Description */}
             <Reveal delay={180}>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100/70 sm:text-base">
-                Browse available properties and find a place
-                that fits your goals, lifestyle, and budget.
+                Browse available properties
+                and find a place that fits
+                your goals, lifestyle, and
+                budget.
               </p>
             </Reveal>
-
-            {/* ============================================================ */}
-            {/* SEARCH BAR                                                     */}
-            {/* ============================================================ */}
 
             <Reveal delay={260}>
               <div className="mt-7 max-w-4xl">
@@ -1095,7 +1177,9 @@ export default function MarketplacePage() {
                     type="text"
                     value={searchQuery}
                     onChange={(event) =>
-                      setSearchQuery(event.target.value)
+                      setSearchQuery(
+                        event.target.value,
+                      )
                     }
                     placeholder="Search your properties, locations, property types..."
                     className="h-14 w-full rounded-2xl border border-white/10 bg-[#020b1d]/80 pl-12 pr-12 text-sm font-medium text-white outline-none backdrop-blur-xl placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
@@ -1104,7 +1188,11 @@ export default function MarketplacePage() {
                   {searchQuery && (
                     <button
                       type="button"
-                      onClick={() => setSearchQuery('')}
+                      onClick={() =>
+                        setSearchQuery(
+                          '',
+                        )
+                      }
                       className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white"
                       aria-label="Clear search"
                     >
@@ -1115,18 +1203,20 @@ export default function MarketplacePage() {
               </div>
             </Reveal>
 
-            {/* ============================================================ */}
-            {/* FILTER BUTTON                                                  */}
-            {/* ============================================================ */}
-
             <Reveal delay={340}>
               <div className="mt-3 max-w-4xl">
                 <button
                   type="button"
-                  onClick={() => setFilterModalOpen(true)}
+                  onClick={() =>
+                    setFilterModalOpen(
+                      true,
+                    )
+                  }
                   className="group flex h-14 w-full items-center justify-between rounded-2xl border border-white/10 bg-[#020b1d]/80 px-4 text-left shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-blue-400/40 hover:bg-[#07152d] hover:shadow-blue-950/20 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
                   aria-haspopup="dialog"
-                  aria-expanded={filterModalOpen}
+                  aria-expanded={
+                    filterModalOpen
+                  }
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200 transition group-hover:bg-blue-500/20 group-hover:text-blue-100">
@@ -1139,16 +1229,22 @@ export default function MarketplacePage() {
                       </p>
 
                       <p className="truncate text-sm font-black text-white">
-                        {activeCategory.label}
+                        {
+                          activeCategory.label
+                        }
                       </p>
                     </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    {activeFilterCount > 0 && (
+                    {activeFilterCount >
+                      0 && (
                       <span className="hidden rounded-full bg-blue-500/20 px-2.5 py-1 text-[9px] font-black text-blue-200 sm:block">
-                        {activeFilterCount}{' '}
-                        {activeFilterCount === 1
+                        {
+                          activeFilterCount
+                        }{' '}
+                        {activeFilterCount ===
+                        1
                           ? 'filter'
                           : 'filters'}
                       </span>
@@ -1165,10 +1261,6 @@ export default function MarketplacePage() {
 
           <div className="absolute bottom-0 left-1/2 h-px w-full max-w-5xl -translate-x-1/2 bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
         </header>
-
-        {/* ================================================================== */}
-        {/* PROPERTY LISTINGS                                                  */}
-        {/* ================================================================== */}
 
         <main className="mx-auto max-w-7xl px-4 pb-24 pt-10 sm:px-6 lg:px-8">
           <Reveal>
@@ -1190,8 +1282,10 @@ export default function MarketplacePage() {
                 </h2>
 
                 <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                  Browse our available properties and discover a
-                  place that fits your goals, lifestyle, and budget.
+                  Browse our available
+                  properties and discover a
+                  place that fits your goals,
+                  lifestyle, and budget.
                 </p>
               </div>
 
@@ -1199,8 +1293,11 @@ export default function MarketplacePage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
 
                 <p className="text-xs font-black text-slate-500">
-                  {filteredProperties.length}{' '}
-                  {filteredProperties.length === 1
+                  {
+                    filteredProperties.length
+                  }{' '}
+                  {filteredProperties.length ===
+                  1
                     ? 'property'
                     : 'properties'}{' '}
                   found
@@ -1208,10 +1305,6 @@ export default function MarketplacePage() {
               </div>
             </div>
           </Reveal>
-
-          {/* ================================================================ */}
-          {/* LOADING                                                           */}
-          {/* ================================================================ */}
 
           {loading ? (
             <Reveal>
@@ -1226,36 +1319,45 @@ export default function MarketplacePage() {
                   </p>
 
                   <p className="mt-1 text-xs text-slate-400">
-                    Preparing the latest listings for you.
+                    Preparing the latest
+                    listings for you.
                   </p>
                 </div>
               </div>
             </Reveal>
-          ) : filteredProperties.length > 0 ? (
-            /* ============================================================ */
-            /* PROPERTY CARDS                                               */
-            /* ============================================================ */
-
+          ) : filteredProperties.length >
+            0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
-              {filteredProperties.map((property, index) => (
-                <Reveal
-                  key={property.id}
-                  delay={Math.min((index % 6) * 80, 400)}
-                >
-                  <div className="min-w-0">
-                    <PropertyCard
-                      property={property}
-                      agentSlug={agentSlug}
-                    />
-                  </div>
-                </Reveal>
-              ))}
+              {filteredProperties.map(
+                (
+                  property,
+                  index,
+                ) => (
+                  <Reveal
+                    key={
+                      property.id
+                    }
+                    delay={Math.min(
+                      (index % 6) *
+                        80,
+                      400,
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <PropertyCard
+                        property={
+                          property
+                        }
+                        agentSlug={
+                          agentSlug
+                        }
+                      />
+                    </div>
+                  </Reveal>
+                ),
+              )}
             </div>
           ) : (
-            /* ============================================================ */
-            /* EMPTY STATE                                                  */
-            /* ============================================================ */
-
             <Reveal>
               <div className="mx-auto max-w-lg rounded-[1.75rem] border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.4rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50">
@@ -1269,13 +1371,16 @@ export default function MarketplacePage() {
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Try changing your search or adjusting your
-                  property filters.
+                  Try changing your search
+                  or adjusting your property
+                  filters.
                 </p>
 
                 <button
                   type="button"
-                  onClick={resetFilters}
+                  onClick={
+                    resetFilters
+                  }
                   className="mt-7 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-800 to-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
                 >
                   <RotateCcw className="h-4 w-4" />

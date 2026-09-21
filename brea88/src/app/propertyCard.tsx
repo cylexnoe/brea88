@@ -6,7 +6,9 @@ import React, {
   useRef,
   useState,
 } from 'react';
+
 import { createPortal } from 'react-dom';
+
 import {
   Bath,
   BedDouble,
@@ -37,6 +39,7 @@ interface Property {
   title: string;
   tag: string;
   price: string;
+  perMonth?: string | null;
   location: string;
   image: string;
   images?: string[];
@@ -125,7 +128,9 @@ function Portal({
 }
 
 function isSafeHttpUrl(value?: string | null) {
-  if (!value) return false;
+  if (!value) {
+    return false;
+  }
 
   try {
     const url = new URL(value);
@@ -140,7 +145,9 @@ function isSafeHttpUrl(value?: string | null) {
 }
 
 function isDirectVideoUrl(value?: string | null) {
-  if (!value || !isSafeHttpUrl(value)) return false;
+  if (!value || !isSafeHttpUrl(value)) {
+    return false;
+  }
 
   try {
     const url = new URL(value);
@@ -185,7 +192,9 @@ function getVideoEmbedUrl(
         }
       }
 
-      if (url.pathname.startsWith('/shorts/')) {
+      if (
+        url.pathname.startsWith('/shorts/')
+      ) {
         const videoId =
           url.pathname.split('/')[2];
 
@@ -196,11 +205,15 @@ function getVideoEmbedUrl(
         }
       }
 
-      if (url.pathname.startsWith('/embed/')) {
+      if (
+        url.pathname.startsWith('/embed/')
+      ) {
         return value;
       }
 
-      if (url.pathname.startsWith('/live/')) {
+      if (
+        url.pathname.startsWith('/live/')
+      ) {
         const videoId =
           url.pathname.split('/')[2];
 
@@ -256,7 +269,9 @@ function getVideoEmbedUrl(
 }
 
 function formatPrice(value?: string | null) {
-  if (!value) return 'Price on request';
+  if (!value) {
+    return 'Price on request';
+  }
 
   const trimmed = String(value).trim();
 
@@ -265,30 +280,126 @@ function formatPrice(value?: string | null) {
     .replace(/,/g, '')
     .trim();
 
-  if (/^\d+(?:\.\d+)?$/.test(numericValue)) {
+  if (
+    /^\d+(?:\.\d+)?$/.test(
+      numericValue,
+    )
+  ) {
     const amount = Number(numericValue);
 
     if (Number.isFinite(amount)) {
-      return `₱${amount.toLocaleString('en-PH', {
-        maximumFractionDigits: 0,
-      })}`;
+      return `₱${amount.toLocaleString(
+        'en-PH',
+        {
+          maximumFractionDigits: 0,
+        },
+      )}`;
     }
   }
 
   return trimmed;
 }
 
+/*
+ * Per Month is allowed ONLY for:
+ * - House & Lot
+ * - Condominiums
+ * - For Sale
+ *
+ * Per Month is hidden for:
+ * - For Rent
+ * - Brokerage
+ */
+function shouldShowPerMonth(
+  category?: string | null,
+  propertyType?: string | null,
+): boolean {
+  const normalizedCategory = String(category ?? '')
+    .trim()
+    .toLowerCase();
+
+  const normalizedPropertyType = String(propertyType ?? '')
+    .trim()
+    .toLowerCase();
+
+  // Never show for Rent or Brokerage
+  if (
+    normalizedCategory === 'for rent' ||
+    normalizedCategory === 'brokerage' ||
+    normalizedPropertyType.includes('for rent') ||
+    normalizedPropertyType.includes('brokerage')
+  ) {
+    return false;
+  }
+
+  // House & Lot
+  if (
+    normalizedCategory === 'house & lot' ||
+    normalizedPropertyType.includes('house & lot')
+  ) {
+    return true;
+  }
+
+  // Condominium
+  if (
+    normalizedCategory === 'condominiums' ||
+    normalizedCategory === 'condominium' ||
+    normalizedPropertyType.includes('condominium')
+  ) {
+    return true;
+  }
+
+  // For Sale
+  if (
+    normalizedCategory === 'for sale' ||
+    normalizedPropertyType === 'for sale'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function formatPerMonth(
+  value?: string | number | null,
+): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  const raw = String(value).trim();
+
+  if (!raw) {
+    return '';
+  }
+
+  const numericValue = raw.replace(/[^\d.]/g, '');
+
+  if (!numericValue) {
+    return '';
+  }
+
+  const amount = Number(numericValue);
+
+  if (!Number.isFinite(amount)) {
+    return '';
+  }
+
+  return `₱${amount.toLocaleString('en-US')}`;
+}
+
 function formatDateMin() {
   const date = new Date();
 
   const year = date.getFullYear();
+
   const month = String(
     date.getMonth() + 1,
   ).padStart(2, '0');
-  const day = String(date.getDate()).padStart(
-    2,
-    '0',
-  );
+
+  const day = String(
+    date.getDate(),
+  ).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
 }
@@ -321,6 +432,31 @@ export default function PropertyCard({
   const [modal, setModal] =
     useState<ModalType>(null);
 
+  /*
+   * This is the single source of truth for
+   * whether Per Month should appear in the UI.
+   */
+  const showPerMonth =
+  shouldShowPerMonth(
+    property.category,
+    property.propertyType,
+  ) &&
+  Boolean(property.perMonth?.trim());
+
+const perMonth = showPerMonth
+  ? formatPerMonth(property.perMonth)
+  : '';
+  
+console.log('🔥 PER MONTH DEBUG', {
+  title: property.title,
+  price: property.price,
+  perMonth: property.perMonth,
+  category: property.category,
+  propertyType: property.propertyType,
+  showPerMonth,
+  formattedPerMonth: perMonth,
+});
+
   const [
     selectedImageIndex,
     setSelectedImageIndex,
@@ -352,25 +488,33 @@ export default function PropertyCard({
   ] = useState(false);
 
   const agentSelectorRef =
-    useRef<HTMLDivElement | null>(null);
+    useRef<HTMLDivElement | null>(
+      null,
+    );
 
   const [submitting, setSubmitting] =
     useState(false);
 
-  const [submitSuccess, setSubmitSuccess] =
-    useState(false);
+  const [
+    submitSuccess,
+    setSubmitSuccess,
+  ] = useState(false);
 
-  const [submitError, setSubmitError] =
-    useState('');
+  const [
+    submitError,
+    setSubmitError,
+  ] = useState('');
 
-  const [inquiryForm, setInquiryForm] =
-    useState<InquiryForm>({
-      name: '',
-      email: '',
-      phone: '',
-      message: '',
-      preferredViewingDate: '',
-    });
+  const [
+    inquiryForm,
+    setInquiryForm,
+  ] = useState<InquiryForm>({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+    preferredViewingDate: '',
+  });
 
   const [isAgent, setIsAgent] =
     useState(false);
@@ -381,8 +525,13 @@ export default function PropertyCard({
       ...(property.images || []),
     ].filter(Boolean);
 
-    return Array.from(new Set(images));
-  }, [property.image, property.images]);
+    return Array.from(
+      new Set(images),
+    );
+  }, [
+    property.image,
+    property.images,
+  ]);
 
   const currentImage =
     galleryImages[selectedImageIndex] ||
@@ -407,11 +556,13 @@ export default function PropertyCard({
   const selectedAgent =
     availableAgents.find(
       (agent) =>
-        agent.slug === selectedAgentSlug,
+        agent.slug ===
+        selectedAgentSlug,
     ) || null;
 
   const isAgentLocked =
     Boolean(agentSlug?.trim());
+
 
   useEffect(() => {
     if (agentSlug?.trim()) {
@@ -422,24 +573,31 @@ export default function PropertyCard({
   }, [agentSlug]);
 
   /*
-   * Lock page scrolling whenever modal/gallery
-   * is open.
+   * Lock page scrolling whenever
+   * modal/gallery is open.
    */
   useEffect(() => {
-    if (!modal && !galleryPreviewOpen) {
+    if (
+      !modal &&
+      !galleryPreviewOpen
+    ) {
       return;
     }
 
     const originalOverflow =
       document.body.style.overflow;
 
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow =
+      'hidden';
 
     return () => {
       document.body.style.overflow =
         originalOverflow;
     };
-  }, [modal, galleryPreviewOpen]);
+  }, [
+    modal,
+    galleryPreviewOpen,
+  ]);
 
   /*
    * Close Agent dropdown when clicking outside.
@@ -479,7 +637,10 @@ export default function PropertyCard({
    * Keyboard controls.
    */
   useEffect(() => {
-    if (!modal && !galleryPreviewOpen) {
+    if (
+      !modal &&
+      !galleryPreviewOpen
+    ) {
       return;
     }
 
@@ -500,11 +661,15 @@ export default function PropertyCard({
         galleryPreviewOpen &&
         galleryImages.length > 1
       ) {
-        if (event.key === 'ArrowLeft') {
+        if (
+          event.key === 'ArrowLeft'
+        ) {
           previousImage();
         }
 
-        if (event.key === 'ArrowRight') {
+        if (
+          event.key === 'ArrowRight'
+        ) {
           nextImage();
         }
       }
@@ -559,7 +724,9 @@ export default function PropertyCard({
       if (agentSlug?.trim()) {
         const matchedAgent =
           agents.find(
-            (agent: AvailableAgent) =>
+            (
+              agent: AvailableAgent,
+            ) =>
               agent.slug ===
               agentSlug.trim(),
           );
@@ -582,9 +749,7 @@ export default function PropertyCard({
     setSubmitSuccess(false);
     setSubmitError('');
     setAgentDropdownOpen(false);
-
     setModal('details');
-
     loadAgents();
   }
 
@@ -600,7 +765,6 @@ export default function PropertyCard({
 
     setAgentDropdownOpen(false);
     setModal('inquiry');
-
     loadAgents();
   }
 
@@ -616,7 +780,6 @@ export default function PropertyCard({
 
     setAgentDropdownOpen(false);
     setModal('viewing');
-
     loadAgents();
   }
 
@@ -843,14 +1006,6 @@ export default function PropertyCard({
       mounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (agentSlug?.trim()) {
-      setSelectedAgentSlug(
-        agentSlug.trim(),
-      );
-    }
-  }, [agentSlug]);
 
   function renderAgentSelector() {
     return (
@@ -1671,6 +1826,17 @@ export default function PropertyCard({
                   )}
                 </p>
 
+                {showPerMonth &&
+                  perMonth && (
+                    <p className="mt-1 text-sm font-semibold text-white/90 sm:text-base">
+                      {perMonth}
+
+                      <span className="ml-1 text-white/70">
+                        / month
+                      </span>
+                    </p>
+                  )}
+
                 <h2 className="mt-1 text-lg font-bold sm:text-xl">
                   {property.title}
                 </h2>
@@ -1732,6 +1898,17 @@ export default function PropertyCard({
                       property.price,
                     )}
                   </p>
+
+                  {showPerMonth &&
+                    perMonth && (
+                      <p className="mt-1 text-sm font-semibold text-[#a47d3c] sm:text-base">
+                        {perMonth}
+
+                        <span className="ml-1 font-medium text-slate-400">
+                          / month
+                        </span>
+                      </p>
+                    )}
 
                   <h1 className="mt-1 text-xl font-bold text-slate-800 sm:text-2xl">
                     {property.title}
@@ -1828,9 +2005,7 @@ export default function PropertyCard({
                   )}
                 </div>
 
-                {/* QUICK ACTIONS
-                    Moved near the top so users do not
-                    need to scroll to the bottom. */}
+                {/* QUICK ACTIONS */}
                 <section>
                   <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
                     <div className="mb-3 px-1">
@@ -1845,7 +2020,6 @@ export default function PropertyCard({
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {/* SEND PROPERTY INQUIRY */}
                       <button
                         type="button"
                         onClick={(event) => {
@@ -1854,7 +2028,6 @@ export default function PropertyCard({
                         }}
                         className="brea88-mobile-premium group relative flex min-h-[62px] items-center justify-center gap-2.5 rounded-[18px] px-5 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(15,23,42,0.18)] transition-transform duration-150 active:scale-[0.97]"
                       >
-                        {/* Continuous outer glow */}
                         <span className="brea88-mobile-glow pointer-events-none absolute -inset-2 -z-10 rounded-[22px] bg-[#c9a96e]/20 blur-lg" />
 
                         <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/10">
@@ -1871,7 +2044,6 @@ export default function PropertyCard({
                         />
                       </button>
 
-                      {/* REQUEST SITE VIEWING */}
                       <button
                         type="button"
                         onClick={(event) => {
@@ -1880,7 +2052,6 @@ export default function PropertyCard({
                         }}
                         className="brea88-mobile-premium brea88-mobile-premium-light group relative flex min-h-[62px] items-center justify-center gap-2.5 rounded-[18px] px-5 py-4 text-sm font-bold text-slate-700 shadow-[0_8px_25px_rgba(15,23,42,0.07)] transition-transform duration-150 active:scale-[0.97]"
                       >
-                        {/* Continuous outer glow */}
                         <span className="brea88-mobile-glow pointer-events-none absolute -inset-2 -z-10 rounded-[22px] bg-[#c9a96e]/15 blur-lg" />
 
                         <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#c9a96e]/10 text-[#a47d3c]">
@@ -2109,9 +2280,6 @@ export default function PropertyCard({
                   </section>
                 )}
 
-                {/* BOTTOM SPACING
-                    Actions are intentionally no longer
-                    placed here. */}
                 <div className="h-1" />
               </div>
             </div>
@@ -2268,6 +2436,17 @@ export default function PropertyCard({
             {formatPrice(property.price)}
           </p>
 
+          {showPerMonth &&
+            perMonth && (
+              <p className="mt-0.5 text-xs font-semibold text-[#a47d3c] sm:text-sm">
+                {perMonth}
+
+                <span className="ml-1 font-medium text-slate-400">
+                  / month
+                </span>
+              </p>
+            )}
+
           <h3 className="mt-1.5 line-clamp-2 min-h-[44px] text-sm font-bold leading-5 text-slate-800">
             {property.title}
           </h3>
@@ -2293,6 +2472,7 @@ export default function PropertyCard({
                     size={14}
                     className="text-slate-400"
                   />
+
                   {property.beds}
                 </span>
               )}
@@ -2303,6 +2483,7 @@ export default function PropertyCard({
                     size={14}
                     className="text-slate-400"
                   />
+
                   {property.baths}
                 </span>
               )}
@@ -2406,7 +2587,9 @@ function DetailRow({
   label: string;
   value?: string | null;
 }) {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-between gap-5 px-4 py-3.5">
