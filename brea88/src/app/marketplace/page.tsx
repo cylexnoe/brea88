@@ -1097,7 +1097,7 @@ export default function MarketplacePage() {
                     onChange={(event) =>
                       setSearchQuery(event.target.value)
                     }
-                    placeholder="Search properties, locations, property types..."
+                    placeholder="Search your properties, locations, property types..."
                     className="h-14 w-full rounded-2xl border border-white/10 bg-[#020b1d]/80 pl-12 pr-12 text-sm font-medium text-white outline-none backdrop-blur-xl placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
                   />
 
