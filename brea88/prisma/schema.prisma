@@ -8,25 +8,27 @@ datasource db {
 }
 
 model Agent {
-  id           Int        @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   fullName     String
-  email        String     @unique
+  email        String    @unique
   passwordHash String
-  role         String     @default("Agent")
-  slug         String     @unique
+  role         String    @default("Agent")
+  slug         String    @unique
   phone        String?
   profileImage String?
   bio          String?
   facebook     String?
   messenger    String?
-  isActive     Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   address      String?
   lastSeen     DateTime?
-  inquiries    Inquiry[]
-  properties   Property[]
-  pushSubscriptions PushSubscription[]
+
+  inquiries           Inquiry[]
+  properties          Property[]
+  propertySubmissions PropertySubmission[]
+  pushSubscriptions   PushSubscription[]
 
   @@index([slug])
   @@index([role])
@@ -35,7 +37,7 @@ model Agent {
 }
 
 model Property {
-  id            Int       @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   title         String
   tag           String
   price         String
@@ -44,22 +46,23 @@ model Property {
   beds          Int?
   baths         Int?
   sqft          Float?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  images        String[]  @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  images        String[] @default([])
   agentId       Int?
   category      String?
   propertyType  String?
   houseType     String?
   storey        String?
   developer     String?
-  bankFinancing String[]  @default([])
+  bankFinancing String[] @default([])
   description   String?
   videoUrl      String?
   totalcp       String?
   lotArea       Float?
-  inquiries     Inquiry[]
-  agent         Agent?    @relation(fields: [agentId], references: [id])
+
+  inquiries Inquiry[]
+  agent     Agent?    @relation(fields: [agentId], references: [id])
 
   @@index([tag])
   @@index([category])
@@ -82,8 +85,9 @@ model Inquiry {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   preferredViewingDate DateTime?
-  agent                Agent?    @relation(fields: [agentId], references: [id])
-  property             Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  agent    Agent?    @relation(fields: [agentId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([agentId])
@@ -105,4 +109,183 @@ model PushSubscription {
 
   @@index([agentId])
   @@map("push_subscriptions")
+}
+
+model PropertySubmission {
+  id Int @id @default(autoincrement())
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Shareable Form
+   * |--------------------------------------------------------------------------
+   */
+
+  submissionToken String @unique
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Submission Status
+   * |--------------------------------------------------------------------------
+   * |
+   * | Pending Review
+   * | Approved
+   * | Published
+   * | Rejected
+   * |
+   */
+
+  status String @default("Pending Review")
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Submitter Information
+   * |--------------------------------------------------------------------------
+   */
+
+  submittedByName  String
+  submittedByEmail String?
+  submittedByPhone String?
+  submittedByRole  String?
+  companyName      String?
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Optional Existing BREA 88 Agent
+   * |--------------------------------------------------------------------------
+   */
+
+  agentId Int?
+  agent   Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Property Information
+   * |--------------------------------------------------------------------------
+   */
+
+  title        String
+  tag          String
+  category     String?
+  propertyType String?
+  houseType    String?
+  storey       String?
+
+  price    String
+  location String
+
+  beds    Int?
+  baths   Int?
+  sqft    Float?
+  lotArea Float?
+
+  developer String?
+  totalcp   String?
+
+  bankFinancing String[] @default([])
+
+  description String?
+  videoUrl    String?
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Property Images
+   * |--------------------------------------------------------------------------
+   */
+
+  image  String
+  images String[] @default([])
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Admin Review
+   * |--------------------------------------------------------------------------
+   */
+
+  adminNotes String?
+
+  reviewedAt DateTime?
+  reviewedBy String?
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Published Property
+   * |--------------------------------------------------------------------------
+   * |
+   * | This stores the ID of the Property created when
+   * | Admin approves and publishes this submission.
+   * |
+   */
+
+  publishedPropertyId Int? @unique
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Form Feedback
+   * |--------------------------------------------------------------------------
+   */
+
+  feedback SubmissionFeedback[]
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Timestamps
+   * |--------------------------------------------------------------------------
+   */
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([submissionToken])
+  @@index([submittedByEmail])
+  @@index([agentId])
+  @@index([createdAt])
+  @@map("property_submissions")
+}
+
+model SubmissionFeedback {
+  id Int @id @default(autoincrement())
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Related Submission
+   * |--------------------------------------------------------------------------
+   */
+
+  submissionId Int
+  submission   PropertySubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Feedback
+   * |--------------------------------------------------------------------------
+   */
+
+  rating Int?
+
+  experience    String?
+  difficultPart String?
+  suggestions   String?
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Submitter Information
+   * |--------------------------------------------------------------------------
+   */
+
+  submittedByName String?
+  submittedByRole String?
+
+  /**
+   * |--------------------------------------------------------------------------
+   * | Timestamp
+   * |--------------------------------------------------------------------------
+   */
+
+  createdAt DateTime @default(now())
+
+  @@index([submissionId])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("submission_feedback")
 }
