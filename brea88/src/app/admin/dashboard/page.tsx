@@ -3037,7 +3037,7 @@ const [
                               htmlFor="baths"
                               className="text-sm font-semibold text-slate-700"
                             >
-                              Bathrooms
+                              Toilet & Bathroom
                             </label>
 
                             <div className="relative">
