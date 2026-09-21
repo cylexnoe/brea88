@@ -2027,26 +2027,6 @@ const [
                       </span>
                     </div>
                   </div>
-
-                  <div className="mt-6 rounded-xl border border-[#c9a96e]/20 bg-[#c9a96e]/5 p-4">
-                    <div className="flex gap-3">
-                      <div className="mt-0.5 text-[#a9874f]">
-                        <Star
-                          size={15}
-                        />
-                      </div>
-
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">
-                          BREA 88 Realty
-                        </p>
-
-                        <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                          Service with a Heart.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
@@ -2783,10 +2763,6 @@ const [
                         >
                           Property Details
                         </label>
-
-                        <span className="text-xs font-medium text-slate-400">
-                          Rich text
-                        </span>
                       </div>
 
                       <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md focus-within:border-blue-500 focus-within:shadow-[0_0_0_4px_rgba(59,130,246,0.08)]">
@@ -2822,8 +2798,7 @@ const [
 
                         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
                           <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                            <span>Rich text formatting enabled</span>
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />                 
                           </div>
 
                           <span className="text-xs font-medium text-slate-400">
