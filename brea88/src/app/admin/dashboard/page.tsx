@@ -2582,15 +2582,26 @@ const [
                           <input
                             id="price"
                             name="price"
-                            value={
-                              formData.price
-                            }
-                            onChange={
-                              handleInputChange
-                            }
-                            placeholder="12,500,000"
+                            value={formData.price}
+                            onChange={(event) => {
+                              const rawValue = event.target.value.replace(/\D/g, '');
+
+                              const formattedValue = rawValue
+                                ? Number(rawValue).toLocaleString('en-US')
+                                : '';
+
+                              handleInputChange({
+                                ...event,
+                                target: {
+                                  ...event.target,
+                                  name: 'price',
+                                  value: formattedValue,
+                                },
+                              } as React.ChangeEvent<HTMLInputElement>);
+                            }}
+                            placeholder="1,000,000"
                             required
-                            inputMode="decimal"
+                            inputMode="numeric"
                             className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                           />
                         </div>
