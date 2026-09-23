@@ -60,6 +60,7 @@ const CATEGORY_OPTIONS = [
   'Condominiums',
   'For Rent',
   'For Sale',
+  'Brokerage',
 ];
 
 const HOUSE_LOT_TYPES = [
@@ -390,28 +391,36 @@ const [
     useState(false);
 
   const propertyTypeOptions = useMemo(() => {
-    switch (formData.category) {
-      case 'House & Lot':
-        return HOUSE_LOT_TYPES;
+  switch (formData.category) {
+    case 'House & Lot':
+      return HOUSE_LOT_TYPES;
 
-      case 'Condominiums':
-        return CONDOMINIUM_TYPES;
+    case 'Condominiums':
+      return CONDOMINIUM_TYPES;
 
-      case 'For Rent':
-        return RENT_TYPES;
+    case 'For Rent':
+      return RENT_TYPES;
 
-      case 'For Sale':
-        return [
-          'House & Lot',
-          'Lot Only',
-          'Condominium',
-          'Commercial Property',
-        ];
+    case 'For Sale':
+      return [
+        'House & Lot',
+        'Lot Only',
+        'Condominium',
+        'Commercial Property',
+      ];
 
-      default:
-        return [];
-    }
-  }, [formData.category]);
+    case 'Brokerage':
+      return [
+        'House & Lot',
+        'Lot Only',
+        'Condominium',
+        'Commercial Property',
+      ];
+
+    default:
+      return [];
+  }
+}, [formData.category]);
 
   const showHouseDetails =
     requiresHouseDetails(
@@ -2522,7 +2531,6 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
                         'Commercial',
                         'Investment',
                         'For Rent',
-                        'Brokerage',
                       ]}
                       required
                     />
