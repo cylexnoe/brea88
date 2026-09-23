@@ -589,11 +589,6 @@ const [
         .trim()
         .toLowerCase();
 
-      /*
-      * Per Month is NOT allowed for:
-      * - For Rent
-      * - Brokerage
-      */
       const shouldClearPerMonth =
         category === 'for rent' ||
         category === 'brokerage' ||
