@@ -1908,10 +1908,6 @@ export default function HomePage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-950 text-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-800">
                           <Search className="h-6 w-6" />
                         </div>
-
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-cyan-300">
-                          01
-                        </span>
                       </div>
 
                       <h3 className="mt-6 text-xl font-black tracking-[-0.02em] text-slate-950">
@@ -1949,10 +1945,6 @@ export default function HomePage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-950 text-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-800">
                           <Building2 className="h-6 w-6" />
                         </div>
-
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-cyan-300">
-                          02
-                        </span>
                       </div>
 
                       <h3 className="mt-6 text-xl font-black tracking-[-0.02em] text-slate-950">
@@ -1986,10 +1978,6 @@ export default function HomePage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-950 text-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-800">
                           <Briefcase className="h-6 w-6" />
                         </div>
-
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-cyan-300">
-                          03
-                        </span>
                       </div>
 
                       <h3 className="mt-6 text-xl font-black tracking-[-0.02em] text-slate-950">
@@ -2023,10 +2011,6 @@ export default function HomePage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-950 text-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-800">
                           <FileText className="h-6 w-6" />
                         </div>
-
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-cyan-300">
-                          04
-                        </span>
                       </div>
 
                       <h3 className="mt-6 text-xl font-black tracking-[-0.02em] text-slate-950">
@@ -2060,10 +2044,6 @@ export default function HomePage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-950 text-white shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-800">
                           <MapPin className="h-6 w-6" />
                         </div>
-
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-cyan-300">
-                          05
-                        </span>
                       </div>
 
                       <h3 className="mt-6 text-xl font-black tracking-[-0.02em] text-slate-950">
@@ -2098,10 +2078,6 @@ export default function HomePage() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-blue-200 backdrop-blur-sm">
                           <Phone className="h-6 w-6" />
                         </div>
-
-                        <span className="text-[10px] font-bold tracking-[0.15em] text-cyan-300">
-                          06
-                        </span>
                       </div>
 
                       <h3 className="mt-6 text-xl font-black tracking-[-0.02em]">
@@ -2260,11 +2236,6 @@ export default function HomePage() {
                             <h3 className="font-black tracking-tight text-slate-950">
                               Service With A Heart
                             </h3>
-
-                            <span className="h-1 w-1 rounded-full bg-amber-400" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-blue-600">
-                              01
-                            </span>
                           </div>
 
                           <p className="mt-2 text-sm leading-7 text-slate-600">
@@ -2292,11 +2263,6 @@ export default function HomePage() {
                             <h3 className="font-black tracking-tight text-slate-950">
                               Integrity
                             </h3>
-
-                            <span className="h-1 w-1 rounded-full bg-amber-400" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-blue-600">
-                              02
-                            </span>
                           </div>
 
                           <p className="mt-2 text-sm leading-7 text-slate-600">
@@ -2324,11 +2290,6 @@ export default function HomePage() {
                             <h3 className="font-black tracking-tight text-slate-950">
                               Excellence
                             </h3>
-
-                            <span className="h-1 w-1 rounded-full bg-amber-400" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-blue-600">
-                              03
-                            </span>
                           </div>
 
                           <p className="mt-2 text-sm leading-7 text-slate-600">
@@ -2400,10 +2361,6 @@ export default function HomePage() {
                             </div>
 
                             <div className="min-w-0">
-                              <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-300/50">
-                                {String(index + 1).padStart(2, '0')}
-                              </span>
-
                               <p className="mt-0.5 text-sm leading-6 text-blue-100/85 transition-colors duration-300 group-hover/benefit:text-white">
                                 {text}
                               </p>
