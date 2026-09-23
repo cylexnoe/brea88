@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 
 import { createPortal } from 'react-dom';
-
+import PropertyShareButton from '@/components/PropertyShareButton';
 import {
   Bath,
   BedDouble,
@@ -80,6 +80,7 @@ interface AvailableAgent {
 interface PropertyCardProps {
   property: Property;
   agentSlug?: string;
+  autoOpen?: boolean;
 }
 
 type ModalType =
@@ -428,6 +429,7 @@ function getInitials(name: string) {
 export default function PropertyCard({
   property,
   agentSlug,
+  autoOpen = false,
 }: PropertyCardProps) {
   const [modal, setModal] =
     useState<ModalType>(null);
@@ -521,6 +523,9 @@ console.log('🔥 PER MONTH DEBUG', {
 
   const [isAgent, setIsAgent] =
     useState(false);
+
+
+
 
   const galleryImages = useMemo(() => {
     const images = [
@@ -754,8 +759,40 @@ console.log('🔥 PER MONTH DEBUG', {
   setSubmitError('');
   setAgentDropdownOpen(false);
   setModal('details');
-  loadAgents();
+
+  void loadAgents();
 }
+
+useEffect(() => {
+  if (!autoOpen) {
+    return;
+  }
+
+  const timer = window.setTimeout(() => {
+    console.log(
+      '[PropertyCard] Auto-opening property:',
+      property.id,
+      property.title,
+    );
+
+    setSelectedImageIndex(0);
+    setDescriptionExpanded(false);
+    setSubmitSuccess(false);
+    setSubmitError('');
+    setAgentDropdownOpen(false);
+
+    // Open the existing details modal
+    setModal('details');
+
+    // Load agents without blocking the modal
+    void loadAgents();
+  }, 500);
+
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [autoOpen, property.id, property.title]);
+
 
   function openInquiry() {
     setSubmitSuccess(false);
@@ -1848,18 +1885,28 @@ console.log('🔥 PER MONTH DEBUG', {
               <div className="space-y-8 p-5 sm:p-7 lg:p-9">
                 {/* PROPERTY SUMMARY */}
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {property.category && (
-                      <span className="rounded-full bg-[#c9a96e]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9c7a3d]">
-                        {property.category}
-                      </span>
-                    )}
+                  <div className="flex w-full items-center justify-between gap-3">
+                    {/* Tags */}
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      {property.category && (
+                        <span className="rounded-full bg-[#c9a96e]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9c7a3d]">
+                          {property.category}
+                        </span>
+                      )}
 
-                    {property.propertyType && (
-                      <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
-                        {property.propertyType}
-                      </span>
-                    )}
+                      {property.propertyType && (
+                        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                          {property.propertyType}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Share */}
+                    <div className="ml-auto shrink-0">
+                      <PropertyShareButton
+                        propertyId={property.id}
+                      />
+                    </div>
                   </div>
 
                   <p className="mt-3 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
