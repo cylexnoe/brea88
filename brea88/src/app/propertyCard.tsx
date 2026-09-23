@@ -495,6 +495,9 @@ console.log('🔥 PER MONTH DEBUG', {
   const [submitting, setSubmitting] =
     useState(false);
 
+    const [descriptionExpanded, setDescriptionExpanded] =
+  useState(false);
+
   const [
     submitSuccess,
     setSubmitSuccess,
@@ -745,13 +748,14 @@ console.log('🔥 PER MONTH DEBUG', {
   }
 
   function openDetails() {
-    setSelectedImageIndex(0);
-    setSubmitSuccess(false);
-    setSubmitError('');
-    setAgentDropdownOpen(false);
-    setModal('details');
-    loadAgents();
-  }
+  setSelectedImageIndex(0);
+  setDescriptionExpanded(false);
+  setSubmitSuccess(false);
+  setSubmitError('');
+  setAgentDropdownOpen(false);
+  setModal('details');
+  loadAgents();
+}
 
   function openInquiry() {
     setSubmitSuccess(false);
@@ -2139,29 +2143,65 @@ console.log('🔥 PER MONTH DEBUG', {
                       title="Description"
                     />
 
-                    <div
-                      className="property-description mt-4 text-sm leading-7 text-slate-600"
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          property.description
-                            .replace(
-                              /&nbsp;/g,
-                              ' ',
-                            )
-                            .replace(
-                              /&amp;/g,
-                              '&',
-                            )
-                            .replace(
-                              /&quot;/g,
-                              '"',
-                            )
-                            .replace(
-                              /&#39;/g,
-                              "'",
-                            ),
-                      }}
-                    />
+                    <div className="relative mt-4">
+                      <div
+                        className={`property-description overflow-hidden text-sm leading-7 text-slate-600 transition-[max-height] duration-500 ease-in-out ${
+                          descriptionExpanded
+                            ? 'max-h-[2000px]'
+                            : 'max-h-[180px]'
+                        }`}
+                      >
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              property.description
+                                .replace(
+                                  /&nbsp;/g,
+                                  ' ',
+                                )
+                                .replace(
+                                  /&amp;/g,
+                                  '&',
+                                )
+                                .replace(
+                                  /&quot;/g,
+                                  '"',
+                                )
+                                .replace(
+                                  /&#39;/g,
+                                  "'",
+                                ),
+                          }}
+                        />
+                      </div>
+
+                      {!descriptionExpanded && (
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white via-white/90 to-transparent" />
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDescriptionExpanded(
+                          (current) => !current,
+                        )
+                      }
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-[#a47d3c] transition-colors duration-200 hover:text-[#8f6a31]"
+                    >
+                      {descriptionExpanded
+                        ? 'See Less'
+                        : 'See More'}
+
+                      <ChevronRight
+                        size={15}
+                        className={`transition-transform duration-300 ${
+                          descriptionExpanded
+                            ? '-rotate-90'
+                            : 'rotate-90'
+                        }`}
+                      />
+                    </button>
                   </section>
                 )}
 
