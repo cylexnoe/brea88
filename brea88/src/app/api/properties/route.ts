@@ -7,13 +7,21 @@ import {
   isSafeHttpUrl,
 } from '@/lib/security';
 
+const ALLOWED_CATEGORIES = new Set([
+  'House & Lot',
+  'Condominiums',
+  'For Rent',
+  'For Sale',
+  'Brokerage',
+]);
+
 const ALLOWED_TAGS = new Set([
   'All',
   'Residential',
   'Commercial',
   'Investment',
   'For Rent',
-  'Brokerage',
+  'For Sale',
 ]);
 
 const MAX_IMAGES = 20;
@@ -407,9 +415,30 @@ function parsePropertyBody(
     };
   }
 
+  /*
+   * LISTING TAG VALIDATION
+   *
+   * Brokerage is intentionally NOT included.
+   * For Sale IS a valid listing tag.
+   */
   if (!ALLOWED_TAGS.has(tag)) {
     return {
       error: 'Invalid property tag.',
+    };
+  }
+
+  /*
+   * CATEGORY VALIDATION
+   *
+   * Brokerage IS a valid category.
+   * For Sale IS also a valid category.
+   */
+  if (
+    category &&
+    !ALLOWED_CATEGORIES.has(category)
+  ) {
+    return {
+      error: 'Invalid property category.',
     };
   }
 
