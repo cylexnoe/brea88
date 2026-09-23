@@ -2533,12 +2533,8 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
                     <SelectField
                       label="Listing Tag"
                       name="tag"
-                      value={
-                        formData.tag
-                      }
-                      onChange={
-                        handleInputChange
-                      }
+                      value={formData.tag}
+                      onChange={handleInputChange}
                       options={[
                         'All',
                         'Residential',
