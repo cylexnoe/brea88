@@ -297,7 +297,7 @@ export default function MarketplacePage() {
   }, []);
 
   /* ------------------------------------------------------------------------ */
-  /* LOAD PROPERTIES                                                           */
+  /* LOAD PROPERTIES                                                          */
   /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
@@ -394,7 +394,7 @@ export default function MarketplacePage() {
   }, [filterModalOpen]);
 
   /* ------------------------------------------------------------------------ */
-  /* ESCAPE TO CLOSE                                                           */
+  /* ESCAPE TO CLOSE                                                          */
   /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
@@ -422,7 +422,7 @@ export default function MarketplacePage() {
   }, [filterModalOpen]);
 
   /* ------------------------------------------------------------------------ */
-  /* PRICE PARSER                                                              */
+  /* PRICE PARSER                                                             */
   /* ------------------------------------------------------------------------ */
 
   const parsePrice = (price: string) =>
@@ -434,7 +434,7 @@ export default function MarketplacePage() {
     ) || 0;
 
   /* ------------------------------------------------------------------------ */
-  /* FILTER PROPERTIES                                                         */
+  /* FILTER PROPERTIES                                                        */
   /* ------------------------------------------------------------------------ */
 
   const filteredProperties = useMemo(() => {
@@ -566,7 +566,7 @@ export default function MarketplacePage() {
   ]);
 
   /* ------------------------------------------------------------------------ */
-  /* RESET FILTERS                                                             */
+  /* RESET FILTERS                                                            */
   /* ------------------------------------------------------------------------ */
 
   const resetFilters = () => {
@@ -581,7 +581,7 @@ export default function MarketplacePage() {
   };
 
   /* ------------------------------------------------------------------------ */
-  /* SELECT CATEGORY                                                           */
+  /* SELECT CATEGORY                                                          */
   /* ------------------------------------------------------------------------ */
 
   const handleCategorySelect = (
@@ -591,7 +591,7 @@ export default function MarketplacePage() {
   };
 
   /* ------------------------------------------------------------------------ */
-  /* ACTIVE CATEGORY                                                           */
+  /* ACTIVE CATEGORY                                                          */
   /* ------------------------------------------------------------------------ */
 
   const activeCategory =
@@ -606,7 +606,7 @@ export default function MarketplacePage() {
     activeCategory.icon;
 
   /* ------------------------------------------------------------------------ */
-  /* FILTER COUNT                                                              */
+  /* FILTER COUNT                                                             */
   /* ------------------------------------------------------------------------ */
 
   const activeFilterCount = [
@@ -620,7 +620,7 @@ export default function MarketplacePage() {
   ].filter(Boolean).length;
 
   /* ------------------------------------------------------------------------ */
-  /* FILTER MODAL                                                              */
+  /* FILTER MODAL                                                             */
   /* ------------------------------------------------------------------------ */
 
   const filterModal =
@@ -1123,7 +1123,7 @@ export default function MarketplacePage() {
       : null;
 
   /* ------------------------------------------------------------------------ */
-  /* PAGE                                                                      */
+  /* PAGE                                                                     */
   /* ------------------------------------------------------------------------ */
 
   return (
@@ -1145,8 +1145,6 @@ export default function MarketplacePage() {
           <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
             <Reveal>
               <div className="flex items-center gap-3">
-                
-
                 <span className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-200 sm:text-xs">
                   BREA 88 REALTY
                 </span>
@@ -1327,7 +1325,7 @@ export default function MarketplacePage() {
             </Reveal>
           ) : filteredProperties.length >
             0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
               {filteredProperties.map(
                 (
                   property,
@@ -1342,8 +1340,9 @@ export default function MarketplacePage() {
                         80,
                       400,
                     )}
+                    className="min-w-0"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 aspect-square">
                       <PropertyCard
                         property={
                           property
@@ -1394,3 +1393,4 @@ export default function MarketplacePage() {
     </>
   );
 }
+
