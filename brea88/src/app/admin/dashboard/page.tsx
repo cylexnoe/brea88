@@ -2531,6 +2531,7 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
                         'Commercial',
                         'Investment',
                         'For Rent',
+                        'For Sale',
                       ]}
                       required
                     />
