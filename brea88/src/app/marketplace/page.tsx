@@ -149,6 +149,14 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
 
   const [agentSlug, setAgentSlug] = useState('');
+  
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const linkedAgent = params.get('agent')?.trim() || '';
+
+  setAgentSlug(linkedAgent);
+}, []);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -181,6 +189,13 @@ export default function MarketplacePage() {
 
   const searchParams = useSearchParams();
 
+  /*
+   * PUBLIC:
+   * /marketplace?property=56
+   *
+   * AGENT:
+   * /marketplace?property=56&agent=john-doe
+   */
   const sharedPropertyId = useMemo(() => {
     const value = searchParams.get('property');
 
@@ -193,18 +208,22 @@ export default function MarketplacePage() {
     return Number.isFinite(id) ? id : null;
   }, [searchParams]);
 
+  /*
+   * Read the agent attribution from the URL.
+   */
   useEffect(() => {
-    const params = new URLSearchParams(
-      window.location.search,
-    );
+    const slug = searchParams.get('agent');
 
-    const slug = params.get('agent');
-
-    if (slug) {
-      setAgentSlug(slug);
+    if (slug?.trim()) {
+      setAgentSlug(slug.trim());
+    } else {
+      setAgentSlug('');
     }
-  }, []);
+  }, [searchParams]);
 
+  /*
+   * Load properties.
+   */
   useEffect(() => {
     let cancelled = false;
 
@@ -245,6 +264,31 @@ export default function MarketplacePage() {
           '[Marketplace] Loaded properties:',
           normalized.length,
         );
+
+        /*
+         * Debug information for shared links.
+         */
+        if (sharedPropertyId !== null) {
+          const matchingProperty = normalized.find(
+            (property) =>
+              property.id === sharedPropertyId,
+          );
+
+          console.log(
+            '[Marketplace] Shared property ID:',
+            sharedPropertyId,
+          );
+
+          console.log(
+            '[Marketplace] Matching property:',
+            matchingProperty,
+          );
+
+          console.log(
+            '[Marketplace] Shared agent:',
+            searchParams.get('agent'),
+          );
+        }
       } catch (error) {
         console.error(
           '[Marketplace] Failed to load properties:',
@@ -266,7 +310,7 @@ export default function MarketplacePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sharedPropertyId, searchParams]);
 
   useEffect(() => {
     if (!filterModalOpen) {
@@ -507,7 +551,6 @@ export default function MarketplacePage() {
             event.stopPropagation()
           }
         >
-          {/* Modal Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7 sm:py-5">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
@@ -537,10 +580,8 @@ export default function MarketplacePage() {
             </button>
           </div>
 
-          {/* Modal Content */}
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
             <div className="space-y-7">
-              {/* Category */}
               <section>
                 <div className="mb-3 flex items-center justify-between">
                   <div>
@@ -633,7 +674,6 @@ export default function MarketplacePage() {
                 </div>
               </section>
 
-              {/* Property Type */}
               <section>
                 <label
                   htmlFor="filter-property-type"
@@ -673,7 +713,6 @@ export default function MarketplacePage() {
                 </div>
               </section>
 
-              {/* House Type */}
               <section>
                 <label
                   htmlFor="filter-house-type"
@@ -713,7 +752,6 @@ export default function MarketplacePage() {
                 </div>
               </section>
 
-              {/* Storey */}
               <section>
                 <label
                   htmlFor="filter-storey"
@@ -755,7 +793,6 @@ export default function MarketplacePage() {
                 </div>
               </section>
 
-              {/* Budget */}
               <section>
                 <div className="mb-3">
                   <h3 className="text-sm font-bold text-slate-950">
@@ -834,7 +871,6 @@ export default function MarketplacePage() {
                 </div>
               </section>
 
-              {/* Sort */}
               <section>
                 <div className="mb-3">
                   <h3 className="text-sm font-bold text-slate-950">
@@ -899,7 +935,6 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          {/* Modal Footer */}
           <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <button
               type="button"
@@ -938,16 +973,13 @@ export default function MarketplacePage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      {/* HERO */}
       <section className="relative overflow-hidden bg-[#020817]">
-        {/* Background glow */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-blue-600/20 blur-[100px]" />
           <div className="absolute -right-32 top-10 h-[360px] w-[360px] rounded-full bg-cyan-500/10 blur-[100px]" />
           <div className="absolute bottom-[-180px] left-1/2 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px]" />
         </div>
 
-        {/* Subtle grid */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.035]"
           style={{
@@ -958,7 +990,6 @@ export default function MarketplacePage() {
         />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-16 lg:pt-20">
-          {/* Branding */}
           <div className="text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-blue-200 sm:text-xs">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
@@ -975,7 +1006,6 @@ export default function MarketplacePage() {
             </p>
           </div>
 
-          {/* DESKTOP SEARCH */}
           <div className="mx-auto mt-8 hidden max-w-4xl sm:block">
             <div className="relative">
               <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -1004,7 +1034,6 @@ export default function MarketplacePage() {
               )}
             </div>
 
-            {/* Desktop Category / Filters */}
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
@@ -1044,7 +1073,6 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          {/* MOBILE SEARCH */}
           <div className="relative mt-7 sm:hidden">
             <div
               className={[
@@ -1056,7 +1084,6 @@ export default function MarketplacePage() {
                   : 'w-14 border-white/10 bg-[#020b1d]/80 shadow-lg hover:border-blue-400/40 hover:bg-[#07152d]',
               ].join(' ')}
             >
-              {/* Input */}
               <div
                 className={[
                   'relative min-w-0 flex-1 transition-all duration-500',
@@ -1082,7 +1109,6 @@ export default function MarketplacePage() {
                 />
               </div>
 
-              {/* ONE control icon: Search -> Minus */}
               <button
                 type="button"
                 onClick={() =>
@@ -1140,7 +1166,6 @@ export default function MarketplacePage() {
               </button>
             </div>
 
-            {/* Mobile Category */}
             <div
               className={[
                 'grid transition-[grid-template-rows,opacity,margin] duration-500',
@@ -1178,8 +1203,7 @@ export default function MarketplacePage() {
                       {React.createElement(
                         activeCategory.icon,
                         {
-                          className:
-                            'h-4 w-4',
+                          className: 'h-4 w-4',
                         },
                       )}
                     </span>
@@ -1217,9 +1241,7 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      {/* CONTENT */}
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-        {/* Section heading */}
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -1257,7 +1279,6 @@ export default function MarketplacePage() {
           </button>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="flex min-h-[320px] items-center justify-center">
             <div className="flex flex-col items-center">
@@ -1276,7 +1297,6 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        {/* Empty State */}
         {!loading &&
           filteredProperties.length === 0 && (
             <div className="flex min-h-[360px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white px-6 text-center">
@@ -1305,7 +1325,6 @@ export default function MarketplacePage() {
             </div>
           )}
 
-        {/* Property Grid */}
         {!loading &&
           filteredProperties.length > 0 && (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
