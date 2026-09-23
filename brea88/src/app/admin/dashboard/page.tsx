@@ -558,52 +558,57 @@ const [
   }, []);
 
   const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = event.target;
+  event: React.ChangeEvent<
+    HTMLInputElement |
+    HTMLSelectElement |
+    HTMLTextAreaElement
+  >
+) => {
+  const { name, value } = event.target;
 
-    setFormData((current) => {
-      const next = {
-        ...current,
-        [name]: value,
-      };
-      if (
-        next.tag === 'Brokerage'
-      ) {
-        next.tag = 'For Sale';
-      }
+  setFormData((current) => {
+    const next = {
+      ...current,
+      [name]: value,
+    };
 
-      const category = (
-        name === 'category'
-          ? value
-          : current.category
-      )
-        .trim()
-        .toLowerCase();
+    // Brokerage is a CATEGORY only.
+    // It is NOT a valid Listing Tag.
+    if (next.tag === 'Brokerage') {
+      next.tag = 'For Sale';
+    }
 
-      const propertyType = (
-        name === 'propertyType'
-          ? value
-          : current.propertyType
-      )
-        .trim()
-        .toLowerCase();
+    const category = (
+      name === 'category'
+        ? value
+        : current.category
+    )
+      .trim()
+      .toLowerCase();
 
-      const shouldClearPerMonth =
-        category === 'for rent' ||
-        category === 'brokerage' ||
-        propertyType === 'for rent' ||
-        propertyType.includes('for rent') ||
-        propertyType === 'brokerage' ||
-        propertyType.includes('brokerage');
+    const propertyType = (
+      name === 'propertyType'
+        ? value
+        : current.propertyType
+    )
+      .trim()
+      .toLowerCase();
 
-      if (shouldClearPerMonth) {
-        next.perMonth = '';
-      }
+    const shouldClearPerMonth =
+      category === 'for rent' ||
+      category === 'brokerage' ||
+      propertyType === 'for rent' ||
+      propertyType.includes('for rent') ||
+      propertyType === 'brokerage' ||
+      propertyType.includes('brokerage');
 
-      return next;
-    });
-  };
+    if (shouldClearPerMonth) {
+      next.perMonth = '';
+    }
+
+    return next;
+  });
+};
   function handleImageUpload(
     event: ChangeEvent<HTMLInputElement>,
   ) {
@@ -835,8 +840,9 @@ const [
           : '',
 
       tag:
-        property.tag ||
-        'Residential',
+        property.tag === 'Brokerage'
+        ? 'For Sale'
+        : property.tag || 'Residential',
 
       price:
         property.price !== null &&
