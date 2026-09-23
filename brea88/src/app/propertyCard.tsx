@@ -1795,8 +1795,6 @@ console.log('🔥 PER MONTH DEBUG', {
                 className="h-full w-full object-cover"
               />
 
-              <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/65 via-transparent to-black/10" />
-
               {galleryImages.length > 1 && (
                 <>
                   <button
@@ -1819,62 +1817,29 @@ console.log('🔥 PER MONTH DEBUG', {
                 </>
               )}
 
-              <div className="pointer-events-none absolute bottom-5 left-5 right-5 z-20 text-white sm:bottom-7 sm:left-7">
-                <span className="inline-flex rounded-full bg-white/15 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] backdrop-blur-md">
+              {/* Property Tag */}
+              <div className="absolute left-5 top-5 z-20 sm:left-7 sm:top-7">
+                <span className="inline-flex rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white shadow-lg backdrop-blur-md">
                   {property.tag}
                 </span>
-
-                <p className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-                  {formatPrice(
-                    property.price,
-                  )}
-                </p>
-
-                {showPerMonth &&
-                  perMonth && (
-                    <p className="mt-1 text-sm font-semibold text-white/90 sm:text-base">
-                      {perMonth}
-
-                      <span className="ml-1 text-white/70">
-                        / month
-                      </span>
-                    </p>
-                  )}
-
-                <h2 className="mt-1 text-lg font-bold sm:text-xl">
-                  {property.title}
-                </h2>
-
-                <div className="mt-2 flex items-center gap-1.5 text-sm text-white/85">
-                  <MapPin size={15} />
-                  {property.location}
-                </div>
               </div>
 
+              {/* Image Indicators */}
               {galleryImages.length > 1 && (
                 <div className="absolute bottom-5 right-5 hidden gap-1.5 sm:flex">
-                  {galleryImages
-                    .slice(0, 6)
-                    .map((_, index) => (
-                      <button
-                        type="button"
-                        key={index}
-                        onClick={() =>
-                          setSelectedImageIndex(
-                            index,
-                          )
-                        }
-                        aria-label={`View image ${
-                          index + 1
-                        }`}
-                        className={`h-1.5 rounded-full transition-all ${
-                          selectedImageIndex ===
-                          index
-                            ? 'w-7 bg-white'
-                            : 'w-2 bg-white/45'
-                        }`}
-                      />
-                    ))}
+                  {galleryImages.slice(0, 6).map((_, index) => (
+                    <button
+                      type="button"
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      aria-label={`View image ${index + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        selectedImageIndex === index
+                          ? 'w-7 bg-white'
+                          : 'w-2 bg-white/45'
+                      }`}
+                    />
+                  ))}
                 </div>
               )}
             </div>
