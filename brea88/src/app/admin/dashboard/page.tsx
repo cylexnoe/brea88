@@ -558,48 +558,57 @@ const [
   }, []);
 
   const handleInputChange = (
-      event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-    ) => {
-      const { name, value } = event.target;
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = event.target;
 
-      setFormData((current) => {
-        const next = {
-          ...current,
-          [name]: value,
-        };
+    setFormData((current) => {
+      const next = {
+        ...current,
+        [name]: value,
+      };
+      if (
+        next.tag === 'Brokerage'
+      ) {
+        next.tag = 'For Sale';
+      }
 
-        const category = (
-          name === 'category'
-            ? value
-            : current.category
-        )
-          .trim()
-          .toLowerCase();
+      const category = (
+        name === 'category'
+          ? value
+          : current.category
+      )
+        .trim()
+        .toLowerCase();
 
-        const propertyType = (
-          name === 'propertyType'
-            ? value
-            : current.propertyType
-        )
-          .trim()
-          .toLowerCase();
+      const propertyType = (
+        name === 'propertyType'
+          ? value
+          : current.propertyType
+      )
+        .trim()
+        .toLowerCase();
 
-        const shouldClearPerMonth =
-          category === 'for rent' ||
-          category === 'brokerage' ||
-          propertyType === 'for rent' ||
-          propertyType.includes('for rent') ||
-          propertyType === 'brokerage' ||
-          propertyType.includes('brokerage');
+      /*
+      * Per Month is NOT allowed for:
+      * - For Rent
+      * - Brokerage
+      */
+      const shouldClearPerMonth =
+        category === 'for rent' ||
+        category === 'brokerage' ||
+        propertyType === 'for rent' ||
+        propertyType.includes('for rent') ||
+        propertyType === 'brokerage' ||
+        propertyType.includes('brokerage');
 
-        if (shouldClearPerMonth) {
-          next.perMonth = '';
-        }
+      if (shouldClearPerMonth) {
+        next.perMonth = '';
+      }
 
-        return next;
-      });
-    };
-
+      return next;
+    });
+  };
   function handleImageUpload(
     event: ChangeEvent<HTMLInputElement>,
   ) {
