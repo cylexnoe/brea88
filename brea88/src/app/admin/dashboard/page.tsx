@@ -3143,7 +3143,7 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
                               htmlFor="baths"
                               className="text-sm font-semibold text-slate-700"
                             >
-                              Toilet & Bathroom
+                              Bathroom
                             </label>
 
                             <div className="relative">
