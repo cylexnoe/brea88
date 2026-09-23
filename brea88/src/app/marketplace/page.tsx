@@ -1145,7 +1145,7 @@ export default function MarketplacePage() {
           <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
             <Reveal>
               <div className="flex items-center gap-3">
-                <span className="h-px w-10 bg-[#c9a96e]" />
+                
 
                 <span className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-200 sm:text-xs">
                   BREA 88 REALTY
