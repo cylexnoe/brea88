@@ -51,6 +51,68 @@ function cleanOptionalString(
 }
 
 /**
+ * Converts known legacy / inconsistent values
+ * into the current classification values.
+ *
+ * Brokerage is a CATEGORY only.
+ * Brokerage is NOT a Listing Tag.
+ */
+function normalizeTag(
+  value: unknown,
+): string | null {
+  const cleaned = cleanString(value, 30);
+
+  if (!cleaned) {
+    return null;
+  }
+
+  // Legacy data:
+  // Brokerage used to be accepted as a tag.
+  // It is now a category only.
+  if (
+    cleaned.toLowerCase() ===
+    'brokerage'
+  ) {
+    return 'For Sale';
+  }
+
+  const matchingTag =
+    Array.from(ALLOWED_TAGS).find(
+      (allowedTag) =>
+        allowedTag.toLowerCase() ===
+        cleaned.toLowerCase(),
+    );
+
+  return matchingTag || null;
+}
+
+/**
+ * Normalizes category values while preserving
+ * the official category capitalization.
+ */
+function normalizeCategory(
+  value: unknown,
+): string | null {
+  const cleaned = cleanOptionalString(
+    value,
+    100,
+  );
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const matchingCategory =
+    Array.from(ALLOWED_CATEGORIES).find(
+      (allowedCategory) =>
+        allowedCategory.toLowerCase() ===
+        cleaned.toLowerCase(),
+    );
+
+  return matchingCategory || null;
+}
+
+/**
  * PER MONTH RULE
  *
  * Per Month is allowed for:
@@ -69,52 +131,82 @@ function cleanPerMonth(
   category: string | null,
   propertyType: string | null,
 ): string | null {
-  const normalizedCategory = String(category ?? '')
+  const normalizedCategory = String(
+    category ?? '',
+  )
     .trim()
     .toLowerCase();
 
-  const normalizedPropertyType = String(propertyType ?? '')
-    .trim()
-    .toLowerCase();
+  const normalizedPropertyType =
+    String(propertyType ?? '')
+      .trim()
+      .toLowerCase();
 
-  // Never store Per Month for rental or brokerage listings.
+  // Never store Per Month for rental
+  // or brokerage listings.
   if (
     normalizedCategory === 'for rent' ||
     normalizedCategory === 'brokerage' ||
     normalizedPropertyType === 'for rent' ||
-    normalizedPropertyType.includes('for rent') ||
-    normalizedPropertyType === 'brokerage' ||
-    normalizedPropertyType.includes('brokerage')
+    normalizedPropertyType.includes(
+      'for rent',
+    ) ||
+    normalizedPropertyType ===
+      'brokerage' ||
+    normalizedPropertyType.includes(
+      'brokerage',
+    )
   ) {
     return null;
   }
 
   // House & Lot
   if (
-    normalizedCategory === 'house & lot' ||
-    normalizedPropertyType === 'house & lot' ||
-    normalizedPropertyType.includes('house & lot')
+    normalizedCategory ===
+      'house & lot' ||
+    normalizedPropertyType ===
+      'house & lot' ||
+    normalizedPropertyType.includes(
+      'house & lot',
+    )
   ) {
-    return cleanOptionalString(value, 100);
+    return cleanOptionalString(
+      value,
+      100,
+    );
   }
 
   // Condominium
   if (
-    normalizedCategory === 'condominium' ||
-    normalizedCategory === 'condominiums' ||
-    normalizedPropertyType === 'condominium' ||
-    normalizedPropertyType === 'condominiums' ||
-    normalizedPropertyType.includes('condominium')
+    normalizedCategory ===
+      'condominium' ||
+    normalizedCategory ===
+      'condominiums' ||
+    normalizedPropertyType ===
+      'condominium' ||
+    normalizedPropertyType ===
+      'condominiums' ||
+    normalizedPropertyType.includes(
+      'condominium',
+    )
   ) {
-    return cleanOptionalString(value, 100);
+    return cleanOptionalString(
+      value,
+      100,
+    );
   }
 
   // For Sale
   if (
-    normalizedCategory === 'for sale' ||
-    normalizedPropertyType === 'for sale'
+    normalizedCategory ===
+      'for sale' ||
+    normalizedPropertyType ===
+      'for sale'
   ) {
-    return cleanOptionalString(value, 100);
+    return cleanOptionalString(
+      value,
+      100,
+    );
   }
 
   return null;
@@ -133,7 +225,9 @@ function cleanImages(
         typeof item === 'string',
     )
     .map((item) => item.trim())
-    .filter((item) => isSafeHttpUrl(item))
+    .filter((item) =>
+      isSafeHttpUrl(item),
+    )
     .slice(0, MAX_IMAGES);
 }
 
@@ -297,9 +391,14 @@ function parsePropertyBody(
     200,
   );
 
-  const tag = cleanString(
+  /*
+   * Normalize Listing Tag.
+   *
+   * This also converts legacy:
+   * Brokerage -> For Sale
+   */
+  const tag = normalizeTag(
     data.tag,
-    30,
   );
 
   const price = cleanString(
@@ -312,10 +411,12 @@ function parsePropertyBody(
     300,
   );
 
+  /*
+   * Normalize Category.
+   */
   const category =
-    cleanOptionalString(
+    normalizeCategory(
       data.category,
-      100,
     );
 
   const propertyType =
@@ -396,6 +497,11 @@ function parsePropertyBody(
       data.sqft,
     );
 
+  const lotArea =
+    parseOptionalFloat(
+      data.lotArea,
+    );
+
   const agentId =
     data.agentId === null ||
     data.agentId === undefined ||
@@ -418,8 +524,18 @@ function parsePropertyBody(
   /*
    * LISTING TAG VALIDATION
    *
-   * Brokerage is intentionally NOT included.
-   * For Sale IS a valid listing tag.
+   * Valid:
+   * - All
+   * - Residential
+   * - Commercial
+   * - Investment
+   * - For Rent
+   * - For Sale
+   *
+   * Brokerage is NOT a Listing Tag.
+   *
+   * normalizeTag() already converts an old
+   * Brokerage tag into For Sale.
    */
   if (!ALLOWED_TAGS.has(tag)) {
     return {
@@ -430,8 +546,12 @@ function parsePropertyBody(
   /*
    * CATEGORY VALIDATION
    *
-   * Brokerage IS a valid category.
-   * For Sale IS also a valid category.
+   * Valid:
+   * - House & Lot
+   * - Condominiums
+   * - For Rent
+   * - For Sale
+   * - Brokerage
    */
   if (
     category &&
@@ -515,6 +635,18 @@ function parsePropertyBody(
   }
 
   if (
+    data.lotArea !== undefined &&
+    data.lotArea !== null &&
+    data.lotArea !== '' &&
+    lotArea === null
+  ) {
+    return {
+      error:
+        'Invalid lot area.',
+    };
+  }
+
+  if (
     agentId !== null &&
     (!Number.isSafeInteger(agentId) ||
       agentId <= 0)
@@ -561,6 +693,7 @@ function parsePropertyBody(
       beds,
       baths,
       sqft,
+      lotArea,
       agentId,
     },
   };
@@ -777,23 +910,15 @@ export async function POST(
       }
 
       /*
-       * IMPORTANT:
+       * Normalize old invalid tags when duplicating.
        *
-       * A new database record is created.
-       *
-       * These are NOT copied:
-       * - id
-       * - createdAt
-       * - updatedAt
-       * - inquiries
-       *
-       * agentId is copied exactly.
-       *
-       * perMonth is copied exactly.
-       *
-       * If original.perMonth === null,
-       * duplicate.perMonth will also be null.
+       * If an old property has Brokerage as its
+       * tag, the duplicate will use For Sale.
        */
+      const duplicateTag =
+        normalizeTag(
+          original.tag,
+        ) || 'Residential';
 
       const duplicate =
         await prisma.property.create({
@@ -802,7 +927,7 @@ export async function POST(
               `${original.title} (Copy)`,
 
             tag:
-              original.tag,
+              duplicateTag,
 
             price:
               original.price,
