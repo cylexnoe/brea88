@@ -1905,6 +1905,7 @@ useEffect(() => {
                     <div className="ml-auto shrink-0">
                       <PropertyShareButton
                         propertyId={property.id}
+                        agentSlug={agentSlug}
                       />
                     </div>
                   </div>
