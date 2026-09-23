@@ -3,13 +3,21 @@ import { prisma } from '@/lib/prisma';
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { isSafeHttpUrl } from '@/lib/security';
 
+const ALLOWED_CATEGORIES = new Set([
+  'House & Lot',
+  'Condominiums',
+  'For Rent',
+  'For Sale',
+  'Brokerage',
+]);
+
 const ALLOWED_TAGS = new Set([
   'All',
   'Residential',
   'Commercial',
   'Investment',
   'For Rent',
-  'Brokerage',
+  'For Sale',
 ]);
 
 const MAX_IMAGES = 20;
@@ -18,7 +26,9 @@ function cleanString(
   value: unknown,
   max: number,
 ): string {
-  if (typeof value !== 'string') return '';
+  if (typeof value !== 'string') {
+    return '';
+  }
 
   const result = value.trim();
 
@@ -27,18 +37,89 @@ function cleanString(
     : '';
 }
 
+function normalizeTag(
+  value: unknown,
+): string {
+  const cleaned = cleanString(
+    value,
+    30,
+  );
+
+  if (!cleaned) {
+    return '';
+  }
+
+  /*
+   * Brokerage is a CATEGORY only.
+   *
+   * If an old property still contains
+   * Brokerage as its Listing Tag,
+   * convert it to For Sale.
+   */
+  if (
+    cleaned.toLowerCase() ===
+    'brokerage'
+  ) {
+    return 'For Sale';
+  }
+
+  const matchedTag =
+    Array.from(ALLOWED_TAGS).find(
+      (allowedTag) =>
+        allowedTag.toLowerCase() ===
+        cleaned.toLowerCase(),
+    );
+
+  return matchedTag || '';
+}
+
+function normalizeCategory(
+  value: unknown,
+): string {
+  const cleaned = cleanString(
+    value,
+    100,
+  );
+
+  if (!cleaned) {
+    return '';
+  }
+
+  const matchedCategory =
+    Array.from(
+      ALLOWED_CATEGORIES,
+    ).find(
+      (allowedCategory) =>
+        allowedCategory.toLowerCase() ===
+        cleaned.toLowerCase(),
+    );
+
+  return matchedCategory || '';
+}
+
 function cleanOptionalUrl(
   value: unknown,
 ): string {
-  const result = cleanString(value, 2048);
+  const result = cleanString(
+    value,
+    2048,
+  );
 
-  if (!result) return '';
+  if (!result) {
+    return '';
+  }
 
-  return isSafeHttpUrl(result) ? result : '';
+  return isSafeHttpUrl(result)
+    ? result
+    : '';
 }
 
-function cleanImages(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
+function cleanImages(
+  value: unknown,
+): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
 
   return value
     .filter(
@@ -46,27 +127,34 @@ function cleanImages(value: unknown): string[] {
         typeof item === 'string',
     )
     .map((item) => item.trim())
-    .filter((item) => isSafeHttpUrl(item))
+    .filter((item) =>
+      isSafeHttpUrl(item),
+    )
     .slice(0, MAX_IMAGES);
 }
 
 function cleanBankFinancing(
   value: unknown,
 ): string[] {
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
 
-  return value
-    .filter(
-      (item): item is string =>
-        typeof item === 'string',
-    )
-    .map((item) => item.trim())
-    .filter(
-      (item) =>
-        item.length > 0 &&
-        item.length <= 100,
-    )
-    .slice(0, 20);
+  return Array.from(
+    new Set(
+      value
+        .filter(
+          (item): item is string =>
+            typeof item === 'string',
+        )
+        .map((item) => item.trim())
+        .filter(
+          (item) =>
+            item.length > 0 &&
+            item.length <= 100,
+        ),
+    ),
+  ).slice(0, 20);
 }
 
 /**
@@ -92,39 +180,63 @@ function cleanPerMonth(
   const isForRent =
     normalizedCategory === 'for rent' ||
     normalizedPropertyType === 'for rent' ||
-    normalizedPropertyType.includes('for rent');
+    normalizedPropertyType.includes(
+      'for rent',
+    );
 
   const isBrokerage =
     normalizedCategory === 'brokerage' ||
-    normalizedPropertyType === 'brokerage' ||
-    normalizedPropertyType.includes('brokerage');
+    normalizedPropertyType ===
+      'brokerage' ||
+    normalizedPropertyType.includes(
+      'brokerage',
+    );
 
-  if (isForRent || isBrokerage) {
+  if (
+    isForRent ||
+    isBrokerage
+  ) {
     return null;
   }
 
   const isHouseAndLot =
-    normalizedCategory === 'house & lot' ||
-    normalizedPropertyType === 'house & lot' ||
-    normalizedPropertyType.includes('house & lot');
+    normalizedCategory ===
+      'house & lot' ||
+    normalizedPropertyType ===
+      'house & lot' ||
+    normalizedPropertyType.includes(
+      'house & lot',
+    );
 
   const isCondominium =
-    normalizedCategory === 'condominiums' ||
-    normalizedCategory === 'condominium' ||
-    normalizedPropertyType === 'condominiums' ||
-    normalizedPropertyType === 'condominium' ||
-    normalizedPropertyType.includes('condominium');
+    normalizedCategory ===
+      'condominiums' ||
+    normalizedCategory ===
+      'condominium' ||
+    normalizedPropertyType ===
+      'condominiums' ||
+    normalizedPropertyType ===
+      'condominium' ||
+    normalizedPropertyType.includes(
+      'condominium',
+    );
 
   const isForSale =
     normalizedCategory === 'for sale' ||
-    normalizedPropertyType === 'for sale';
+    normalizedPropertyType ===
+      'for sale';
 
   if (
     isHouseAndLot ||
     isCondominium ||
     isForSale
   ) {
-    return cleanString(value, 100) || null;
+    return (
+      cleanString(
+        value,
+        100,
+      ) || null
+    );
   }
 
   return null;
@@ -143,7 +255,8 @@ function optionalNumber(
 
   const number = Number(value);
 
-  return Number.isFinite(number) && number >= 0
+  return Number.isFinite(number) &&
+    number >= 0
     ? number
     : null;
 }
@@ -183,9 +296,19 @@ function getPropertyData(
     200,
   );
 
-  const tag = cleanString(
+  /*
+   * IMPORTANT:
+   *
+   * Normalize the Listing Tag here.
+   *
+   * Old:
+   * Brokerage
+   *
+   * Becomes:
+   * For Sale
+   */
+  const tag = normalizeTag(
     data.tag,
-    30,
   );
 
   const location = cleanString(
@@ -198,10 +321,13 @@ function getPropertyData(
     100,
   );
 
-  const category = cleanString(
-    data.category,
-    100,
-  );
+  /*
+   * Normalize Category.
+   */
+  const category =
+    normalizeCategory(
+      data.category,
+    );
 
   const propertyType = cleanString(
     data.propertyType,
@@ -233,9 +359,10 @@ function getPropertyData(
     100,
   );
 
-  const videoUrl = cleanOptionalUrl(
-    data.videoUrl,
-  );
+  const videoUrl =
+    cleanOptionalUrl(
+      data.videoUrl,
+    );
 
   const bankFinancing =
     cleanBankFinancing(
@@ -273,7 +400,7 @@ function getPropertyData(
     data.lotArea,
   );
 
-  /**
+  /*
    * IMPORTANT:
    * Per Month is normalized on the server.
    */
@@ -308,7 +435,9 @@ function getPropertyData(
 }
 
 function validatePropertyData(
-  data: ReturnType<typeof getPropertyData>,
+  data: ReturnType<
+    typeof getPropertyData
+  >,
   raw: Record<string, unknown>,
 ) {
   if (
@@ -317,11 +446,45 @@ function validatePropertyData(
     !data.location ||
     !data.price
   ) {
-    return 'Title, tag, price, and location are required.';
+    return (
+      'Title, tag, price, and location are required.'
+    );
   }
 
+  /*
+   * LISTING TAG
+   *
+   * Allowed:
+   * All
+   * Residential
+   * Commercial
+   * Investment
+   * For Rent
+   * For Sale
+   *
+   * Brokerage is NOT a tag.
+   */
   if (!ALLOWED_TAGS.has(data.tag)) {
     return 'Invalid property tag.';
+  }
+
+  /*
+   * CATEGORY
+   *
+   * Allowed:
+   * House & Lot
+   * Condominiums
+   * For Rent
+   * For Sale
+   * Brokerage
+   */
+  if (
+    data.category &&
+    !ALLOWED_CATEGORIES.has(
+      data.category,
+    )
+  ) {
+    return 'Invalid property category.';
   }
 
   if (
@@ -350,13 +513,17 @@ function validatePropertyData(
 
 export async function GET() {
   try {
-    if (!(await isAdminAuthenticated())) {
+    if (
+      !(await isAdminAuthenticated())
+    ) {
       return NextResponse.json(
         {
           success: false,
           message: 'Unauthorized.',
         },
-        { status: 401 },
+        {
+          status: 401,
+        },
       );
     }
 
@@ -382,9 +549,12 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch properties.',
+        message:
+          'Failed to fetch properties.',
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 }
@@ -392,21 +562,25 @@ export async function GET() {
 export async function POST(
   request: Request,
 ) {
-  if (!(await isAdminAuthenticated())) {
+  if (
+    !(await isAdminAuthenticated())
+  ) {
     return NextResponse.json(
       {
         success: false,
         message: 'Unauthorized.',
       },
-      { status: 401 },
+      {
+        status: 401,
+      },
     );
   }
 
   try {
     const body: unknown =
-      await request.json().catch(
-        () => null,
-      );
+      await request
+        .json()
+        .catch(() => null);
 
     if (
       typeof body !== 'object' ||
@@ -416,14 +590,20 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid property data.',
+          message:
+            'Invalid property data.',
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
     const raw =
-      body as Record<string, unknown>;
+      body as Record<
+        string,
+        unknown
+      >;
 
     const data =
       getPropertyData(raw);
@@ -438,9 +618,12 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message: validationError,
+          message:
+            validationError,
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -458,15 +641,23 @@ export async function POST(
           message:
             'At least one valid property image is required.',
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
     const property =
       await prisma.property.create({
         data: {
-          title: data.title,
-          tag: data.tag,
+          title:
+            data.title,
+
+          /*
+           * Always save the normalized tag.
+           */
+          tag:
+            data.tag,
 
           category:
             data.category,
@@ -483,10 +674,6 @@ export async function POST(
           price:
             data.price,
 
-          /**
-           * NEW:
-           * Save Per Month.
-           */
           perMonth:
             data.perMonth,
 
@@ -543,7 +730,9 @@ export async function POST(
           'Property saved successfully.',
         property,
       },
-      { status: 201 },
+      {
+        status: 201,
+      },
     );
   } catch (error) {
     console.error(
@@ -559,7 +748,9 @@ export async function POST(
         message:
           'Failed to create property.',
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 }
@@ -567,21 +758,25 @@ export async function POST(
 export async function PUT(
   request: Request,
 ) {
-  if (!(await isAdminAuthenticated())) {
+  if (
+    !(await isAdminAuthenticated())
+  ) {
     return NextResponse.json(
       {
         success: false,
         message: 'Unauthorized.',
       },
-      { status: 401 },
+      {
+        status: 401,
+      },
     );
   }
 
   try {
     const body: unknown =
-      await request.json().catch(
-        () => null,
-      );
+      await request
+        .json()
+        .catch(() => null);
 
     if (
       typeof body !== 'object' ||
@@ -594,12 +789,17 @@ export async function PUT(
           message:
             'Invalid property data.',
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
     const raw =
-      body as Record<string, unknown>;
+      body as Record<
+        string,
+        unknown
+      >;
 
     const id =
       Number(raw.id);
@@ -614,7 +814,9 @@ export async function PUT(
           message:
             'A valid property ID is required.',
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -631,9 +833,12 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          message: validationError,
+          message:
+            validationError,
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -651,7 +856,9 @@ export async function PUT(
           message:
             'At least one valid property image is required.',
         },
-        { status: 400 },
+        {
+          status: 400,
+        },
       );
     }
 
@@ -665,6 +872,9 @@ export async function PUT(
           title:
             data.title,
 
+          /*
+           * Always save the normalized tag.
+           */
           tag:
             data.tag,
 
@@ -683,10 +893,6 @@ export async function PUT(
           price:
             data.price,
 
-          /**
-           * NEW:
-           * Update Per Month.
-           */
           perMonth:
             data.perMonth,
 
@@ -756,7 +962,9 @@ export async function PUT(
         message:
           'Failed to update property.',
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 }
