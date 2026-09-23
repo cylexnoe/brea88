@@ -3,7 +3,6 @@
 import React, {
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -18,7 +17,7 @@ import {
   Home,
   Layers3,
   Loader2,
-  MapPin,
+  Minus,
   RotateCcw,
   Search,
   SlidersHorizontal,
@@ -28,10 +27,6 @@ import {
 } from 'lucide-react';
 
 import PropertyCard from '../propertyCard';
-
-/* -------------------------------------------------------------------------- */
-/* TYPES                                                                      */
-/* -------------------------------------------------------------------------- */
 
 interface Agent {
   id: number;
@@ -53,11 +48,8 @@ interface Property {
   propertyType?: string | null;
   houseType?: string | null;
   storey?: string | null;
-
   price: string;
-
   perMonth?: string | null;
-
   location: string;
   image: string;
   images?: string[];
@@ -72,10 +64,6 @@ interface Property {
   bankFinancing?: string[];
   videoUrl?: string;
 }
-
-/* -------------------------------------------------------------------------- */
-/* PROPERTY CATEGORY OPTIONS                                                  */
-/* -------------------------------------------------------------------------- */
 
 const PROPERTY_CATEGORIES = [
   {
@@ -145,130 +133,35 @@ const HOUSE_TYPES = [
 
 const STOREY_OPTIONS = ['1', '2', '3', '4+'];
 
-/* -------------------------------------------------------------------------- */
-/* SCROLL REVEAL HOOK                                                         */
-/* -------------------------------------------------------------------------- */
+function parsePrice(value: string | number | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
 
-function useScrollReveal<T extends HTMLElement>(
-  options: IntersectionObserverInit = {},
-) {
-  const ref = useRef<T | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const numeric = String(value).replace(/[^\d.-]/g, '');
+  const parsed = Number(numeric);
 
-  useEffect(() => {
-    const element = ref.current;
-
-    if (!element) return;
-
-    if (
-      window.matchMedia(
-        '(prefers-reduced-motion: reduce)',
-      ).matches
-    ) {
-      setIsVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
-        }
-      },
-      {
-        threshold: 0.12,
-        rootMargin: '0px 0px -50px 0px',
-        ...options,
-      },
-    );
-
-    observer.observe(element);
-
-    return () => observer.disconnect();
-  }, [options]);
-
-  return {
-    ref,
-    isVisible,
-  };
+  return Number.isFinite(parsed) ? parsed : 0;
 }
-
-/* -------------------------------------------------------------------------- */
-/* REVEAL COMPONENT                                                           */
-/* -------------------------------------------------------------------------- */
-
-function Reveal({
-  children,
-  className = '',
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const { ref, isVisible } =
-    useScrollReveal<HTMLDivElement>();
-
-  return (
-    <div
-      ref={ref}
-      style={{
-        transitionDelay: isVisible
-          ? `${delay}ms`
-          : '0ms',
-      }}
-      className={[
-        'transform-gpu transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-        isVisible
-          ? 'translate-y-0 opacity-100'
-          : 'translate-y-10 opacity-0',
-        className,
-      ].join(' ')}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* MAIN MARKETPLACE                                                           */
-/* -------------------------------------------------------------------------- */
 
 export default function MarketplacePage() {
-  const [properties, setProperties] =
-    useState<Property[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [agentSlug, setAgentSlug] = useState('');
 
-  const [agentSlug, setAgentSlug] =
-    useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [searchQuery, setSearchQuery] =
-    useState('');
-
-  const [selectedCategory, setSelectedCategory] =
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedPropertyType, setSelectedPropertyType] =
     useState('All');
-
-  const [
-    selectedPropertyType,
-    setSelectedPropertyType,
-  ] = useState('All');
-
-  const [
-    selectedHouseType,
-    setSelectedHouseType,
-  ] = useState('All');
-
+  const [selectedHouseType, setSelectedHouseType] =
+    useState('All');
   const [selectedStorey, setSelectedStorey] =
     useState('All');
 
-  const [minimumBudget, setMinimumBudget] =
-    useState('');
-
-  const [maximumBudget, setMaximumBudget] =
-    useState('');
+  const [minimumBudget, setMinimumBudget] = useState('');
+  const [maximumBudget, setMaximumBudget] = useState('');
 
   const [sortBy, setSortBy] = useState<
     'default' | 'price-asc' | 'price-desc'
@@ -277,15 +170,10 @@ export default function MarketplacePage() {
   const [filterModalOpen, setFilterModalOpen] =
     useState(false);
 
-  /* ------------------------------------------------------------------------ */
-  /* MOBILE SEARCH STATE                                                      */
-  /* ------------------------------------------------------------------------ */
-
   const [mobileSearchOpen, setMobileSearchOpen] =
     useState(false);
 
-  const [mounted, setMounted] =
-    useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -296,278 +184,208 @@ export default function MarketplacePage() {
       window.location.search,
     );
 
-    const slug =
-      params.get('agent')?.trim() || '';
+    const slug = params.get('agent');
 
-    setAgentSlug(slug);
+    if (slug) {
+      setAgentSlug(slug);
+    }
   }, []);
 
-  /* ------------------------------------------------------------------------ */
-  /* LOAD PROPERTIES                                                          */
-  /* ------------------------------------------------------------------------ */
-
   useEffect(() => {
-    const loadProperties = async () => {
+    let cancelled = false;
+
+    async function loadProperties() {
       try {
         setLoading(true);
 
-        const response = await fetch(
-          '/api/properties',
-          {
-            cache: 'no-store',
-          },
-        );
+        const response = await fetch('/api/properties', {
+          method: 'GET',
+          cache: 'no-store',
+        });
 
         if (!response.ok) {
           throw new Error(
-            'Failed to load properties.',
+            `Failed to load properties: ${response.status}`,
           );
         }
 
-        const data =
-          await response.json();
+        const data = await response.json();
 
-        if (Array.isArray(data)) {
-          const normalizedProperties: Property[] =
-            data.map((property) => ({
+        if (cancelled) {
+          return;
+        }
+
+        const normalized: Property[] = Array.isArray(data)
+          ? data.map((property) => ({
               ...property,
-
               perMonth:
-                property.perMonth != null
-                  ? String(
-                      property.perMonth,
-                    ).trim()
-                  : null,
-            }));
+                property.perMonth ??
+                property.monthlyPayment ??
+                null,
+            }))
+          : [];
 
-          console.log(
-            'Marketplace properties with perMonth:',
-            normalizedProperties.map(
-              (property) => ({
-                id: property.id,
-                title: property.title,
-                category:
-                  property.category,
-                price: property.price,
-                perMonth:
-                  property.perMonth,
-              }),
-            ),
-          );
+        setProperties(normalized);
 
-          setProperties(
-            normalizedProperties,
-          );
-        } else {
-          setProperties([]);
-        }
+        console.log(
+          '[Marketplace] Loaded properties:',
+          normalized.length,
+        );
       } catch (error) {
         console.error(
-          'Failed fetching properties:',
+          '[Marketplace] Failed to load properties:',
           error,
         );
 
-        setProperties([]);
+        if (!cancelled) {
+          setProperties([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
     loadProperties();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  /* ------------------------------------------------------------------------ */
-  /* LOCK BODY SCROLL WHEN MODAL IS OPEN                                      */
-  /* ------------------------------------------------------------------------ */
-
   useEffect(() => {
-    if (!filterModalOpen) return;
+    if (!filterModalOpen) {
+      document.body.style.overflow = '';
+      return;
+    }
 
     const previousOverflow =
       document.body.style.overflow;
 
-    document.body.style.overflow =
-      'hidden';
+    document.body.style.overflow = 'hidden';
 
     return () => {
-      document.body.style.overflow =
-        previousOverflow;
+      document.body.style.overflow = previousOverflow;
     };
   }, [filterModalOpen]);
 
-  /* ------------------------------------------------------------------------ */
-  /* ESCAPE TO CLOSE                                                          */
-  /* ------------------------------------------------------------------------ */
-
   useEffect(() => {
-    if (!filterModalOpen) return;
-
-    const handleKeyDown = (
-      event: KeyboardEvent,
-    ) => {
-      if (event.key === 'Escape') {
-        setFilterModalOpen(false);
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') {
+        return;
       }
-    };
 
-    window.addEventListener(
-      'keydown',
-      handleKeyDown,
-    );
+      if (filterModalOpen) {
+        setFilterModalOpen(false);
+        return;
+      }
 
-    return () => {
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown,
-      );
-    };
-  }, [filterModalOpen]);
-
-  /* ------------------------------------------------------------------------ */
-  /* ESCAPE TO CLOSE MOBILE SEARCH                                            */
-  /* ------------------------------------------------------------------------ */
-
-  useEffect(() => {
-    if (!mobileSearchOpen) return;
-
-    const handleKeyDown = (
-      event: KeyboardEvent,
-    ) => {
-      if (event.key === 'Escape') {
+      if (mobileSearchOpen) {
         setMobileSearchOpen(false);
       }
-    };
+    }
 
     window.addEventListener(
       'keydown',
-      handleKeyDown,
+      handleEscape,
     );
 
     return () => {
       window.removeEventListener(
         'keydown',
-        handleKeyDown,
+        handleEscape,
       );
     };
-  }, [mobileSearchOpen]);
-
-  /* ------------------------------------------------------------------------ */
-  /* PRICE PARSER                                                             */
-  /* ------------------------------------------------------------------------ */
-
-  const parsePrice = (price: string) =>
-    Number(
-      String(price).replace(
-        /[^0-9.]/g,
-        '',
-      ),
-    ) || 0;
-
-  /* ------------------------------------------------------------------------ */
-  /* FILTER PROPERTIES                                                        */
-  /* ------------------------------------------------------------------------ */
+  }, [filterModalOpen, mobileSearchOpen]);
 
   const filteredProperties = useMemo(() => {
-    const query =
+    const normalizedSearch =
       searchQuery.trim().toLowerCase();
 
-    const minBudget = minimumBudget
-      ? Number(
-          minimumBudget.replace(
-            /,/g,
-            '',
-          ),
-        )
-      : null;
+    const minimum =
+      minimumBudget.trim() === ''
+        ? null
+        : parsePrice(minimumBudget);
 
-    const maxBudget = maximumBudget
-      ? Number(
-          maximumBudget.replace(
-            /,/g,
-            '',
-          ),
-        )
-      : null;
+    const maximum =
+      maximumBudget.trim() === ''
+        ? null
+        : parsePrice(maximumBudget);
 
-    const result =
-      properties.filter(
-        (property) => {
-          const searchableText = [
-            property.title,
-            property.location,
-            property.tag,
-            property.category,
-            property.propertyType,
-            property.houseType,
-            property.storey,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
+    const result = properties.filter((property) => {
+      const searchableText = [
+        property.title,
+        property.tag,
+        property.category,
+        property.propertyType,
+        property.houseType,
+        property.storey,
+        property.location,
+        property.developer,
+        property.description,
+        property.agent?.fullName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-          const categoryMatches =
-            selectedCategory ===
-              'All' ||
-            property.category ===
-              selectedCategory ||
-            property.tag ===
-              selectedCategory;
+      if (
+        normalizedSearch &&
+        !searchableText.includes(normalizedSearch)
+      ) {
+        return false;
+      }
 
-          const typeMatches =
-            selectedPropertyType ===
-              'All' ||
-            property.propertyType ===
-              selectedPropertyType;
+      if (
+        selectedCategory !== 'All' &&
+        property.category !== selectedCategory
+      ) {
+        return false;
+      }
 
-          const houseTypeMatches =
-            selectedHouseType ===
-              'All' ||
-            property.houseType ===
-              selectedHouseType;
+      if (
+        selectedPropertyType !== 'All' &&
+        property.propertyType !== selectedPropertyType
+      ) {
+        return false;
+      }
 
-          const storeyMatches =
-            selectedStorey ===
-              'All' ||
-            property.storey ===
-              selectedStorey ||
-            (selectedStorey ===
-              '4+' &&
-              Number(
-                property.storey,
-              ) >= 4);
+      if (
+        selectedHouseType !== 'All' &&
+        property.houseType !== selectedHouseType
+      ) {
+        return false;
+      }
 
-          const propertyPrice =
-            parsePrice(
-              property.price,
-            );
+      if (
+        selectedStorey !== 'All' &&
+        property.storey !== selectedStorey
+      ) {
+        return false;
+      }
 
-          const minimumBudgetMatches =
-            minBudget === null ||
-            propertyPrice >=
-              minBudget;
+      const propertyPrice = parsePrice(property.price);
 
-          const maximumBudgetMatches =
-            maxBudget === null ||
-            propertyPrice <=
-              maxBudget;
+      if (
+        minimum !== null &&
+        propertyPrice < minimum
+      ) {
+        return false;
+      }
 
-          return (
-            (!query ||
-              searchableText.includes(
-                query,
-              )) &&
-            categoryMatches &&
-            typeMatches &&
-            houseTypeMatches &&
-            storeyMatches &&
-            minimumBudgetMatches &&
-            maximumBudgetMatches
-          );
-        },
-      );
+      if (
+        maximum !== null &&
+        propertyPrice > maximum
+      ) {
+        return false;
+      }
+
+      return true;
+    });
 
     if (sortBy === 'price-asc') {
-      return [...result].sort(
+      result.sort(
         (a, b) =>
           parsePrice(a.price) -
           parsePrice(b.price),
@@ -575,7 +393,7 @@ export default function MarketplacePage() {
     }
 
     if (sortBy === 'price-desc') {
-      return [...result].sort(
+      result.sort(
         (a, b) =>
           parsePrice(b.price) -
           parsePrice(a.price),
@@ -595,12 +413,58 @@ export default function MarketplacePage() {
     sortBy,
   ]);
 
-  /* ------------------------------------------------------------------------ */
-  /* RESET FILTERS                                                            */
-  /* ------------------------------------------------------------------------ */
+  const activeCategory = useMemo(() => {
+    return (
+      PROPERTY_CATEGORIES.find(
+        (category) =>
+          category.value === selectedCategory,
+      ) ?? PROPERTY_CATEGORIES[0]
+    );
+  }, [selectedCategory]);
 
-  const resetFilters = () => {
-    setSearchQuery('');
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+
+    if (selectedCategory !== 'All') {
+      count += 1;
+    }
+
+    if (selectedPropertyType !== 'All') {
+      count += 1;
+    }
+
+    if (selectedHouseType !== 'All') {
+      count += 1;
+    }
+
+    if (selectedStorey !== 'All') {
+      count += 1;
+    }
+
+    if (minimumBudget.trim()) {
+      count += 1;
+    }
+
+    if (maximumBudget.trim()) {
+      count += 1;
+    }
+
+    if (sortBy !== 'default') {
+      count += 1;
+    }
+
+    return count;
+  }, [
+    selectedCategory,
+    selectedPropertyType,
+    selectedHouseType,
+    selectedStorey,
+    minimumBudget,
+    maximumBudget,
+    sortBy,
+  ]);
+
+  function resetFilters() {
     setSelectedCategory('All');
     setSelectedPropertyType('All');
     setSelectedHouseType('All');
@@ -608,1062 +472,847 @@ export default function MarketplacePage() {
     setMinimumBudget('');
     setMaximumBudget('');
     setSortBy('default');
-  };
+    setSearchQuery('');
+  }
 
-  /* ------------------------------------------------------------------------ */
-  /* SELECT CATEGORY                                                          */
-  /* ------------------------------------------------------------------------ */
+  function renderFilterModal() {
+    if (!mounted || !filterModalOpen) {
+      return null;
+    }
 
-  const handleCategorySelect = (
-    category: string,
-  ) => {
-    setSelectedCategory(category);
-  };
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[9999] flex items-end justify-center bg-slate-950/70 p-0 backdrop-blur-md sm:items-center sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Property filters"
+      >
+        <div
+          className="flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:max-h-[90vh] sm:max-w-3xl sm:rounded-[2rem]"
+          onClick={(event) =>
+            event.stopPropagation()
+          }
+        >
+          {/* Modal Header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7 sm:py-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <SlidersHorizontal className="h-5 w-5" />
+              </div>
 
-  /* ------------------------------------------------------------------------ */
-  /* ACTIVE CATEGORY                                                          */
-  /* ------------------------------------------------------------------------ */
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-bold text-slate-950 sm:text-xl">
+                  Filter Properties
+                </h2>
 
-  const activeCategory =
-    PROPERTY_CATEGORIES.find(
-      (category) =>
-        category.value ===
-        selectedCategory,
-    ) ||
-    PROPERTY_CATEGORIES[0];
+                <p className="truncate text-xs text-slate-500 sm:text-sm">
+                  Refine your property search
+                </p>
+              </div>
+            </div>
 
-  const ActiveCategoryIcon =
-    activeCategory.icon;
-
-  /* ------------------------------------------------------------------------ */
-  /* FILTER COUNT                                                             */
-  /* ------------------------------------------------------------------------ */
-
-  const activeFilterCount = [
-    selectedCategory !== 'All',
-    selectedPropertyType !== 'All',
-    selectedHouseType !== 'All',
-    selectedStorey !== 'All',
-    minimumBudget !== '',
-    maximumBudget !== '',
-    sortBy !== 'default',
-  ].filter(Boolean).length;
-
-  /* ------------------------------------------------------------------------ */
-  /* FILTER MODAL                                                             */
-  /* ------------------------------------------------------------------------ */
-
-  const filterModal =
-    mounted && filterModalOpen
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-3 py-4 sm:px-6 sm:py-8"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="marketplace-filter-title"
-          >
             <button
               type="button"
-              aria-label="Close filters"
               onClick={() =>
                 setFilterModalOpen(false)
               }
-              className="absolute inset-0 cursor-default bg-slate-950/75 backdrop-blur-md"
-            />
-
-            <div className="relative z-10 flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border border-white/20 bg-white shadow-[0_35px_120px_rgba(2,12,27,0.5)]">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.15),transparent_70%)]" />
-
-              <div className="relative shrink-0 border-b border-slate-100 bg-white/95 px-5 pb-5 pt-5 backdrop-blur-xl sm:px-7 sm:pb-6 sm:pt-7">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-950 to-blue-600 text-white shadow-lg shadow-blue-900/20">
-                      <SlidersHorizontal className="h-5 w-5" />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-black uppercase tracking-[0.25em] text-blue-700">
-                        Marketplace
-                      </p>
-
-                      <h2
-                        id="marketplace-filter-title"
-                        className="mt-0.5 text-xl font-black tracking-tight text-slate-950 sm:text-2xl"
-                      >
-                        Property Filters
-                      </h2>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFilterModalOpen(false)
-                    }
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-                    aria-label="Close filters"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-slate-500">
-                  Refine the properties
-                  displayed in the marketplace
-                  based on your preferences.
-                </p>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7 sm:py-6">
-                <div>
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-                        <Home className="h-3.5 w-3.5 text-blue-800" />
-                      </div>
-
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                          Property Category
-                        </p>
-
-                        <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                          Choose a category
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="hidden rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400 sm:block">
-                      {activeCategory.label}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {PROPERTY_CATEGORIES.map(
-                      (category) => {
-                        const Icon =
-                          category.icon;
-
-                        const isSelected =
-                          selectedCategory ===
-                          category.value;
-
-                        return (
-                          <button
-                            key={
-                              category.value
-                            }
-                            type="button"
-                            onClick={() =>
-                              handleCategorySelect(
-                                category.value,
-                              )
-                            }
-                            className={[
-                              'group relative overflow-hidden rounded-2xl border p-3.5 text-left transition-all duration-300',
-                              'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-                              isSelected
-                                ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-white shadow-md shadow-blue-900/10'
-                                : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md',
-                            ].join(' ')}
-                          >
-                            {isSelected && (
-                              <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-500/10 blur-2xl" />
-                            )}
-
-                            <div className="relative flex items-center gap-3">
-                              <div
-                                className={[
-                                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300',
-                                  isSelected
-                                    ? 'bg-gradient-to-br from-blue-950 to-blue-600 text-white shadow-md'
-                                    : 'bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700',
-                                ].join(' ')}
-                              >
-                                <Icon className="h-4.5 w-4.5" />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <p
-                                  className={[
-                                    'truncate text-xs font-black',
-                                    isSelected
-                                      ? 'text-blue-950'
-                                      : 'text-slate-800',
-                                  ].join(' ')}
-                                >
-                                  {
-                                    category.label
-                                  }
-                                </p>
-
-                                <p className="mt-0.5 truncate text-[10px] text-slate-400">
-                                  {
-                                    category.description
-                                  }
-                                </p>
-                              </div>
-
-                              <div
-                                className={[
-                                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all',
-                                  isSelected
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-50 text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600',
-                                ].join(' ')}
-                              >
-                                {isSelected ? (
-                                  <Check className="h-3.5 w-3.5" />
-                                ) : (
-                                  <ChevronRight className="h-3.5 w-3.5" />
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      },
-                    )}
-                  </div>
-                </div>
-
-                <div className="my-6 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-                <div>
-                  <div className="mb-4 flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
-                      <Filter className="h-3.5 w-3.5 text-blue-800" />
-                    </div>
-
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 sm:text-xs">
-                      Property Details
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div>
-                      <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
-                        <Tag className="h-3.5 w-3.5" />
-                        Property Type
-                      </label>
-
-                      <div className="relative">
-                        <select
-                          value={
-                            selectedPropertyType
-                          }
-                          onChange={(event) =>
-                            setSelectedPropertyType(
-                              event.target.value,
-                            )
-                          }
-                          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-                          <option value="All">
-                            All Property Types
-                          </option>
-
-                          {PROPERTY_TYPES.map(
-                            (type) => (
-                              <option
-                                key={type}
-                                value={type}
-                              >
-                                {type}
-                              </option>
-                            ),
-                          )}
-                        </select>
-
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
-                        <Home className="h-3.5 w-3.5" />
-                        House Type
-                      </label>
-
-                      <div className="relative">
-                        <select
-                          value={
-                            selectedHouseType
-                          }
-                          onChange={(event) =>
-                            setSelectedHouseType(
-                              event.target.value,
-                            )
-                          }
-                          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-                          <option value="All">
-                            All House Types
-                          </option>
-
-                          {HOUSE_TYPES.map(
-                            (type) => (
-                              <option
-                                key={type}
-                                value={type}
-                              >
-                                {type}
-                              </option>
-                            ),
-                          )}
-                        </select>
-
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">
-                        <Layers3 className="h-3.5 w-3.5" />
-                        Storey
-                      </label>
-
-                      <div className="relative">
-                        <select
-                          value={
-                            selectedStorey
-                          }
-                          onChange={(event) =>
-                            setSelectedStorey(
-                              event.target.value,
-                            )
-                          }
-                          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-                          <option value="All">
-                            All Storeys
-                          </option>
-
-                          {STOREY_OPTIONS.map(
-                            (storey) => (
-                              <option
-                                key={storey}
-                                value={storey}
-                              >
-                                {storey ===
-                                '4+'
-                                  ? '4 or more'
-                                  : `${storey} Storey`}
-                              </option>
-                            ),
-                          )}
-                        </select>
-
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="my-6 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_250px]">
-                  <div>
-                    <label className="mb-3 block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                      Budget Range
-                    </label>
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div>
-                        <div className="relative">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#a47d3c]">
-                            ₱
-                          </span>
-
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={
-                              minimumBudget
-                            }
-                            onChange={(event) => {
-                              const value =
-                                event.target.value.replace(
-                                  /\D/g,
-                                  '',
-                                );
-
-                              setMinimumBudget(
-                                value
-                                  ? Number(
-                                      value,
-                                    ).toLocaleString(
-                                      'en-PH',
-                                    )
-                                  : '',
-                              );
-                            }}
-                            placeholder="Minimum Budget"
-                            aria-label="Minimum Budget"
-                            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pl-10 text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                          />
-                        </div>
-
-                        <p className="mt-1.5 pl-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                          Minimum
-                        </p>
-                      </div>
-
-                      <div>
-                        <div className="relative">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-[#a47d3c]">
-                            ₱
-                          </span>
-
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={
-                              maximumBudget
-                            }
-                            onChange={(event) => {
-                              const value =
-                                event.target.value.replace(
-                                  /\D/g,
-                                  '',
-                                );
-
-                              setMaximumBudget(
-                                value
-                                  ? Number(
-                                      value,
-                                    ).toLocaleString(
-                                      'en-PH',
-                                    )
-                                  : '',
-                              );
-                            }}
-                            placeholder="Maximum Budget"
-                            aria-label="Maximum Budget"
-                            className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pl-10 text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-[#c9a96e] focus:ring-4 focus:ring-[#c9a96e]/10"
-                          />
-                        </div>
-
-                        <p className="mt-1.5 pl-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                          Maximum
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="mt-2 text-[10px] font-medium text-slate-400">
-                      Enter your preferred
-                      property price range.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                      <ArrowUpDown className="h-3.5 w-3.5" />
-                      Sort Listings
-                    </label>
-
-                    <div className="relative">
-                      <select
-                        value={sortBy}
-                        onChange={(event) =>
-                          setSortBy(
-                            event.target
-                              .value as
-                              | 'default'
-                              | 'price-asc'
-                              | 'price-desc',
-                          )
-                        }
-                        className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                      >
-                        <option value="default">
-                          Featured
-                        </option>
-
-                        <option value="price-asc">
-                          Price: Low to High
-                        </option>
-
-                        <option value="price-desc">
-                          Price: High to Low
-                        </option>
-                      </select>
-
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative shrink-0 border-t border-slate-100 bg-slate-50/90 px-5 py-4 backdrop-blur-xl sm:px-7">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={[
-                        'h-2 w-2 rounded-full',
-                        activeFilterCount > 0
-                          ? 'bg-blue-600'
-                          : 'bg-slate-300',
-                      ].join(' ')}
-                    />
-
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      {activeFilterCount >
-                      0
-                        ? `${activeFilterCount} filter${
-                            activeFilterCount ===
-                            1
-                              ? ''
-                              : 's'
-                          } selected`
-                        : 'No additional filters selected'}
-                    </p>
-                  </div>
-
-                  <div className="flex w-full gap-2 sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={
-                        resetFilters
-                      }
-                      className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 sm:flex-none"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      Reset
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFilterModalOpen(
-                          false,
-                        )
-                      }
-                      className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-950 to-blue-700 px-5 text-xs font-black text-white shadow-lg shadow-blue-950/20 transition hover:-translate-y-0.5 hover:shadow-xl sm:flex-none"
-                    >
-                      <Check className="h-4 w-4" />
-                      Apply Filters
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
-
-  /* ------------------------------------------------------------------------ */
-  /* PAGE                                                                     */
-  /* ------------------------------------------------------------------------ */
-
-  return (
-    <>
-      {filterModal}
-
-      <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.08),_transparent_30%),linear-gradient(to_bottom,_#f8fafc,_#ffffff_45%,_#f8fafc)] text-slate-900">
-        <header className="relative overflow-hidden bg-[#06142d] text-white">
-          <div className="absolute inset-0">
-            <div className="absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-blue-600/20 blur-3xl" />
-
-            <div className="absolute -bottom-48 -left-40 h-[34rem] w-[34rem] rounded-full bg-cyan-500/10 blur-3xl" />
-
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.16),transparent_45%)]" />
-
-            <div className="absolute inset-0 bg-gradient-to-b from-[#06142d]/95 via-[#071936]/95 to-[#06142d]" />
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+              aria-label="Close filters"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
-          <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
-            <Reveal>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-200 sm:text-xs">
-                  BREA 88 REALTY
-                </span>
-              </div>
-            </Reveal>
+          {/* Modal Content */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
+            <div className="space-y-7">
+              {/* Category */}
+              <section>
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-950">
+                      Property Category
+                    </h3>
 
-            <Reveal delay={100}>
-              <h1 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.03em] sm:text-5xl">
-                Property Marketplace
-              </h1>
-            </Reveal>
-
-            <Reveal delay={180}>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100/70 sm:text-base">
-                Browse available properties
-                and find a place that fits
-                your goals, lifestyle, and
-                budget.
-              </p>
-            </Reveal>
-
-            {/* ---------------------------------------------------------------- */}
-            {/* MOBILE MORPHING SEARCH                                            */}
-            {/* ---------------------------------------------------------------- */}
-
-            <Reveal
-              delay={260}
-              className="sm:hidden"
-            >
-              <div className="relative mt-7">
-                {/* ------------------------------------------------------------ */}
-                {/* CLOSED / EXPANDED SEARCH CONTAINER                           */}
-                {/* ------------------------------------------------------------ */}
-
-                <div
-                  className={[
-                    'ml-auto flex h-14 overflow-hidden rounded-2xl border backdrop-blur-xl',
-                    'transition-[width,background-color,border-color,box-shadow] duration-500',
-                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    mobileSearchOpen
-                      ? 'w-full border-blue-400/40 bg-[#020b1d]/95 shadow-[0_18px_55px_rgba(2,12,27,0.35)]'
-                      : 'w-14 border-white/10 bg-[#020b1d]/80 shadow-lg hover:border-blue-400/40 hover:bg-[#07152d]',
-                  ].join(' ')}
-                >
-                  {/* Search Input Area */}
-                  <div
-                    className={[
-                      'relative min-w-0 flex-1 transition-all duration-500',
-                      'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                      mobileSearchOpen
-                        ? 'translate-x-0 opacity-100'
-                        : 'pointer-events-none -translate-x-3 opacity-0',
-                    ].join(' ')}
-                  >
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-                    <input
-                      type="text"
-                      value={
-                        searchQuery
-                      }
-                      onChange={(
-                        event,
-                      ) =>
-                        setSearchQuery(
-                          event.target
-                            .value,
-                        )
-                      }
-                      placeholder="Search properties..."
-                      tabIndex={
-                        mobileSearchOpen
-                          ? 0
-                          : -1
-                      }
-                      className="h-full w-full bg-transparent pl-12 pr-12 text-sm font-medium text-white outline-none placeholder:text-slate-500"
-                    />
-
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSearchQuery(
-                            '',
-                          )
-                        }
-                        className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white"
-                        aria-label="Clear search"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      Choose the type of listing
+                    </p>
                   </div>
 
-                  {/* ---------------------------------------------------------- */}
-                  {/* MORPHING SEARCH / CLOSE BUTTON                             */}
-                  {/* ---------------------------------------------------------- */}
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMobileSearchOpen(
-                        (previous) =>
-                          !previous,
-                      )
-                    }
-                    aria-label={
-                      mobileSearchOpen
-                        ? 'Close property search'
-                        : 'Open property search'
-                    }
-                    aria-expanded={
-                      mobileSearchOpen
-                    }
-                    className={[
-                      'group relative z-10 flex h-14 w-14 shrink-0 items-center justify-center',
-                      'transition-all duration-500',
-                      'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                      'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-                      mobileSearchOpen
-                        ? 'border-l border-white/10'
-                        : '',
-                    ].join(' ')}
-                  >
-                    {/* Glow */}
-                    <span
-                      className={[
-                        'absolute inset-1 rounded-xl bg-blue-500/20 blur-md',
-                        'transition-all duration-500',
-                        mobileSearchOpen
-                          ? 'scale-100 opacity-100'
-                          : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100',
-                      ].join(' ')}
-                    />
-
-                    {/* Search Icon */}
-                    <Search
-                      className={[
-                        'absolute h-5 w-5 text-blue-200',
-                        'transition-all duration-500',
-                        'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                        mobileSearchOpen
-                          ? 'scale-0 rotate-90 opacity-0'
-                          : 'scale-100 rotate-0 opacity-100 group-hover:scale-110',
-                      ].join(' ')}
-                    />
-
-                    {/* X Icon */}
-                    <X
-                      className={[
-                        'absolute h-5 w-5 text-blue-200',
-                        'transition-all duration-500',
-                        'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                        mobileSearchOpen
-                          ? 'scale-100 rotate-0 opacity-100'
-                          : 'scale-0 -rotate-90 opacity-0',
-                      ].join(' ')}
-                    />
-                  </button>
-                </div>
-
-                {/* ------------------------------------------------------------ */}
-                {/* MOBILE CATEGORY REVEAL                                        */}
-                {/* ------------------------------------------------------------ */}
-
-                <div
-                  className={[
-                    'grid transition-[grid-template-rows,opacity,margin] duration-500',
-                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    mobileSearchOpen
-                      ? 'mt-3 grid-rows-[1fr] opacity-100'
-                      : 'mt-0 grid-rows-[0fr] opacity-0',
-                  ].join(' ')}
-                >
-                  <div className="min-h-0 overflow-hidden">
+                  {selectedCategory !== 'All' && (
                     <button
                       type="button"
                       onClick={() =>
-                        setFilterModalOpen(
-                          true,
-                        )
+                        setSelectedCategory('All')
                       }
-                      tabIndex={
-                        mobileSearchOpen
-                          ? 0
-                          : -1
-                      }
-                      className={[
-                        'group flex h-14 w-full items-center justify-between rounded-2xl border',
-                        'border-white/10 bg-[#020b1d]/90 px-4 text-left shadow-lg backdrop-blur-xl',
-                        'transition-all duration-500',
-                        'ease-[cubic-bezier(0.22,1,0.36,1)]',
-                        mobileSearchOpen
-                          ? 'translate-y-0'
-                          : '-translate-y-3',
-                        'hover:border-blue-400/40 hover:bg-[#07152d] hover:shadow-blue-950/20',
-                        'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-                      ].join(' ')}
-                      aria-haspopup="dialog"
-                      aria-expanded={
-                        filterModalOpen
-                      }
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200 transition group-hover:bg-blue-500/20 group-hover:text-blue-100">
-                          <SlidersHorizontal className="h-4 w-4" />
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-200/70">
-                            Property Category
-                          </p>
-
-                          <p className="truncate text-sm font-black text-white">
-                            {
-                              activeCategory.label
-                            }
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-2">
-                        {activeFilterCount >
-                          0 && (
-                          <span className="rounded-full bg-blue-500/20 px-2.5 py-1 text-[9px] font-black text-blue-200">
-                            {
-                              activeFilterCount
-                            }{' '}
-                            {activeFilterCount ===
-                            1
-                              ? 'filter'
-                              : 'filters'}
-                          </span>
-                        )}
-
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition group-hover:bg-blue-500/10 group-hover:text-blue-200">
-                          <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-
-            {/* ---------------------------------------------------------------- */}
-            {/* DESKTOP SEARCH                                                     */}
-            {/* ---------------------------------------------------------------- */}
-
-            <Reveal
-              delay={260}
-              className="hidden sm:block"
-            >
-              <div className="mt-7 max-w-4xl">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-                  <input
-                    type="text"
-                    value={
-                      searchQuery
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setSearchQuery(
-                        event
-                          .target
-                          .value,
-                      )
-                    }
-                    placeholder="Search your properties, locations, property types..."
-                    className="h-14 w-full rounded-2xl border border-white/10 bg-[#020b1d]/80 pl-12 pr-12 text-sm font-medium text-white outline-none backdrop-blur-xl placeholder:text-slate-500 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
-                  />
-
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSearchQuery(
-                          '',
-                        )
-                      }
-                      className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white"
-                      aria-label="Clear search"
-                    >
-                      <X className="h-4 w-4" />
+                      Clear
                     </button>
                   )}
                 </div>
-              </div>
-            </Reveal>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* DESKTOP PROPERTY CATEGORY                                          */}
-            {/* ---------------------------------------------------------------- */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {PROPERTY_CATEGORIES.map(
+                    (category) => {
+                      const Icon = category.icon;
+                      const selected =
+                        selectedCategory ===
+                        category.value;
 
-            <Reveal
-              delay={340}
-              className="hidden sm:block"
+                      return (
+                        <button
+                          key={category.value}
+                          type="button"
+                          onClick={() =>
+                            setSelectedCategory(
+                              category.value,
+                            )
+                          }
+                          className={[
+                            'group relative flex min-h-[92px] flex-col items-start justify-between rounded-2xl border p-3 text-left transition',
+                            'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                            selected
+                              ? 'border-blue-500 bg-blue-50 shadow-sm'
+                              : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50',
+                          ].join(' ')}
+                        >
+                          <div className="flex w-full items-start justify-between">
+                            <span
+                              className={[
+                                'flex h-9 w-9 items-center justify-center rounded-xl',
+                                selected
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600',
+                              ].join(' ')}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </span>
+
+                            {selected && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white">
+                                <Check className="h-3 w-3" />
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-2 min-w-0">
+                            <p
+                              className={[
+                                'text-xs font-bold',
+                                selected
+                                  ? 'text-blue-700'
+                                  : 'text-slate-800',
+                              ].join(' ')}
+                            >
+                              {category.label}
+                            </p>
+
+                            <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-slate-500">
+                              {category.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </section>
+
+              {/* Property Type */}
+              <section>
+                <label
+                  htmlFor="filter-property-type"
+                  className="mb-2 block text-sm font-bold text-slate-950"
+                >
+                  Property Type
+                </label>
+
+                <div className="relative">
+                  <Layers3 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                  <select
+                    id="filter-property-type"
+                    value={selectedPropertyType}
+                    onChange={(event) =>
+                      setSelectedPropertyType(
+                        event.target.value,
+                      )
+                    }
+                    className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  >
+                    <option value="All">
+                      All Property Types
+                    </option>
+
+                    {PROPERTY_TYPES.map((type) => (
+                      <option
+                        key={type}
+                        value={type}
+                      >
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+              </section>
+
+              {/* House Type */}
+              <section>
+                <label
+                  htmlFor="filter-house-type"
+                  className="mb-2 block text-sm font-bold text-slate-950"
+                >
+                  House Type
+                </label>
+
+                <div className="relative">
+                  <Home className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                  <select
+                    id="filter-house-type"
+                    value={selectedHouseType}
+                    onChange={(event) =>
+                      setSelectedHouseType(
+                        event.target.value,
+                      )
+                    }
+                    className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  >
+                    <option value="All">
+                      All House Types
+                    </option>
+
+                    {HOUSE_TYPES.map((type) => (
+                      <option
+                        key={type}
+                        value={type}
+                      >
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+              </section>
+
+              {/* Storey */}
+              <section>
+                <label
+                  htmlFor="filter-storey"
+                  className="mb-2 block text-sm font-bold text-slate-950"
+                >
+                  Storey
+                </label>
+
+                <div className="relative">
+                  <Building2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                  <select
+                    id="filter-storey"
+                    value={selectedStorey}
+                    onChange={(event) =>
+                      setSelectedStorey(
+                        event.target.value,
+                      )
+                    }
+                    className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  >
+                    <option value="All">
+                      Any Number of Storeys
+                    </option>
+
+                    {STOREY_OPTIONS.map((storey) => (
+                      <option
+                        key={storey}
+                        value={storey}
+                      >
+                        {storey === '4+'
+                          ? '4 or More Storeys'
+                          : `${storey} Storey`}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                </div>
+              </section>
+
+              {/* Budget */}
+              <section>
+                <div className="mb-3">
+                  <h3 className="text-sm font-bold text-slate-950">
+                    Budget Range
+                  </h3>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Set your preferred price range
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="minimum-budget"
+                      className="mb-1.5 block text-xs font-semibold text-slate-600"
+                    >
+                      Minimum Budget
+                    </label>
+
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
+                        ₱
+                      </span>
+
+                      <input
+                        id="minimum-budget"
+                        type="text"
+                        inputMode="numeric"
+                        value={minimumBudget}
+                        onChange={(event) =>
+                          setMinimumBudget(
+                            event.target.value.replace(
+                              /[^\d]/g,
+                              '',
+                            ),
+                          )
+                        }
+                        placeholder="No minimum"
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="maximum-budget"
+                      className="mb-1.5 block text-xs font-semibold text-slate-600"
+                    >
+                      Maximum Budget
+                    </label>
+
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
+                        ₱
+                      </span>
+
+                      <input
+                        id="maximum-budget"
+                        type="text"
+                        inputMode="numeric"
+                        value={maximumBudget}
+                        onChange={(event) =>
+                          setMaximumBudget(
+                            event.target.value.replace(
+                              /[^\d]/g,
+                              '',
+                            ),
+                          )
+                        }
+                        placeholder="No maximum"
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Sort */}
+              <section>
+                <div className="mb-3">
+                  <h3 className="text-sm font-bold text-slate-950">
+                    Sort Listings
+                  </h3>
+
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Choose how properties are displayed
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {[
+                    {
+                      value: 'default' as const,
+                      label: 'Recommended',
+                    },
+                    {
+                      value: 'price-asc' as const,
+                      label: 'Price: Low to High',
+                    },
+                    {
+                      value: 'price-desc' as const,
+                      label: 'Price: High to Low',
+                    },
+                  ].map((option) => {
+                    const selected =
+                      sortBy === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          setSortBy(option.value)
+                        }
+                        className={[
+                          'flex min-h-12 items-center justify-between rounded-xl border px-4 text-left text-sm font-semibold transition',
+                          'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                          selected
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-slate-50',
+                        ].join(' ')}
+                      >
+                        <span className="flex items-center gap-2">
+                          {option.value !==
+                            'default' && (
+                            <ArrowUpDown className="h-4 w-4" />
+                          )}
+
+                          {option.label}
+                        </span>
+
+                        {selected && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-500/10"
             >
-              <div className="mt-3 max-w-4xl">
+              <RotateCcw className="h-4 w-4" />
+              Reset Filters
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setFilterModalOpen(false)
+              }
+              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 hover:shadow-blue-600/30 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+            >
+              <Check className="h-4 w-4" />
+              Apply Filters
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Close filter modal"
+          className="absolute inset-0 -z-10 cursor-default"
+          onClick={() =>
+            setFilterModalOpen(false)
+          }
+        />
+      </div>,
+      document.body,
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-[#020817]">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-blue-600/20 blur-[100px]" />
+          <div className="absolute -right-32 top-10 h-[360px] w-[360px] rounded-full bg-cyan-500/10 blur-[100px]" />
+          <div className="absolute bottom-[-180px] left-1/2 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px]" />
+        </div>
+
+        {/* Subtle grid */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+
+        <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-16 lg:pt-20">
+          {/* Branding */}
+          <div className="text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-blue-200 sm:text-xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+              BREA 88 REALTY
+            </div>
+
+            <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Property Marketplace
+            </h1>
+
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-400 sm:text-base sm:leading-8">
+              Explore carefully selected properties and
+              find a place that feels like home.
+            </p>
+          </div>
+
+          {/* DESKTOP SEARCH */}
+          <div className="mx-auto mt-8 hidden max-w-4xl sm:block">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) =>
+                  setSearchQuery(event.target.value)
+                }
+                placeholder="Search by property name, location, type, developer..."
+                className="h-16 w-full rounded-2xl border border-white/10 bg-white/[0.07] pl-14 pr-14 text-sm font-medium text-white shadow-2xl shadow-black/10 outline-none backdrop-blur-xl transition placeholder:text-slate-500 focus:border-blue-400/50 focus:bg-white/[0.09] focus:ring-4 focus:ring-blue-500/10"
+              />
+
+              {searchQuery && (
                 <button
                   type="button"
                   onClick={() =>
-                    setFilterModalOpen(
-                      true,
-                    )
+                    setSearchQuery('')
                   }
-                  className="group flex h-14 w-full items-center justify-between rounded-2xl border border-white/10 bg-[#020b1d]/80 px-4 text-left shadow-lg backdrop-blur-xl transition-all duration-300 hover:border-blue-400/40 hover:bg-[#07152d] hover:shadow-blue-950/20 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                  className="absolute right-4 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Desktop Category / Filters */}
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setFilterModalOpen(true)
+                }
+                className="group flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-slate-200 backdrop-blur-xl transition hover:border-blue-400/30 hover:bg-white/[0.1] focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+              >
+                <SlidersHorizontal className="h-4 w-4 text-blue-300" />
+
+                <span>
+                  {activeCategory.label}
+                </span>
+
+                {activeFilterCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+
+                <ChevronDown className="h-4 w-4 text-slate-500 transition group-hover:text-slate-300" />
+              </button>
+
+              {selectedCategory !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedCategory('All')
+                  }
+                  className="flex h-11 items-center gap-2 rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/15 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                >
+                  {activeCategory.label}
+
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* MOBILE SEARCH */}
+          <div className="relative mt-7 sm:hidden">
+            <div
+              className={[
+                'ml-auto flex h-14 overflow-hidden rounded-2xl border backdrop-blur-xl',
+                'transition-[width,background-color,border-color,box-shadow] duration-500',
+                'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                mobileSearchOpen
+                  ? 'w-full border-blue-400/40 bg-[#020b1d]/95 shadow-[0_18px_55px_rgba(2,12,27,0.35)]'
+                  : 'w-14 border-white/10 bg-[#020b1d]/80 shadow-lg hover:border-blue-400/40 hover:bg-[#07152d]',
+              ].join(' ')}
+            >
+              {/* Input */}
+              <div
+                className={[
+                  'relative min-w-0 flex-1 transition-all duration-500',
+                  'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                  mobileSearchOpen
+                    ? 'translate-x-0 opacity-100'
+                    : 'pointer-events-none -translate-x-3 opacity-0',
+                ].join(' ')}
+              >
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) =>
+                    setSearchQuery(event.target.value)
+                  }
+                  placeholder="Search properties..."
+                  tabIndex={
+                    mobileSearchOpen ? 0 : -1
+                  }
+                  className="h-full w-full bg-transparent pl-12 pr-4 text-sm font-medium text-white outline-none placeholder:text-slate-500"
+                />
+              </div>
+
+              {/* ONE control icon: Search -> Minus */}
+              <button
+                type="button"
+                onClick={() =>
+                  setMobileSearchOpen(
+                    (previous) => !previous,
+                  )
+                }
+                aria-label={
+                  mobileSearchOpen
+                    ? 'Close property search'
+                    : 'Open property search'
+                }
+                aria-expanded={mobileSearchOpen}
+                className={[
+                  'group relative z-10 flex h-14 w-14 shrink-0 items-center justify-center',
+                  'transition-all duration-500',
+                  'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                  'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                  mobileSearchOpen
+                    ? 'border-l border-white/10'
+                    : '',
+                ].join(' ')}
+              >
+                <span
+                  className={[
+                    'absolute inset-1 rounded-xl bg-blue-500/20 blur-md',
+                    'transition-all duration-500',
+                    mobileSearchOpen
+                      ? 'scale-100 opacity-100'
+                      : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100',
+                  ].join(' ')}
+                />
+
+                <Search
+                  className={[
+                    'absolute h-5 w-5 text-blue-200',
+                    'transition-all duration-500',
+                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    mobileSearchOpen
+                      ? 'scale-0 rotate-90 opacity-0'
+                      : 'scale-100 rotate-0 opacity-100 group-hover:scale-110',
+                  ].join(' ')}
+                />
+
+                <Minus
+                  className={[
+                    'absolute h-5 w-5 text-blue-200',
+                    'transition-all duration-500',
+                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    mobileSearchOpen
+                      ? 'scale-100 rotate-0 opacity-100'
+                      : 'scale-0 -rotate-90 opacity-0',
+                  ].join(' ')}
+                />
+              </button>
+            </div>
+
+            {/* Mobile Category */}
+            <div
+              className={[
+                'grid transition-[grid-template-rows,opacity,margin] duration-500',
+                'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                mobileSearchOpen
+                  ? 'mt-3 grid-rows-[1fr] opacity-100'
+                  : 'mt-0 grid-rows-[0fr] opacity-0',
+              ].join(' ')}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilterModalOpen(true)
+                  }
+                  tabIndex={
+                    mobileSearchOpen ? 0 : -1
+                  }
+                  className={[
+                    'group flex h-14 w-full items-center justify-between rounded-2xl border',
+                    'border-white/10 bg-[#020b1d]/90 px-4 text-left shadow-lg backdrop-blur-xl',
+                    'transition-all duration-500',
+                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    mobileSearchOpen
+                      ? 'translate-y-0'
+                      : '-translate-y-3',
+                    'hover:border-blue-400/40 hover:bg-[#07152d] hover:shadow-blue-950/20',
+                    'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                  ].join(' ')}
                   aria-haspopup="dialog"
-                  aria-expanded={
-                    filterModalOpen
-                  }
+                  aria-expanded={filterModalOpen}
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200 transition group-hover:bg-blue-500/20 group-hover:text-blue-100">
-                      <SlidersHorizontal className="h-4.5 w-4.5" />
-                    </div>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300">
+                      {React.createElement(
+                        activeCategory.icon,
+                        {
+                          className:
+                            'h-4 w-4',
+                        },
+                      )}
+                    </span>
 
                     <div className="min-w-0">
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-200/70">
-                        Property Category
+                      <p className="truncate text-sm font-bold text-white">
+                        {activeCategory.label}
                       </p>
 
-                      <p className="truncate text-sm font-black text-white">
-                        {
-                          activeCategory.label
-                        }
+                      <p className="truncate text-[11px] text-slate-500">
+                        {activeFilterCount > 0
+                          ? `${activeFilterCount} filter${
+                              activeFilterCount === 1
+                                ? ''
+                                : 's'
+                            } applied`
+                          : 'Tap to refine your search'}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    {activeFilterCount >
-                      0 && (
-                      <span className="hidden rounded-full bg-blue-500/20 px-2.5 py-1 text-[9px] font-black text-blue-200 sm:block">
-                        {
-                          activeFilterCount
-                        }{' '}
-                        {activeFilterCount ===
-                        1
-                          ? 'filter'
-                          : 'filters'}
+                    {activeFilterCount > 0 && (
+                      <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">
+                        {activeFilterCount}
                       </span>
                     )}
 
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition group-hover:bg-blue-500/10 group-hover:text-blue-200">
-                      <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-blue-300" />
                   </div>
                 </button>
               </div>
-            </Reveal>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTENT */}
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
+        {/* Section heading */}
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                Available Properties
+              </span>
+
+              <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-50 px-2 text-xs font-bold text-blue-600">
+                {filteredProperties.length}
+              </span>
+            </div>
+
+            <p className="mt-1.5 text-sm text-slate-500">
+              Find your perfect place from our current
+              listings.
+            </p>
           </div>
 
-          <div className="absolute bottom-0 left-1/2 h-px w-full max-w-5xl -translate-x-1/2 bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
-        </header>
+          <button
+            type="button"
+            onClick={() =>
+              setFilterModalOpen(true)
+            }
+            className="hidden shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 sm:flex"
+          >
+            <Filter className="h-4 w-4" />
 
-        <main className="mx-auto max-w-7xl px-4 pb-24 pt-10 sm:px-6 lg:px-8">
-          <Reveal>
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="h-px w-8 bg-[#c9a96e]" />
+            Filters
 
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-700 sm:text-xs">
-                    Available Properties
-                  </p>
-                </div>
+            {activeFilterCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl md:text-4xl">
-                  Find Your{' '}
-                  <span className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                    Perfect Place
-                  </span>
-                </h2>
-
-                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                  Browse our available
-                  properties and discover a
-                  place that fits your goals,
-                  lifestyle, and budget.
-                </p>
+        {/* Loading */}
+        {loading && (
+          <div className="flex min-h-[320px] items-center justify-center">
+            <div className="flex flex-col items-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
 
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              <p className="mt-4 text-sm font-semibold text-slate-600">
+                Loading properties...
+              </p>
 
-                <p className="text-xs font-black text-slate-500">
-                  {
-                    filteredProperties.length
-                  }{' '}
-                  {filteredProperties.length ===
-                  1
-                    ? 'property'
-                    : 'properties'}{' '}
-                  found
-                </p>
-              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                Please wait a moment.
+              </p>
             </div>
-          </Reveal>
+          </div>
+        )}
 
-          {loading ? (
-            <Reveal>
-              <div className="flex min-h-[400px] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-                <div className="text-center">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-800" />
-                  </div>
-
-                  <p className="mt-5 text-sm font-black text-slate-700">
-                    Loading properties...
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-400">
-                    Preparing the latest
-                    listings for you.
-                  </p>
-                </div>
+        {/* Empty State */}
+        {!loading &&
+          filteredProperties.length === 0 && (
+            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white px-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <Search className="h-7 w-7" />
               </div>
-            </Reveal>
-          ) : filteredProperties.length >
-            0 ? (
+
+              <h3 className="mt-5 text-xl font-bold text-slate-950">
+                No properties found
+              </h3>
+
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                We couldn't find properties matching
+                your current search or filters. Try
+                adjusting your search criteria.
+              </p>
+
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset Search
+              </button>
+            </div>
+          )}
+
+        {/* Property Grid */}
+        {!loading &&
+          filteredProperties.length > 0 && (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
               {filteredProperties.map(
-                (
-                  property,
-                  index,
-                ) => (
-                  <Reveal
-                    key={
-                      property.id
-                    }
-                    delay={Math.min(
-                      (index % 6) *
-                        80,
-                      400,
-                    )}
-                    className="min-w-0"
+                (property) => (
+                  <div
+                    key={property.id}
+                    className="min-w-0 aspect-square"
                   >
-                    <div className="min-w-0 aspect-square">
-                      <PropertyCard
-                        property={
-                          property
-                        }
-                        agentSlug={
-                          agentSlug
-                        }
-                      />
-                    </div>
-                  </Reveal>
+                    <PropertyCard
+                      property={property}
+                      agentSlug={agentSlug}
+                    />
+                  </div>
                 ),
               )}
             </div>
-          ) : (
-            <Reveal>
-              <div className="mx-auto max-w-lg rounded-[1.75rem] border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.4rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50">
-                  <MapPin className="h-8 w-8 text-blue-800" />
-                </div>
-
-                <div className="mx-auto mt-5 h-px w-12 bg-[#c9a96e]" />
-
-                <h3 className="mt-5 text-xl font-black text-slate-950">
-                  No Properties Found
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Try changing your search
-                  or adjusting your property
-                  filters.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={
-                    resetFilters
-                  }
-                  className="mt-7 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-800 to-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Reset Search
-                </button>
-              </div>
-            </Reveal>
           )}
-        </main>
-      </div>
-    </>
+      </section>
+
+      {renderFilterModal()}
+    </main>
   );
 }
