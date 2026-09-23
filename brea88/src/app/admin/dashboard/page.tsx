@@ -212,6 +212,10 @@ function requiresHouseDetails(
     return true;
   }
 
+  if (category === 'Brokerage') {
+    return true;
+  }
+
   return false;
 }
 
