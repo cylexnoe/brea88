@@ -56,7 +56,6 @@ interface Property {
 
   price: string;
 
-  // NEW: Per Month
   perMonth?: string | null;
 
   location: string;
@@ -278,6 +277,13 @@ export default function MarketplacePage() {
   const [filterModalOpen, setFilterModalOpen] =
     useState(false);
 
+  /* ------------------------------------------------------------------------ */
+  /* MOBILE SEARCH STATE                                                      */
+  /* ------------------------------------------------------------------------ */
+
+  const [mobileSearchOpen, setMobileSearchOpen] =
+    useState(false);
+
   const [mounted, setMounted] =
     useState(false);
 
@@ -326,10 +332,6 @@ export default function MarketplacePage() {
             data.map((property) => ({
               ...property,
 
-              /*
-               * Preserve the perMonth value coming
-               * from the API.
-               */
               perMonth:
                 property.perMonth != null
                   ? String(
@@ -420,6 +422,34 @@ export default function MarketplacePage() {
       );
     };
   }, [filterModalOpen]);
+
+  /* ------------------------------------------------------------------------ */
+  /* ESCAPE TO CLOSE MOBILE SEARCH                                            */
+  /* ------------------------------------------------------------------------ */
+
+  useEffect(() => {
+    if (!mobileSearchOpen) return;
+
+    const handleKeyDown = (
+      event: KeyboardEvent,
+    ) => {
+      if (event.key === 'Escape') {
+        setMobileSearchOpen(false);
+      }
+    };
+
+    window.addEventListener(
+      'keydown',
+      handleKeyDown,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      );
+    };
+  }, [mobileSearchOpen]);
 
   /* ------------------------------------------------------------------------ */
   /* PRICE PARSER                                                             */
@@ -1166,17 +1196,254 @@ export default function MarketplacePage() {
               </p>
             </Reveal>
 
-            <Reveal delay={260}>
+            {/* ---------------------------------------------------------------- */}
+            {/* MOBILE MORPHING SEARCH                                            */}
+            {/* ---------------------------------------------------------------- */}
+
+            <Reveal
+              delay={260}
+              className="sm:hidden"
+            >
+              <div className="relative mt-7">
+                {/* ------------------------------------------------------------ */}
+                {/* CLOSED / EXPANDED SEARCH CONTAINER                           */}
+                {/* ------------------------------------------------------------ */}
+
+                <div
+                  className={[
+                    'ml-auto flex h-14 overflow-hidden rounded-2xl border backdrop-blur-xl',
+                    'transition-[width,background-color,border-color,box-shadow] duration-500',
+                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    mobileSearchOpen
+                      ? 'w-full border-blue-400/40 bg-[#020b1d]/95 shadow-[0_18px_55px_rgba(2,12,27,0.35)]'
+                      : 'w-14 border-white/10 bg-[#020b1d]/80 shadow-lg hover:border-blue-400/40 hover:bg-[#07152d]',
+                  ].join(' ')}
+                >
+                  {/* Search Input Area */}
+                  <div
+                    className={[
+                      'relative min-w-0 flex-1 transition-all duration-500',
+                      'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                      mobileSearchOpen
+                        ? 'translate-x-0 opacity-100'
+                        : 'pointer-events-none -translate-x-3 opacity-0',
+                    ].join(' ')}
+                  >
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+
+                    <input
+                      type="text"
+                      value={
+                        searchQuery
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setSearchQuery(
+                          event.target
+                            .value,
+                        )
+                      }
+                      placeholder="Search properties..."
+                      tabIndex={
+                        mobileSearchOpen
+                          ? 0
+                          : -1
+                      }
+                      className="h-full w-full bg-transparent pl-12 pr-12 text-sm font-medium text-white outline-none placeholder:text-slate-500"
+                    />
+
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSearchQuery(
+                            '',
+                          )
+                        }
+                        className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* ---------------------------------------------------------- */}
+                  {/* MORPHING SEARCH / CLOSE BUTTON                             */}
+                  {/* ---------------------------------------------------------- */}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileSearchOpen(
+                        (previous) =>
+                          !previous,
+                      )
+                    }
+                    aria-label={
+                      mobileSearchOpen
+                        ? 'Close property search'
+                        : 'Open property search'
+                    }
+                    aria-expanded={
+                      mobileSearchOpen
+                    }
+                    className={[
+                      'group relative z-10 flex h-14 w-14 shrink-0 items-center justify-center',
+                      'transition-all duration-500',
+                      'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                      'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                      mobileSearchOpen
+                        ? 'border-l border-white/10'
+                        : '',
+                    ].join(' ')}
+                  >
+                    {/* Glow */}
+                    <span
+                      className={[
+                        'absolute inset-1 rounded-xl bg-blue-500/20 blur-md',
+                        'transition-all duration-500',
+                        mobileSearchOpen
+                          ? 'scale-100 opacity-100'
+                          : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100',
+                      ].join(' ')}
+                    />
+
+                    {/* Search Icon */}
+                    <Search
+                      className={[
+                        'absolute h-5 w-5 text-blue-200',
+                        'transition-all duration-500',
+                        'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                        mobileSearchOpen
+                          ? 'scale-0 rotate-90 opacity-0'
+                          : 'scale-100 rotate-0 opacity-100 group-hover:scale-110',
+                      ].join(' ')}
+                    />
+
+                    {/* X Icon */}
+                    <X
+                      className={[
+                        'absolute h-5 w-5 text-blue-200',
+                        'transition-all duration-500',
+                        'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                        mobileSearchOpen
+                          ? 'scale-100 rotate-0 opacity-100'
+                          : 'scale-0 -rotate-90 opacity-0',
+                      ].join(' ')}
+                    />
+                  </button>
+                </div>
+
+                {/* ------------------------------------------------------------ */}
+                {/* MOBILE CATEGORY REVEAL                                        */}
+                {/* ------------------------------------------------------------ */}
+
+                <div
+                  className={[
+                    'grid transition-[grid-template-rows,opacity,margin] duration-500',
+                    'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    mobileSearchOpen
+                      ? 'mt-3 grid-rows-[1fr] opacity-100'
+                      : 'mt-0 grid-rows-[0fr] opacity-0',
+                  ].join(' ')}
+                >
+                  <div className="min-h-0 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFilterModalOpen(
+                          true,
+                        )
+                      }
+                      tabIndex={
+                        mobileSearchOpen
+                          ? 0
+                          : -1
+                      }
+                      className={[
+                        'group flex h-14 w-full items-center justify-between rounded-2xl border',
+                        'border-white/10 bg-[#020b1d]/90 px-4 text-left shadow-lg backdrop-blur-xl',
+                        'transition-all duration-500',
+                        'ease-[cubic-bezier(0.22,1,0.36,1)]',
+                        mobileSearchOpen
+                          ? 'translate-y-0'
+                          : '-translate-y-3',
+                        'hover:border-blue-400/40 hover:bg-[#07152d] hover:shadow-blue-950/20',
+                        'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                      ].join(' ')}
+                      aria-haspopup="dialog"
+                      aria-expanded={
+                        filterModalOpen
+                      }
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200 transition group-hover:bg-blue-500/20 group-hover:text-blue-100">
+                          <SlidersHorizontal className="h-4 w-4" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-200/70">
+                            Property Category
+                          </p>
+
+                          <p className="truncate text-sm font-black text-white">
+                            {
+                              activeCategory.label
+                            }
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        {activeFilterCount >
+                          0 && (
+                          <span className="rounded-full bg-blue-500/20 px-2.5 py-1 text-[9px] font-black text-blue-200">
+                            {
+                              activeFilterCount
+                            }{' '}
+                            {activeFilterCount ===
+                            1
+                              ? 'filter'
+                              : 'filters'}
+                          </span>
+                        )}
+
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition group-hover:bg-blue-500/10 group-hover:text-blue-200">
+                          <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* ---------------------------------------------------------------- */}
+            {/* DESKTOP SEARCH                                                     */}
+            {/* ---------------------------------------------------------------- */}
+
+            <Reveal
+              delay={260}
+              className="hidden sm:block"
+            >
               <div className="mt-7 max-w-4xl">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
                   <input
                     type="text"
-                    value={searchQuery}
-                    onChange={(event) =>
+                    value={
+                      searchQuery
+                    }
+                    onChange={(
+                      event,
+                    ) =>
                       setSearchQuery(
-                        event.target.value,
+                        event
+                          .target
+                          .value,
                       )
                     }
                     placeholder="Search your properties, locations, property types..."
@@ -1201,7 +1468,14 @@ export default function MarketplacePage() {
               </div>
             </Reveal>
 
-            <Reveal delay={340}>
+            {/* ---------------------------------------------------------------- */}
+            {/* DESKTOP PROPERTY CATEGORY                                          */}
+            {/* ---------------------------------------------------------------- */}
+
+            <Reveal
+              delay={340}
+              className="hidden sm:block"
+            >
               <div className="mt-3 max-w-4xl">
                 <button
                   type="button"
@@ -1393,4 +1667,3 @@ export default function MarketplacePage() {
     </>
   );
 }
-
