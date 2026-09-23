@@ -2559,16 +2559,6 @@ console.log('🔥 PER MONTH DEBUG', {
                 </p>
               </div>
             )}
-
-          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5">
-            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[#a47d3c] transition group-hover:text-[#8c6a32]">
-              View Details
-            </span>
-
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#c9a96e]/10 text-[#a47d3c] transition group-hover:translate-x-0.5 group-hover:bg-[#c9a96e]/20">
-              <ChevronRight size={15} />
-            </span>
-          </div>
         </div>
       </article>
 
