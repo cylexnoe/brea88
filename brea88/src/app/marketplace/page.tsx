@@ -25,7 +25,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-
+import { useSearchParams } from 'next/navigation';
 import PropertyCard from '../propertyCard';
 
 interface Agent {
@@ -178,6 +178,20 @@ export default function MarketplacePage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const searchParams = useSearchParams();
+
+  const sharedPropertyId = useMemo(() => {
+    const value = searchParams.get('property');
+
+    if (!value) {
+      return null;
+    }
+
+    const id = Number(value);
+
+    return Number.isFinite(id) ? id : null;
+  }, [searchParams]);
 
   useEffect(() => {
     const params = new URLSearchParams(
@@ -1304,6 +1318,10 @@ export default function MarketplacePage() {
                     <PropertyCard
                       property={property}
                       agentSlug={agentSlug}
+                      autoOpen={
+                        sharedPropertyId !== null &&
+                        property.id === sharedPropertyId
+                      }
                     />
                   </div>
                 ),
