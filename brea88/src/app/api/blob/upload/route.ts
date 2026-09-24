@@ -12,7 +12,7 @@ import {
 } from '@/lib/security';
 import { getClientKey, rateLimit } from '@/lib/rate-limit';
 
-const MAX_UPLOAD_SIZE = 6 * 1024 * 1024;
+const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
 
 /*
  * ============================================================
