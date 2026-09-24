@@ -1071,219 +1071,242 @@ const [
 }
 
   async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
+  event: FormEvent<HTMLFormElement>,
+) {
+  event.preventDefault();
 
-    if (!formData.title.trim()) {
-      alert(
-        'Please enter the property title.',
-      );
+  if (!formData.title.trim()) {
+    alert('Please enter the property title.');
+    return;
+  }
 
-      return;
-    }
+  if (!formData.price.trim()) {
+    alert('Please enter the property price.');
+    return;
+  }
 
-    if (!formData.price.trim()) {
-      alert(
-        'Please enter the property price.',
-      );
+  if (!formData.location.trim()) {
+    alert('Please enter the property location.');
+    return;
+  }
 
-      return;
-    }
+  if (!formData.category) {
+    alert('Please select a property category.');
+    return;
+  }
 
-    if (!formData.location.trim()) {
-      alert(
-        'Please enter the property location.',
-      );
+  if (!formData.propertyType) {
+    alert('Please select a property type.');
+    return;
+  }
 
-      return;
-    }
+  const normalizedHouseType =
+    formData.houseType.trim() || null;
 
-    if (!formData.category) {
-      alert(
-        'Please select a property category.',
-      );
+  const normalizedStorey =
+    formData.storey.trim() || null;
 
-      return;
-    }
+  if (!images.length) {
+    alert('Please add at least one property image.');
+    return;
+  }
 
-    if (!formData.propertyType) {
-      alert(
-        'Please select a property type.',
-      );
+  setStatus('loading');
 
-      return;
-    }
+  try {
+    const uploadedImageUrls: string[] = [];
 
-    /*
-     * House Type and Storey are optional.
-     * Blank values are automatically saved as "None".
-     */
-    const normalizedHouseType =
-      formData.houseType.trim() || null;
+    for (const image of images) {
+      if (
+        image.source === 'upload' &&
+        image.file
+      ) {
+        const uploadedUrl =
+          await uploadImageToBlob(image.file);
 
-    const normalizedStorey =
-      formData.storey.trim() || null;
-
-    if (!images.length) {
-      alert(
-        'Please add at least one property image.',
-      );
-
-      return;
-    }
-
-    setStatus('loading');
-
-    try {
-      const uploadedImageUrls: string[] =
-        [];
-
-      for (const image of images) {
-        if (
-          image.source === 'upload' &&
-          image.file
-        ) {
-          const uploadedUrl =
-            await uploadImageToBlob(
-              image.file,
-            );
-
-          uploadedImageUrls.push(
-            uploadedUrl,
-          );
-        } else {
-          uploadedImageUrls.push(
-            image.url,
+        if (!uploadedUrl) {
+          throw new Error(
+            `Failed to upload ${image.file.name}.`,
           );
         }
-      }
 
-      if (!uploadedImageUrls.length) {
-        throw new Error(
-          'No valid property images were found.',
+        uploadedImageUrls.push(uploadedUrl);
+      } else if (image.url) {
+        uploadedImageUrls.push(
+          image.url.trim(),
         );
       }
+    }
 
-      const payload = {
-            ...(editingId !== null
-              ? { id: editingId }
-              : {}),
-            title: formData.title.trim(),
-            category: formData.category,
-            propertyType: formData.propertyType,
+    const validImageUrls =
+      uploadedImageUrls
+        .filter(Boolean)
+        .slice(0, MAX_IMAGES);
 
-            houseType: showHouseDetails
-              ? normalizedHouseType
-              : null,
-
-            storey: showHouseDetails
-              ? normalizedStorey
-              : null,
-
-            tag: formData.tag || 'Residential',
-
-            price: formData.price.trim(),
-            location: formData.location.trim(),
-
-            perMonth: showPerMonth
-              ? formData.perMonth.trim()
-              : null,
-
-            beds: formData.beds
-              ? Number(formData.beds)
-              : null,
-
-            baths: formData.baths
-              ? Number(formData.baths)
-              : null,
-
-            sqft: formData.sqft
-              ? Number(formData.sqft)
-              : null,
-
-            lotArea: formData.lotArea
-              ? Number(formData.lotArea)
-              : null,
-
-            image: uploadedImageUrls[0],
-            images: uploadedImageUrls,
-            developer: formData.developer.trim() || null,
-            bankFinancing: formData.bankFinancing
-              .map((bank) => bank.trim())
-              .filter(Boolean),
-            description: formData.description.trim() || null,
-            videoUrl: formData.videoUrl.trim() || null,
-          };
-
-      const response = await fetch('/admin/api/properties', {
-            method:
-              editingId !== null
-                ? 'PUT'
-                : 'POST',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-            },
-
-            credentials:
-              'include',
-
-            body:
-              JSON.stringify(
-                payload,
-              ),
-          },
-        );
-console.log('🔥 ADMIN PER MONTH PAYLOAD', {
-  category: formData.category,
-  propertyType: formData.propertyType,
-  perMonth: formData.perMonth,
-  showPerMonth,
-  payloadPerMonth: payload.perMonth,
-});
-      const data =
-        await response
-          .json()
-          .catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            `Failed to ${
-              editingId !== null
-                ? 'update'
-                : 'create'
-            } property.`,
-        );
-      }
-
-      setStatus('success');
-
-      await fetchProperties();
-
-      window.setTimeout(() => {
-        resetForm();
-        setActiveSection(
-          'properties',
-        );
-      }, 800);
-    } catch (error) {
-      console.error(
-        'Save property error:',
-        error,
-      );
-
-      setStatus('error');
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Timeout you need to refresh the page.',
+    if (!validImageUrls.length) {
+      throw new Error(
+        'No valid property images were found.',
       );
     }
+
+    const payload = {
+      ...(editingId !== null
+        ? { id: editingId }
+        : {}),
+
+      title: formData.title.trim(),
+
+      category:
+        formData.category.trim(),
+
+      propertyType:
+        formData.propertyType.trim(),
+
+      houseType:
+        showHouseDetails
+          ? normalizedHouseType
+          : null,
+
+      storey:
+        showHouseDetails
+          ? normalizedStorey
+          : null,
+
+      tag:
+        formData.tag.trim() ||
+        'Residential',
+
+      price:
+        formData.price.trim(),
+
+      location:
+        formData.location.trim(),
+
+      perMonth:
+        showPerMonth
+          ? formData.perMonth.trim() || null
+          : null,
+
+      beds:
+        formData.beds.trim()
+          ? Number(formData.beds)
+          : null,
+
+      baths:
+        formData.baths.trim()
+          ? Number(formData.baths)
+          : null,
+
+      sqft:
+        formData.sqft.trim()
+          ? Number(formData.sqft)
+          : null,
+
+      lotArea:
+        formData.lotArea.trim()
+          ? Number(formData.lotArea)
+          : null,
+
+      image:
+        validImageUrls[0],
+
+      images:
+        validImageUrls,
+
+      developer:
+        formData.developer.trim() || null,
+
+      bankFinancing:
+        formData.bankFinancing
+          .map((bank) => bank.trim())
+          .filter(Boolean),
+
+      description:
+        formData.description.trim() || null,
+
+      videoUrl:
+        formData.videoUrl.trim() || null,
+    };
+
+    const serializedPayload =
+      JSON.stringify(payload);
+
+    console.log(
+      '[Property Save] Payload size:',
+      `${new Blob([serializedPayload]).size} bytes`,
+    );
+
+    console.log(
+      '[Property Save] Image count:',
+      validImageUrls.length,
+    );
+
+    console.log(
+      '[Property Save] Image URLs:',
+      validImageUrls,
+    );
+
+    const response = await fetch(
+      '/api/properties',
+      {
+        method:
+          editingId !== null
+            ? 'PUT'
+            : 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        credentials: 'include',
+
+        body: serializedPayload,
+      },
+    );
+
+    const data =
+      await response
+        .json()
+        .catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          `Failed to ${
+            editingId !== null
+              ? 'update'
+              : 'create'
+          } property. HTTP ${response.status}`,
+      );
+    }
+
+    setStatus('success');
+
+    await fetchProperties();
+
+    window.setTimeout(() => {
+      resetForm();
+
+      setActiveSection(
+        'properties',
+      );
+    }, 800);
+  } catch (error) {
+    console.error(
+      'Save property error:',
+      error,
+    );
+
+    setStatus('error');
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : 'Failed to save property.',
+    );
   }
+}
 
   async function handleLogout() {
     try {
