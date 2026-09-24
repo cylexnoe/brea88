@@ -2143,17 +2143,8 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
 
                   <input
                     type="search"
-                    value={
-                      searchTerm
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setSearchTerm(
-                        event.target
-                          .value,
-                      )
-                    }
+                    value={searchTerm}
+                    onChange={(event,) => setSearchTerm(event.target.value,)}
                     placeholder="Search properties by title, location, category, type..."
                     className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                   />
