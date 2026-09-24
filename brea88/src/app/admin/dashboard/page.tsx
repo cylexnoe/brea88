@@ -653,7 +653,7 @@ const [
 
       if (file.size > MAX_FILE_SIZE) {
         alert(
-          `${file.name} is larger than 5MB and cannot be uploaded.`,
+          `${file.name} is larger than 50MB and cannot be uploaded.`,
         );
 
         continue;
