@@ -1436,7 +1436,7 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     );
   }
 
-  async function uploadVideoToBlob(file: File) {
+ async function uploadVideoToBlob(file: File) {
   const allowedTypes = [
     'video/mp4',
     'video/webm',
@@ -1468,64 +1468,45 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
   setVideoUploadProgress(0);
 
   try {
-    /*
-     * ==========================================================
-     * FORM DATA
-     * ==========================================================
-     */
-
     const formData = new FormData();
 
     formData.append('file', file);
 
-    /*
-     * ==========================================================
-     * UPLOAD TO OUR API
-     * ==========================================================
-     */
-
     const response = await fetch(
-      '/api/blob/video',
+      '/api/blob/video-upload',
       {
         method: 'POST',
         body: formData,
       },
     );
 
-    /*
-     * ==========================================================
-     * READ RESPONSE
-     * ==========================================================
-     */
-
     let result: {
       success?: boolean;
       url?: string;
       message?: string;
-      size?: number;
+      filename?: string;
       contentType?: string;
+      size?: number;
     };
 
     try {
       result = await response.json();
     } catch {
       throw new Error(
-        'The server returned an invalid response.',
+        `Server returned an invalid response (${response.status}).`,
       );
     }
 
-    if (!response.ok || !result.success || !result.url) {
+    if (
+      !response.ok ||
+      !result.success ||
+      !result.url
+    ) {
       throw new Error(
         result.message ||
           `Video upload failed (${response.status}).`,
       );
     }
-
-    /*
-     * ==========================================================
-     * SUCCESS
-     * ==========================================================
-     */
 
     setFormData((current) => ({
       ...current,
@@ -1533,7 +1514,6 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     }));
 
     setVideoFile(file);
-
     setVideoUploadProgress(100);
 
     return result.url;
@@ -1542,6 +1522,8 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
       '[Video Upload] Frontend failed:',
       error,
     );
+
+    setVideoUploadProgress(0);
 
     throw new Error(
       error instanceof Error
