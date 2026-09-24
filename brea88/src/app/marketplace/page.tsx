@@ -873,7 +873,7 @@ useEffect(() => {
                   {[
                     {
                       value: 'default' as const,
-                      label: 'Recommended',
+                      label: 'All',
                     },
                     {
                       value: 'price-asc' as const,
