@@ -2222,56 +2222,54 @@ useEffect(() => {
                 {(property.totalcp ||
                   property.bankFinancing
                     ?.length) && (
-                  <section>
-                    <SectionTitle
-                      icon={
-                        <Landmark size={17} />
-                      }
-                      title="Bank Financing"
-                    />
+                 <section>
+                  <SectionTitle
+                    icon={<Landmark size={17} />}
+                    title="Bank Financing"
+                  />
 
-                    <div className="mt-4 space-y-3">
-                      {property.totalcp && (
-                        <div className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4">
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                            Total Contract Price
-                          </span>
+                  <div className="mt-4 space-y-4">
+                    {property.totalcp && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                          Total Contract Price
+                        </span>
 
-                          <span className="text-right text-sm font-bold text-slate-800">
-                            {formatPrice(
-                              property.totalcp,
-                            )}
-                          </span>
-                        </div>
-                      )}
+                        <span className="text-right text-sm font-bold text-slate-800">
+                          {formatPrice(property.totalcp)}
+                        </span>
+                      </div>
+                    )}
 
-                      {property.bankFinancing
-                        ?.length ? (
-                        <div className="space-y-2">
+                    {property.bankFinancing?.length ? (
+                      <div>
+                        <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                          Accepted Financing
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
                           {property.bankFinancing.map(
-                            (
-                              financing,
-                              index,
-                            ) => (
-                              <div
+                            (financing, index) => (
+                              <span
                                 key={`${financing}-${index}`}
-                                className="flex items-start gap-2.5 rounded-xl bg-emerald-50 px-3.5 py-3 text-sm text-emerald-700"
+                                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:border-emerald-300 hover:bg-emerald-100"
                               >
-                                <CheckCircle2
-                                  size={16}
-                                  className="mt-0.5 shrink-0"
-                                />
-
-                                <span>
-                                  {financing}
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                                  <CheckCircle2
+                                    size={13}
+                                    className="text-emerald-600"
+                                  />
                                 </span>
-                              </div>
+
+                                <span>{financing}</span>
+                              </span>
                             ),
                           )}
                         </div>
-                      ) : null}
-                    </div>
-                  </section>
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
                 )}
 
                 {/* PROPERTY VIDEO */}
