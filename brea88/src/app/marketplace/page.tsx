@@ -869,55 +869,44 @@ useEffect(() => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {[
-                    {
-                      value: 'default' as const,
-                      label: 'All',
-                    },
-                    {
-                      value: 'price-asc' as const,
-                      label: 'Price: Low to High',
-                    },
-                    {
-                      value: 'price-desc' as const,
-                      label: 'Price: High to Low',
-                    },
-                  ].map((option) => {
-                    const selected =
-                      sortBy === option.value;
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {[
+                      {
+                        value: 'price-asc' as const,
+                        label: 'Price: Low to High',
+                      },
+                      {
+                        value: 'price-desc' as const,
+                        label: 'Price: High to Low',
+                      },
+                    ].map((option) => {
+                      const selected = sortBy === option.value;
 
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() =>
-                          setSortBy(option.value)
-                        }
-                        className={[
-                          'flex min-h-12 items-center justify-between rounded-xl border px-4 text-left text-sm font-semibold transition',
-                          'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-                          selected
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-slate-50',
-                        ].join(' ')}
-                      >
-                        <span className="flex items-center gap-2">
-                          {option.value !==
-                            'default' && (
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setSortBy(option.value)}
+                          className={[
+                            'flex min-h-12 items-center justify-between rounded-xl border px-4 text-left text-sm font-semibold transition',
+                            'focus:outline-none focus:ring-4 focus:ring-blue-500/10',
+                            selected
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-slate-50',
+                          ].join(' ')}
+                        >
+                          <span className="flex items-center gap-2">
                             <ArrowUpDown className="h-4 w-4" />
+                            {option.label}
+                          </span>
+
+                          {selected && (
+                            <Check className="h-4 w-4" />
                           )}
-
-                          {option.label}
-                        </span>
-
-                        {selected && (
-                          <Check className="h-4 w-4" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                        </button>
+                      );
+                    })}
+                  </div>
               </section>
             </div>
           </div>
