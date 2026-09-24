@@ -3738,14 +3738,6 @@ const [
                       <p className="mt-2 text-sm leading-6 text-slate-500">
                         Please wait while we save your property details.
                       </p>
-
-                      <div className="mt-7 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400" />
-                      </div>
-
-                      <p className="mt-5 text-xs font-medium text-slate-400">
-                        Please don't close or refresh this page.
-                      </p>
                     </div>
                   </div>
                 )}
