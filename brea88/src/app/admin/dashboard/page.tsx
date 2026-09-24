@@ -1306,43 +1306,32 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     }
   }
 
-  const filteredProperties =
-    useMemo(() => {
-      const term =
-        searchTerm
-          .trim()
-          .toLowerCase();
+  const filteredProperties = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
 
-      if (!term) {
-        return properties;
-      }
+    if (!term) {
+      return properties;
+    }
 
-      return properties.filter(
-        (property) => {
-          const values = [
-            property.title,
-            property.location,
-            property.tag,
-            property.category,
-            property.propertyType,
-            property.houseType,
-            property.price,
-          ];
+    return properties.filter((property) => {
+      const values = [
+        property.title,
+        property.location,
+        property.tag,
+        property.category,
+        property.propertyType,
+        property.houseType,
+        property.developer,
+        property.price,
+      ];
 
-          return values.some(
-            (value) =>
-              String(
-                value || '',
-              )
-                .toLowerCase()
-                .includes(term),
-          );
-        },
+      return values.some((value) =>
+        String(value || '')
+          .toLowerCase()
+          .includes(term),
       );
-    }, [
-      properties,
-      searchTerm,
-    ]);
+    });
+  }, [properties, searchTerm]);
 
   const houseLotCount =
     properties.filter(
