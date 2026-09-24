@@ -8,8 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { upload as uploadBlob } from '@vercel/blob/client';
-
+ 
 import {
   PlusCircle,
   CheckCircle2,
@@ -1445,7 +1444,7 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     'video/ogg',
   ];
 
-  const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+  const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500 MB
 
   if (!allowedTypes.includes(file.type)) {
     throw new Error(
@@ -1453,9 +1452,15 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     );
   }
 
-  if (file.size <= 0 || file.size > MAX_VIDEO_SIZE) {
+  if (file.size <= 0) {
     throw new Error(
-      'Video must be larger than 0 bytes and 500MB or smaller.',
+      'The selected video is empty.',
+    );
+  }
+
+  if (file.size > MAX_VIDEO_SIZE) {
+    throw new Error(
+      'Video is too large. Maximum video size is 500 MB.',
     );
   }
 
@@ -1463,30 +1468,86 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
   setVideoUploadProgress(0);
 
   try {
-    const blob = await uploadBlob(
-      `properties/videos/${crypto.randomUUID()}-${file.name}`,
-      file,
-      {
-        access: 'public',
-        handleUploadUrl: '/api/blob/video-upload',
-        multipart: true,
+    /*
+     * ==========================================================
+     * FORM DATA
+     * ==========================================================
+     */
 
-        onUploadProgress(event) {
-          setVideoUploadProgress(
-            Math.round(event.percentage),
-          );
-        },
+    const formData = new FormData();
+
+    formData.append('file', file);
+
+    /*
+     * ==========================================================
+     * UPLOAD TO OUR API
+     * ==========================================================
+     */
+
+    const response = await fetch(
+      '/api/blob/video',
+      {
+        method: 'POST',
+        body: formData,
       },
     );
 
+    /*
+     * ==========================================================
+     * READ RESPONSE
+     * ==========================================================
+     */
+
+    let result: {
+      success?: boolean;
+      url?: string;
+      message?: string;
+      size?: number;
+      contentType?: string;
+    };
+
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error(
+        'The server returned an invalid response.',
+      );
+    }
+
+    if (!response.ok || !result.success || !result.url) {
+      throw new Error(
+        result.message ||
+          `Video upload failed (${response.status}).`,
+      );
+    }
+
+    /*
+     * ==========================================================
+     * SUCCESS
+     * ==========================================================
+     */
+
     setFormData((current) => ({
       ...current,
-      videoUrl: blob.url,
+      videoUrl: result.url!,
     }));
 
     setVideoFile(file);
 
-    return blob.url;
+    setVideoUploadProgress(100);
+
+    return result.url;
+  } catch (error) {
+    console.error(
+      '[Video Upload] Frontend failed:',
+      error,
+    );
+
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : 'Video upload failed.',
+    );
   } finally {
     setVideoUploading(false);
   }
