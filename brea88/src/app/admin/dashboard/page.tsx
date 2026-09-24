@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
- 
+import { upload } from '@vercel/blob/client';
 import {
   PlusCircle,
   CheckCircle2,
@@ -1444,13 +1444,26 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     'video/ogg',
   ];
 
-  const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500 MB
+  const MAX_VIDEO_SIZE =
+    500 * 1024 * 1024; // 500 MB
+
+  /*
+   * ==========================================================
+   * VALIDATE FILE TYPE
+   * ==========================================================
+   */
 
   if (!allowedTypes.includes(file.type)) {
     throw new Error(
       'Unsupported video format. Please use MP4, WebM, MOV, or OGG.',
     );
   }
+
+  /*
+   * ==========================================================
+   * VALIDATE FILE SIZE
+   * ==========================================================
+   */
 
   if (file.size <= 0) {
     throw new Error(
@@ -1464,62 +1477,96 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     );
   }
 
+  /*
+   * ==========================================================
+   * START UPLOAD
+   * ==========================================================
+   */
+
   setVideoUploading(true);
   setVideoUploadProgress(0);
 
   try {
-    const formData = new FormData();
+    const extension =
+      file.name.includes('.')
+        ? file.name.substring(
+            file.name.lastIndexOf('.'),
+          )
+        : '';
 
-    formData.append('file', file);
+    const safeExtension =
+      extension.toLowerCase();
 
-    const response = await fetch(
-      '/api/blob/video-upload',
+    const pathname =
+      `properties/videos/${crypto.randomUUID()}${safeExtension}`;
+
+    /*
+     * ========================================================
+     * DIRECT VERCEL BLOB UPLOAD
+     * ========================================================
+     *
+     * The video itself does NOT pass through Next.js.
+     *
+     * multipart: true
+     * allows large videos to be uploaded in chunks.
+     */
+
+    const blob = await upload(
+      pathname,
+      file,
       {
-        method: 'POST',
-        body: formData,
+        access: 'public',
+
+        handleUploadUrl:
+          '/api/blob/video-upload',
+
+        multipart: true,
+
+        onUploadProgress(event) {
+          const percentage = Math.round(
+            event.percentage,
+          );
+
+          setVideoUploadProgress(
+            Math.max(
+              0,
+              Math.min(100, percentage),
+            ),
+          );
+        },
       },
     );
 
-    let result: {
-      success?: boolean;
-      url?: string;
-      message?: string;
-      filename?: string;
-      contentType?: string;
-      size?: number;
-    };
+    /*
+     * ========================================================
+     * SAVE VIDEO URL
+     * ========================================================
+     */
 
-    try {
-      result = await response.json();
-    } catch {
+    if (!blob?.url) {
       throw new Error(
-        `Server returned an invalid response (${response.status}).`,
-      );
-    }
-
-    if (
-      !response.ok ||
-      !result.success ||
-      !result.url
-    ) {
-      throw new Error(
-        result.message ||
-          `Video upload failed (${response.status}).`,
+        'Video uploaded, but no Blob URL was returned.',
       );
     }
 
     setFormData((current) => ({
       ...current,
-      videoUrl: result.url!,
+      videoUrl: blob.url,
     }));
 
     setVideoFile(file);
+
     setVideoUploadProgress(100);
 
-    return result.url;
+    console.log(
+      '[Video Upload] Completed:',
+      blob.url,
+    );
+
+    return blob.url;
   } catch (error) {
     console.error(
-      '[Video Upload] Frontend failed:',
+      '[Video Upload] Failed:',
       error,
     );
 
