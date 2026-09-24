@@ -1,12 +1,12 @@
 import crypto from 'crypto';
 
 const MAX_JSON_BYTES = 256 * 1024;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
 
 export const SECURITY_LIMITS = {
   maxJsonBytes: MAX_JSON_BYTES,
   maxImageBytes: MAX_IMAGE_BYTES,
-  maxImagesPerProperty: 10,
+  maxImagesPerProperty: 20,
 } as const;
 
 export function hasValidContentLength(
@@ -19,10 +19,17 @@ export function hasValidContentLength(
 
   const length = Number(value);
 
-  return Number.isSafeInteger(length) && length >= 0 && length <= maxBytes;
+  return (
+    Number.isSafeInteger(length) &&
+    length >= 0 &&
+    length <= maxBytes
+  );
 }
 
-export function safeTimingEqual(a: string, b: string): boolean {
+export function safeTimingEqual(
+  a: string,
+  b: string,
+): boolean {
   const left = Buffer.from(a, 'utf8');
   const right = Buffer.from(b, 'utf8');
 
@@ -31,12 +38,22 @@ export function safeTimingEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(left, right);
 }
 
-export function isSafeHttpUrl(value: string, maxLength = 2048): boolean {
+export function isSafeHttpUrl(
+  value: string,
+  maxLength = 2048,
+): boolean {
   if (!value || value.length > maxLength) return false;
 
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' || (process.env.NODE_ENV !== 'production' && url.protocol === 'http:');
+
+    return (
+      url.protocol === 'https:' ||
+      (
+        process.env.NODE_ENV !== 'production' &&
+        url.protocol === 'http:'
+      )
+    );
   } catch {
     return false;
   }
@@ -47,7 +64,12 @@ export function validateImageSignature(
   declaredType: string,
 ): boolean {
   if (declaredType === 'image/jpeg') {
-    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    return (
+      bytes.length >= 3 &&
+      bytes[0] === 0xff &&
+      bytes[1] === 0xd8 &&
+      bytes[2] === 0xff
+    );
   }
 
   if (declaredType === 'image/png') {
@@ -81,31 +103,68 @@ export function validateImageSignature(
   return false;
 }
 
-export async function validateImageFile(file: File): Promise<{
-  ok: true;
-  extension: 'jpg' | 'png' | 'webp';
-} | {
-  ok: false;
-  message: string;
-}> {
-  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+export async function validateImageFile(
+  file: File,
+): Promise<
+  | {
+      ok: true;
+      extension: 'jpg' | 'png' | 'webp';
+    }
+  | {
+      ok: false;
+      message: string;
+    }
+> {
+  const allowedTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ]);
 
   if (!allowedTypes.has(file.type)) {
-    return { ok: false, message: 'Only JPG, PNG, and WebP images are allowed.' };
+    return {
+      ok: false,
+      message:
+        'Only JPG, PNG, and WebP images are allowed.',
+    };
   }
 
-  if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > MAX_IMAGE_BYTES) {
-    return { ok: false, message: 'Image must be larger than 0 bytes and 5MB or smaller.' };
+  if (
+    !Number.isSafeInteger(file.size) ||
+    file.size <= 0 ||
+    file.size > MAX_IMAGE_BYTES
+  ) {
+    return {
+      ok: false,
+      message:
+        'Image must be larger than 0 bytes and 50MB or smaller.',
+    };
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  const bytes = new Uint8Array(
+    await file.arrayBuffer(),
+  );
 
-  if (!validateImageSignature(bytes, file.type)) {
-    return { ok: false, message: 'The uploaded file is not a valid image.' };
+  if (
+    !validateImageSignature(
+      bytes,
+      file.type,
+    )
+  ) {
+    return {
+      ok: false,
+      message:
+        'The uploaded file is not a valid image.',
+    };
   }
 
   return {
     ok: true,
-    extension: file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg',
+    extension:
+      file.type === 'image/png'
+        ? 'png'
+        : file.type === 'image/webp'
+          ? 'webp'
+          : 'jpg',
   };
 }
