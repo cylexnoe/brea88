@@ -25,7 +25,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+
 import PropertyCard from '../propertyCard';
 
 interface Agent {
@@ -187,40 +187,27 @@ useEffect(() => {
     setMounted(true);
   }, []);
 
-  const searchParams = useSearchParams();
+ const [sharedPropertyId, setSharedPropertyId] = useState<number | null>(
+  null,
+);
 
-  /*
-   * PUBLIC:
-   * /marketplace?property=56
-   *
-   * AGENT:
-   * /marketplace?property=56&agent=john-doe
-   */
-  const sharedPropertyId = useMemo(() => {
-    const value = searchParams.get('property');
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
 
-    if (!value) {
-      return null;
-    }
+  const propertyParam = params.get('property');
 
-    const id = Number(value);
+  if (!propertyParam) {
+    setSharedPropertyId(null);
+    return;
+  }
 
-    return Number.isFinite(id) ? id : null;
-  }, [searchParams]);
+  const id = Number(propertyParam);
 
-  /*
-   * Read the agent attribution from the URL.
-   */
-  useEffect(() => {
-    const slug = searchParams.get('agent');
-
-    if (slug?.trim()) {
-      setAgentSlug(slug.trim());
-    } else {
-      setAgentSlug('');
-    }
-  }, [searchParams]);
-
+  setSharedPropertyId(
+    Number.isFinite(id) && id > 0 ? id : null,
+  );
+}, []);
+ 
   /*
    * Load properties.
    */
@@ -286,7 +273,7 @@ useEffect(() => {
 
           console.log(
             '[Marketplace] Shared agent:',
-            searchParams.get('agent'),
+            agentSlug,
           );
         }
       } catch (error) {
@@ -310,7 +297,7 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [sharedPropertyId, searchParams]);
+  }, [sharedPropertyId, agentSlug]);
 
   useEffect(() => {
     if (!filterModalOpen) {
