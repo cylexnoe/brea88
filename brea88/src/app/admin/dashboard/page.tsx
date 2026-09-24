@@ -748,48 +748,72 @@ const [
     });
   }
 
-  async function uploadImageToBlob(
-        file: File,
-      ) {
-        const body = new FormData();
+  async function uploadImageToBlob(file: File) {
+    const body = new FormData();
 
-        body.append(
-          'file',
-          file,
-        );
+    body.append('file', file);
+    body.append('type', 'property');
 
-        body.append(
-          'type',
-          'property',
-        );
+    try {
+      const response = await fetch(
+        '/api/blob/upload',
+        {
+          method: 'POST',
+          body,
+          credentials: 'include',
+        },
+      );
 
-        const response = await fetch(
-          '/api/blob/upload',
-          {
-            method: 'POST',
-            body,
-            credentials: 'include',
-          },
-        );
+      const rawText = await response.text();
 
-        const data =
-          await response
-            .json()
-            .catch(() => null);
+      let data: {
+        success?: boolean;
+        url?: string;
+        message?: string;
+        error?: string;
+      } | null = null;
 
-        if (
-          !response.ok ||
-          !data?.success ||
-          !data?.url
-        ) {
-          throw new Error(
-            data?.message ||
-              'Failed to upload image.',
-          );
-        }
-
-        return data.url as string;
+      try {
+        data = rawText
+          ? JSON.parse(rawText)
+          : null;
+      } catch {
+        data = null;
       }
+
+      console.log('[Image Upload] Status:', response.status);
+      console.log('[Image Upload] Response:', rawText);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            rawText ||
+            `Image upload failed. HTTP ${response.status}`,
+        );
+      }
+
+      if (!data?.success || !data?.url) {
+        throw new Error(
+          data?.message ||
+            'Image uploaded, but no Blob URL was returned.',
+        );
+      }
+
+      return data.url;
+    } catch (error) {
+      console.error(
+        `[Image Upload] Failed: ${file.name}`,
+        error,
+      );
+
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : `Failed to upload image: ${file.name}`,
+      );
+    }
+  }
 
   function resetForm() {
     images.forEach((image) => {
