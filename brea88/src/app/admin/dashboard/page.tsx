@@ -1315,7 +1315,7 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
     }
 
     return properties.filter((property) => {
-      const values = [
+      const searchableValues = [
         property.title,
         property.location,
         property.tag,
@@ -1326,8 +1326,9 @@ console.log('🔥 ADMIN PER MONTH PAYLOAD', {
         property.price,
       ];
 
-      return values.some((value) =>
-        String(value || '')
+      return searchableValues.some((value) =>
+        String(value ?? '')
+          .trim()
           .toLowerCase()
           .includes(term),
       );
