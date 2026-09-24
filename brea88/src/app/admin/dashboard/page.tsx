@@ -748,69 +748,103 @@ const [
     });
   }
 
-  async function uploadImageToBlob(file: File) {
-    const body = new FormData();
+  async function uploadImageToBlob(
+    file: File,
+  ) {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
 
-    body.append('file', file);
-    body.append('type', 'property');
+    const MAX_IMAGE_SIZE =
+      50 * 1024 * 1024;
+
+    if (
+      !allowedTypes.includes(file.type)
+    ) {
+      throw new Error(
+        `${file.name}: Only JPG, PNG, and WebP images are allowed.`,
+      );
+    }
+
+    if (
+      file.size <= 0
+    ) {
+      throw new Error(
+        `${file.name}: The selected image is empty.`,
+      );
+    }
+
+    if (
+      file.size > MAX_IMAGE_SIZE
+    ) {
+      throw new Error(
+        `${file.name}: Image must be 50 MB or smaller.`,
+      );
+    }
 
     try {
-      const response = await fetch(
-        '/api/blob/upload',
-        {
-          method: 'POST',
-          body,
-          credentials: 'include',
-        },
+      const extension =
+        file.name.includes('.')
+          ? file.name.substring(
+              file.name.lastIndexOf('.'),
+            )
+          : '';
+
+      const safeExtension =
+        extension.toLowerCase();
+
+      const pathname =
+        `properties/${crypto.randomUUID()}${safeExtension}`;
+
+      const blob =
+        await upload(
+          pathname,
+          file,
+          {
+            access: 'public',
+
+            handleUploadUrl:
+              '/api/blob/property-upload',
+
+            multipart: true,
+
+            onUploadProgress(event) {
+              const percentage =
+                Math.round(
+                  event.percentage,
+                );
+
+              console.log(
+                `[Property Image Upload] ${file.name}: ${percentage}%`,
+              );
+            },
+          },
+        );
+
+      if (!blob?.url) {
+        throw new Error(
+          `${file.name}: Upload completed but no Blob URL was returned.`,
+        );
+      }
+
+      console.log(
+        '[Property Image Upload] Completed:',
+        blob.url,
       );
 
-      const rawText = await response.text();
-
-      let data: {
-        success?: boolean;
-        url?: string;
-        message?: string;
-        error?: string;
-      } | null = null;
-
-      try {
-        data = rawText
-          ? JSON.parse(rawText)
-          : null;
-      } catch {
-        data = null;
-      }
-
-      console.log('[Image Upload] Status:', response.status);
-      console.log('[Image Upload] Response:', rawText);
-
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            rawText ||
-            `Image upload failed. HTTP ${response.status}`,
-        );
-      }
-
-      if (!data?.success || !data?.url) {
-        throw new Error(
-          data?.message ||
-            'Image uploaded, but no Blob URL was returned.',
-        );
-      }
-
-      return data.url;
+      return blob.url;
     } catch (error) {
       console.error(
-        `[Image Upload] Failed: ${file.name}`,
+        `[Property Image Upload] Failed: ${file.name}`,
         error,
       );
 
       throw new Error(
         error instanceof Error
           ? error.message
-          : `Failed to upload image: ${file.name}`,
+          : `${file.name}: Image upload failed.`,
       );
     }
   }
