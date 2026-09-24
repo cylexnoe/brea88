@@ -1,32 +1,28 @@
-import { randomUUID } from 'crypto';
-import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 
 import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { getClientKey, rateLimit } from '@/lib/rate-limit';
 
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500 MB
-
-const ALLOWED_VIDEO_TYPES = new Set([
+const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
   'video/webm',
   'video/quicktime',
   'video/ogg',
-]);
-
-const VIDEO_EXTENSIONS: Record<string, string> = {
-  'video/mp4': 'mp4',
-  'video/webm': 'webm',
-  'video/quicktime': 'mov',
-  'video/ogg': 'ogg',
-};
+];
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
+  /*
+   * ============================================================
+   * RATE LIMIT
+   * ============================================================
+   */
+
   const limit = rateLimit(
-    getClientKey(request, 'property-video-upload'),
-    10,
+    getClientKey(request, 'property-video-token'),
+    20,
   );
 
   if (!limit.allowed) {
@@ -34,18 +30,29 @@ export async function POST(request: Request) {
       {
         success: false,
         message:
-          'Too many video uploads. Please try again later.',
+          'Too many upload requests. Please try again later.',
       },
       {
         status: 429,
         headers: {
-          'Retry-After': String(limit.retryAfterSeconds),
+          'Retry-After': String(
+            limit.retryAfterSeconds,
+          ),
         },
       },
     );
   }
 
-  if (!(await isAdminAuthenticated())) {
+  /*
+   * ============================================================
+   * ADMIN AUTHENTICATION
+   * ============================================================
+   */
+
+  const authenticated =
+    await isAdminAuthenticated();
+
+  if (!authenticated) {
     return NextResponse.json(
       {
         success: false,
@@ -57,107 +64,68 @@ export async function POST(request: Request) {
     );
   }
 
+  /*
+   * ============================================================
+   * HANDLE VERCEL BLOB CLIENT UPLOAD
+   * ============================================================
+   *
+   * IMPORTANT:
+   *
+   * This endpoint does NOT receive the video itself.
+   *
+   * It only handles the authorization/token handshake.
+   *
+   * The actual video goes directly from the browser
+   * to Vercel Blob.
+   */
+
   try {
-    const formData = await request.formData();
-    const file = formData.get('file');
+    const body =
+      (await request.json()) as HandleUploadBody;
 
-    if (!(file instanceof File)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'No video file was provided.',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
+    const jsonResponse = await handleUpload({
+      body,
+      request,
 
-    if (file.size <= 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'The selected video is empty.',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
+      onBeforeGenerateToken: async (
+        pathname,
+      ) => {
+        console.log(
+          '[Video Upload] Generating upload token:',
+          pathname,
+        );
 
-    if (file.size > MAX_VIDEO_SIZE) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'Video is too large. Maximum video size is 500 MB.',
-        },
-        {
-          status: 413,
-        },
-      );
-    }
+        return {
+          allowedContentTypes:
+            ALLOWED_VIDEO_TYPES,
 
-    if (!ALLOWED_VIDEO_TYPES.has(file.type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'Unsupported video format. Please upload MP4, WebM, MOV, or OGG.',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
+          addRandomSuffix: true,
 
-    const extension = VIDEO_EXTENSIONS[file.type];
+          tokenPayload: JSON.stringify({
+            type: 'property-video',
+          }),
+        };
+      },
 
-    if (!extension) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'Unable to determine the video file extension.',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
+      onUploadCompleted: async ({
+        blob,
+      }) => {
+        console.log(
+          '[Video Upload] Upload completed:',
+          blob.url,
+        );
+      },
+    });
 
-    const videoBuffer = Buffer.from(
-      await file.arrayBuffer(),
-    );
-
-    const filename =
-      `properties/videos/${randomUUID()}.${extension}`;
-
-    const blob = await put(
-      filename,
-      videoBuffer,
+    return NextResponse.json(
+      jsonResponse,
       {
-        access: 'public',
-        addRandomSuffix: true,
-        contentType: file.type,
+        status: 200,
       },
     );
-
-    console.log(
-      '[Video Upload] Successfully uploaded:',
-      blob.url,
-    );
-
-    return NextResponse.json({
-      success: true,
-      url: blob.url,
-      filename: blob.pathname,
-      contentType: file.type,
-      size: file.size,
-    });
   } catch (error) {
     console.error(
-      '[Video Upload] Failed:',
+      '[Video Upload] Token generation failed:',
       error,
     );
 
@@ -167,10 +135,10 @@ export async function POST(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : 'Video upload failed.',
+            : 'Unable to authorize video upload.',
       },
       {
-        status: 500,
+        status: 400,
       },
     );
   }
