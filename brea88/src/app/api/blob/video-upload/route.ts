@@ -24,12 +24,6 @@ const VIDEO_EXTENSIONS: Record<string, string> = {
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  /*
-   * ============================================================
-   * RATE LIMIT
-   * ============================================================
-   */
-
   const limit = rateLimit(
     getClientKey(request, 'property-video-upload'),
     10,
@@ -51,12 +45,6 @@ export async function POST(request: Request) {
     );
   }
 
-  /*
-   * ============================================================
-   * ADMIN AUTHENTICATION
-   * ============================================================
-   */
-
   if (!(await isAdminAuthenticated())) {
     return NextResponse.json(
       {
@@ -69,44 +57,8 @@ export async function POST(request: Request) {
     );
   }
 
-  /*
-   * ============================================================
-   * CONTENT LENGTH CHECK
-   * ============================================================
-   */
-
-  const contentLength = request.headers.get('content-length');
-
-  if (contentLength) {
-    const size = Number(contentLength);
-
-    if (
-      !Number.isFinite(size) ||
-      size <= 0 ||
-      size > MAX_VIDEO_SIZE
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            'Video is too large. Maximum video size is 500 MB.',
-        },
-        {
-          status: 413,
-        },
-      );
-    }
-  }
-
   try {
-    /*
-     * ==========================================================
-     * READ FORM DATA
-     * ==========================================================
-     */
-
     const formData = await request.formData();
-
     const file = formData.get('file');
 
     if (!(file instanceof File)) {
@@ -120,12 +72,6 @@ export async function POST(request: Request) {
         },
       );
     }
-
-    /*
-     * ==========================================================
-     * FILE SIZE
-     * ==========================================================
-     */
 
     if (file.size <= 0) {
       return NextResponse.json(
@@ -152,12 +98,6 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-     * ==========================================================
-     * VIDEO TYPE
-     * ==========================================================
-     */
-
     if (!ALLOWED_VIDEO_TYPES.has(file.type)) {
       return NextResponse.json(
         {
@@ -170,12 +110,6 @@ export async function POST(request: Request) {
         },
       );
     }
-
-    /*
-     * ==========================================================
-     * DETERMINE EXTENSION
-     * ==========================================================
-     */
 
     const extension = VIDEO_EXTENSIONS[file.type];
 
@@ -192,21 +126,9 @@ export async function POST(request: Request) {
       );
     }
 
-    /*
-     * ==========================================================
-     * READ VIDEO
-     * ==========================================================
-     */
-
     const videoBuffer = Buffer.from(
       await file.arrayBuffer(),
     );
-
-    /*
-     * ==========================================================
-     * UPLOAD TO VERCEL BLOB
-     * ==========================================================
-     */
 
     const filename =
       `properties/videos/${randomUUID()}.${extension}`;
@@ -221,33 +143,18 @@ export async function POST(request: Request) {
       },
     );
 
-    /*
-     * ==========================================================
-     * SUCCESS
-     * ==========================================================
-     */
-
     console.log(
       '[Video Upload] Successfully uploaded:',
-      {
-        url: blob.url,
-        size: file.size,
-        contentType: file.type,
-      },
+      blob.url,
     );
 
-    return NextResponse.json(
-      {
-        success: true,
-        url: blob.url,
-        filename: blob.pathname,
-        contentType: file.type,
-        size: file.size,
-      },
-      {
-        status: 200,
-      },
-    );
+    return NextResponse.json({
+      success: true,
+      url: blob.url,
+      filename: blob.pathname,
+      contentType: file.type,
+      size: file.size,
+    });
   } catch (error) {
     console.error(
       '[Video Upload] Failed:',
