@@ -337,7 +337,9 @@ export default function AdminDashboardPage() {
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const router = useRouter();
-
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveCompleted, setSaveCompleted] = useState(false);
+  
   const [
   duplicateTarget,
   setDuplicateTarget,
@@ -3676,16 +3678,11 @@ const [
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-2 sm:flex-row sm:justify-end">
+               <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
-                    onClick={
-                      resetForm
-                    }
-                    disabled={
-                      status ===
-                      'loading'
-                    }
+                    onClick={resetForm}
+                    disabled={status === 'loading'}
                     className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                   >
                     Clear Form
@@ -3693,14 +3690,10 @@ const [
 
                   <button
                     type="submit"
-                    disabled={
-                      status ===
-                      'loading'
-                    }
+                    disabled={status === 'loading'}
                     className="flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {status ===
-                    'loading' ? (
+                    {status === 'loading' ? (
                       <>
                         <Loader2
                           size={17}
@@ -3708,28 +3701,58 @@ const [
                         />
                         Saving...
                       </>
-                    ) : editingId !==
-                      null ? (
+                    ) : editingId !== null ? (
                       <>
-                        <CheckCircle2
-                          size={17}
-                        />
+                        <CheckCircle2 size={17} />
                         Update Property
                       </>
                     ) : (
                       <>
-                        <PlusCircle
-                          size={17}
-                        />
+                        <PlusCircle size={17} />
                         Publish Property
                       </>
                     )}
                   </button>
                 </div>
-              </form>
-            </section>
-          )}
 
+                {/* Saving Property Modal */}
+                {status === 'loading' && (
+                  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-md">
+                    <div className="w-full max-w-sm rounded-3xl border border-white/20 bg-white p-8 text-center shadow-2xl">
+
+                      <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
+                        <div className="absolute inset-0 animate-ping rounded-2xl bg-blue-500/10" />
+
+                        <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 shadow-xl shadow-blue-500/30">
+                          <Loader2
+                            size={38}
+                            className="animate-spin text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <h2 className="mt-7 text-xl font-bold tracking-tight text-slate-900">
+                        Saving Property...
+                      </h2>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        Please wait while we save your property details.
+                      </p>
+
+                      <div className="mt-7 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400" />
+                      </div>
+
+                      <p className="mt-5 text-xs font-medium text-slate-400">
+                        Please don't close or refresh this page.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                </form>
+                </section>
+                )}
           {/* SETTINGS */}
           {activeSection === 'settings' && (
             <section className="mx-auto max-w-5xl space-y-6">
