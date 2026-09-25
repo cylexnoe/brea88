@@ -1680,16 +1680,29 @@ const uploadUnitImageToBlob = async (
   };
   /* =========================================================
     SAVE UNIT
-  ========================================================= */
+  ========================================================= */ 
+
+  const saveUnit = () => {
   const finalUnitType =
     unitForm.unitType === 'Custom'
       ? unitForm.customUnitType.trim()
-      : unitForm.unitType;
-      
+      : unitForm.unitType.trim();
 
-  const saveUnit = () => {
   if (!unitForm.unitType.trim()) {
     alert('Please select a Unit Type.');
+    return;
+  }
+
+  if (
+    unitForm.unitType === 'Custom' &&
+    !unitForm.customUnitType.trim()
+  ) {
+    alert('Please enter a Custom Unit Type.');
+    return;
+  }
+
+  if (!finalUnitType) {
+    alert('Please select or enter a valid Unit Type.');
     return;
   }
 
@@ -1705,10 +1718,6 @@ const uploadUnitImageToBlob = async (
     return;
   }
 
-  if (!finalUnitType) {
-    alert('Please enter a Custom Unit Type.');
-    return;
-  }
   const pendingUnit: PendingUnit = {
     id:
       editingUnitDraftId ??
