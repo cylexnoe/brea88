@@ -32,7 +32,63 @@ import {
   UserRound,
   Video,
   X,
+  ChevronDown,
 } from 'lucide-react';
+
+interface PropertyUnitImage {
+  id: number;
+  url: string;
+  sortOrder: number;
+}
+
+interface PropertyUnit {
+  id: number;
+  propertyId: number;
+  unitType: string;
+  unitName?: string | null;
+  price: string;
+  lotArea?: number | null;
+  floorArea?: number | null;
+  description?: string | null;
+  images?: PropertyUnitImage[];
+}
+
+interface Property {
+  id: number;
+  title: string;
+  tag: string;
+  price: string;
+  perMonth?: string | null;
+  location: string;
+  image: string;
+  images?: string[];
+  beds?: number | null;
+  baths?: number | null;
+  sqft?: number | null;
+  lotArea?: number | null;
+  category?: string | null;
+  propertyType?: string | null;
+  houseType?: string | null;
+  storey?: string | null;
+  developer?: string | null;
+  totalcp?: string | null;
+  bankFinancing?: string[] | null;
+  description?: string | null;
+  videoUrl?: string | null;
+
+  units?: PropertyUnit[];
+
+  agent?: {
+    id: number;
+    fullName: string;
+    email: string;
+    phone?: string | null;
+    role?: string;
+    messenger?: string | null;
+    facebook?: string | null;
+    slug?: string | null;
+  } | null;
+}
 
 interface Property {
   id: number;
@@ -449,15 +505,14 @@ const perMonth = showPerMonth
   ? formatPerMonth(property.perMonth)
   : '';
   
-console.log('🔥 PER MONTH DEBUG', {
-  title: property.title,
-  price: property.price,
-  perMonth: property.perMonth,
-  category: property.category,
-  propertyType: property.propertyType,
-  showPerMonth,
-  formattedPerMonth: perMonth,
-});
+
+const [propertyUnits, setPropertyUnits] = useState<PropertyUnit[]>([]);
+const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
+const [loadingUnits, setLoadingUnits] = useState(false);
+
+const [selectedUnitImageIndex, setSelectedUnitImageIndex] = useState(0);
+const [unitGalleryPreviewOpen, setUnitGalleryPreviewOpen] = useState(false);
+const [expandedUnitId, setExpandedUnitId] = useState<string | number | null>(null);
 
   const [
     selectedImageIndex,
@@ -545,6 +600,41 @@ console.log('🔥 PER MONTH DEBUG', {
     galleryImages[selectedImageIndex] ||
     property.image;
 
+  const selectedUnit = useMemo(() => {
+    if (!propertyUnits.length) {
+      return null;
+    }
+
+    if (selectedUnitId !== null) {
+      const matchedUnit = propertyUnits.find(
+        (unit) => unit.id === selectedUnitId
+      );
+
+      if (matchedUnit) {
+        return matchedUnit;
+      }
+    }
+
+    return propertyUnits[0];
+  }, [propertyUnits, selectedUnitId]);
+
+  const selectedUnitImages = useMemo(() => {
+    if (!selectedUnit) {
+      return [];
+    }
+
+    const images = (selectedUnit.images || [])
+      .map((image) => image.url)
+      .filter(Boolean);
+
+    return Array.from(new Set(images));
+  }, [selectedUnit]);
+
+  const currentUnitImage =
+    selectedUnitImages[selectedUnitImageIndex] ||
+    selectedUnitImages[0] ||
+    '';
+
   const videoUrl =
     property.videoUrl?.trim() || '';
 
@@ -584,28 +674,27 @@ console.log('🔥 PER MONTH DEBUG', {
    * Lock page scrolling whenever
    * modal/gallery is open.
    */
-  useEffect(() => {
-    if (
-      !modal &&
-      !galleryPreviewOpen
-    ) {
-      return;
-    }
+    useEffect(() => {
+      if (
+        !modal &&
+        !galleryPreviewOpen &&
+        !unitGalleryPreviewOpen
+      ) {
+        return;
+      }
 
-    const originalOverflow =
-      document.body.style.overflow;
+      const previousOverflow = document.body.style.overflow;
 
-    document.body.style.overflow =
-      'hidden';
+      document.body.style.overflow = 'hidden';
 
-    return () => {
-      document.body.style.overflow =
-        originalOverflow;
-    };
-  }, [
-    modal,
-    galleryPreviewOpen,
-  ]);
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }, [
+      modal,
+      galleryPreviewOpen,
+      unitGalleryPreviewOpen,
+    ]);
 
   /*
    * Close Agent dropdown when clicking outside.
@@ -645,58 +734,62 @@ console.log('🔥 PER MONTH DEBUG', {
    * Keyboard controls.
    */
   useEffect(() => {
-    if (
-      !modal &&
-      !galleryPreviewOpen
-    ) {
-      return;
-    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (unitGalleryPreviewOpen) {
+        if (event.key === 'Escape') {
+          closeUnitGalleryPreview();
+          return;
+        }
 
-    function handleKeyDown(
-      event: KeyboardEvent,
-    ) {
-      if (event.key === 'Escape') {
-        if (galleryPreviewOpen) {
-          closeGalleryPreview();
-        } else if (modal) {
-          closeModal();
+        if (event.key === 'ArrowLeft') {
+          previousUnitImage();
+          return;
+        }
+
+        if (event.key === 'ArrowRight') {
+          nextUnitImage();
+          return;
         }
 
         return;
       }
 
-      if (
-        galleryPreviewOpen &&
-        galleryImages.length > 1
-      ) {
-        if (
-          event.key === 'ArrowLeft'
-        ) {
-          previousImage();
+      if (unitGalleryPreviewOpen) {
+        if (event.key === 'Escape') {
+          closeUnitGalleryPreview();
+          return;
         }
 
-        if (
-          event.key === 'ArrowRight'
-        ) {
-          nextImage();
+        if (event.key === 'ArrowLeft') {
+          previousUnitImage();
+          return;
+        }
+
+        if (event.key === 'ArrowRight') {
+          nextUnitImage();
+          return;
+        }
+
+        return;
+      }
+
+      if (modal) {
+        if (event.key === 'Escape') {
+          closeModal();
         }
       }
-    }
+    };
 
-    window.addEventListener(
-      'keydown',
-      handleKeyDown,
-    );
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener(
-        'keydown',
-        handleKeyDown,
-      );
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
-    modal,
+    unitGalleryPreviewOpen,
     galleryPreviewOpen,
+    modal,
+    selectedUnitImages.length,
     galleryImages.length,
   ]);
 
@@ -761,7 +854,111 @@ console.log('🔥 PER MONTH DEBUG', {
   setModal('details');
 
   void loadAgents();
-}
+  void loadUnits();
+  }
+
+  const loadUnits = async () => {
+  setLoadingUnits(true);
+
+  try {
+    const response = await fetch(
+      `/api/properties/${property.id}/units`,
+      {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'include',
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        'Failed to load property units.'
+      );
+    }
+
+    const data = await response.json();
+
+    const fetchedUnits: PropertyUnit[] =
+      Array.isArray(data)
+        ? data
+        : Array.isArray(data?.units)
+          ? data.units
+          : [];
+
+    console.log(
+      '[PropertyCard] ===== UNIT DEBUG ====='
+    );
+
+    console.log(
+      '[PropertyCard] Number of units:',
+      fetchedUnits.length
+    );
+
+    fetchedUnits.forEach((unit, index) => {
+      console.log(
+        `[PropertyCard] UNIT ${index + 1}:`,
+        {
+          id: unit.id,
+          unitType: unit.unitType,
+          unitName: unit.unitName,
+          price: unit.price,
+          lotArea: unit.lotArea,
+          floorArea: unit.floorArea,
+          description: unit.description,
+          images: unit.images,
+        }
+      );
+
+      console.log(
+        `[PropertyCard] UNIT ${index + 1} IMAGE URLS:`,
+        (unit.images ?? []).map(
+          (image) => image.url
+        )
+      );
+    });
+
+    console.log(
+      '[PropertyCard] FULL UNIT DATA:',
+      JSON.stringify(
+        fetchedUnits,
+        null,
+        2
+      )
+    );
+
+    console.log(
+      '[PropertyCard] ======================='
+    );
+
+    setPropertyUnits(fetchedUnits);
+
+    if (fetchedUnits.length > 0) {
+      setSelectedUnitId((currentId) => {
+        const stillExists = fetchedUnits.some(
+          (unit) => unit.id === currentId
+        );
+
+        return stillExists
+          ? currentId
+          : fetchedUnits[0].id;
+      });
+    } else {
+      setSelectedUnitId(null);
+    }
+
+    setSelectedUnitImageIndex(0);
+  } catch (error) {
+    console.error(
+      'Failed to load property units:',
+      error
+    );
+
+    setPropertyUnits([]);
+    setSelectedUnitId(null);
+  } finally {
+    setLoadingUnits(false);
+  }
+};
 
 useEffect(() => {
   if (!autoOpen) {
@@ -786,6 +983,7 @@ useEffect(() => {
 
     // Load agents without blocking the modal
     void loadAgents();
+    void loadUnits();
   }, 500);
 
   return () => {
@@ -829,6 +1027,7 @@ useEffect(() => {
     setSubmitSuccess(false);
     setSubmitError('');
     setAgentDropdownOpen(false);
+    setUnitGalleryPreviewOpen(false);
   }
 
   function openGalleryPreview(
@@ -884,6 +1083,48 @@ useEffect(() => {
           galleryImages.length) %
         galleryImages.length,
     );
+  }
+
+  function nextUnitImage(event?: React.MouseEvent) {
+    event?.stopPropagation();
+
+    if (selectedUnitImages.length <= 1) {
+      return;
+    }
+
+    setSelectedUnitImageIndex((current) =>
+      current >= selectedUnitImages.length - 1
+        ? 0
+        : current + 1
+    );
+  }
+
+  function previousUnitImage(event?: React.MouseEvent) {
+    event?.stopPropagation();
+
+    if (selectedUnitImages.length <= 1) {
+      return;
+    }
+
+    setSelectedUnitImageIndex((current) =>
+      current <= 0
+        ? selectedUnitImages.length - 1
+        : current - 1
+    );
+  }
+
+  function openUnitGalleryPreview(index: number) {
+    setSelectedUnitImageIndex(index);
+    setUnitGalleryPreviewOpen(true);
+  }
+
+  function closeUnitGalleryPreview() {
+    setUnitGalleryPreviewOpen(false);
+  }
+
+  function selectUnit(unitId: number) {
+    setSelectedUnitId(unitId);
+    setSelectedUnitImageIndex(0);
   }
 
   async function submitInquiry(
@@ -2022,6 +2263,250 @@ useEffect(() => {
                   )}
                 </div>
 
+                {propertyUnits.length > 0 && (
+                <section>
+                  <SectionTitle
+                    icon={<Building2 size={17} />}
+                    title="Unit Types"
+                  />
+
+                  <div className="mt-4">
+                    <div className="flex flex-wrap gap-2">
+                      {propertyUnits.map((unit) => {
+                        const isExpanded = expandedUnitId === unit.id;
+
+                        return (
+                          <button
+                            key={unit.id}
+                            type="button"
+                            onClick={() => {
+                              setExpandedUnitId(
+                                isExpanded ? null : unit.id
+                              );
+
+                              if (!isExpanded) {
+                                setSelectedUnitId(unit.id);
+                                setSelectedUnitImageIndex(0);
+                              }
+                            }}
+                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all duration-200 ${
+                              isExpanded
+                                ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+                            }`}
+                          >
+                            
+
+                            <span>
+                              {unit.unitType?.trim() ||
+                                unit.unitName}
+                            </span>
+
+                            <ChevronDown
+                              size={14}
+                              className={`transition-transform duration-200 ${
+                                isExpanded
+                                  ? 'rotate-180'
+                                  : ''
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4 space-y-4">
+                      {propertyUnits.map((unit) => {
+                        const isExpanded =
+                          expandedUnitId === unit.id;
+
+                        if (!isExpanded) {
+                          return null;
+                        }
+
+                        const unitImages = [
+                          ...(unit.images ?? []),
+                        ]
+                          .sort(
+                            (a, b) =>
+                              a.sortOrder - b.sortOrder
+                          )
+                          .filter(
+                            (image) =>
+                              typeof image.url === 'string' &&
+                              image.url.trim() !== ''
+                          );
+
+                        const displayName =
+                          unit.unitName?.trim() ||
+                          unit.unitType;
+
+                        return (
+                          <div
+                            key={unit.id}
+                            className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-slate-900/5"
+                          >
+                            {/* UNIT HEADER */}
+                            <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-cyan-50 px-4 py-4 sm:px-5">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-700 shadow-sm">
+                                    <Building2 size={12} />
+
+                                    {unit.unitType}
+                                  </div>
+
+                                  <h3 className="break-words text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
+                                    {displayName}
+                                  </h3>
+                                </div>
+
+                                <div className="shrink-0 text-right">
+                                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                                    Price
+                                  </p>
+
+                                  <p className="mt-0.5 text-base font-extrabold text-blue-700 sm:text-lg">
+                                    ₱
+                                    {Number(
+                                      unit.price || 0
+                                    ).toLocaleString(
+                                      'en-PH'
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {unit.description && (
+                                <p className="mt-3 whitespace-pre-line break-words text-sm leading-6 text-slate-600">
+                                  {unit.description}
+                                </p>
+                              )}
+                            </div>
+                            {/* UNIT SPECIFICATIONS */}
+                            {(unit.lotArea != null ||
+                              unit.floorArea != null) && (
+                              <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-5">
+                                <div className="grid grid-cols-2 gap-2">
+                                  {unit.lotArea != null && (
+                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                                        Lot Area
+                                      </p>
+
+                                      <p className="mt-1 text-sm font-extrabold text-slate-800">
+                                        {Number(
+                                          unit.lotArea
+                                        ).toLocaleString(
+                                          'en-PH'
+                                        )}{' '}
+                                        sqm
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {unit.floorArea != null && (
+                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                                        Floor Area
+                                      </p>
+
+                                      <p className="mt-1 text-sm font-extrabold text-slate-800">
+                                        {Number(
+                                          unit.floorArea
+                                        ).toLocaleString(
+                                          'en-PH'
+                                        )}{' '}
+                                        sqm
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            {/* UNIT PHOTOS */}
+                            {unitImages.length > 0 ? (
+                              <div className="p-3 sm:p-4">
+                                <div className="mb-3 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <ImageIcon
+                                      size={16}
+                                      className="text-blue-600"
+                                    />
+
+                                    <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-500">
+                                      Unit Photos
+                                    </span>
+                                  </div>
+
+                                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">
+                                    {unitImages.length}{' '}
+                                    {unitImages.length === 1
+                                      ? 'Photo'
+                                      : 'Photos'}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                  {unitImages.map(
+                                    (image, index) => (
+                                      <button
+                                        key={`${unit.id}-${image.id}-${index}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedUnitId(
+                                            unit.id
+                                          );
+                                          setSelectedUnitImageIndex(
+                                            index
+                                          );
+                                          openUnitGalleryPreview(
+                                            index
+                                          );
+                                        }}
+                                        className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 text-left"
+                                      >
+                                        <img
+                                          src={image.url}
+                                          alt={`${displayName} - Unit Photo ${
+                                            index + 1
+                                          }`}
+                                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                          loading="lazy"
+                                          onError={(event) => {
+                                            event.currentTarget.style.display =
+                                              'none';
+                                          }}
+                                        />
+
+                                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+
+                                        <div className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-1 text-[9px] font-bold text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
+                                          View
+                                        </div>
+                                      </button>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="px-4 py-6 text-center sm:px-5">
+                                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                                  <ImageIcon size={18} />
+                                </div>
+
+                                <p className="mt-2 text-xs font-semibold text-slate-500">
+                                  No unit photos available.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+              )}
                 {/* QUICK ACTIONS */}
                 <section>
                   <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
@@ -2088,354 +2573,423 @@ useEffect(() => {
                   </div>
                 </section>
 
+
+
                 {/* PROPERTY DETAILS */}
                 <section>
                   <SectionTitle
-                    icon={
-                      <Building2 size={17} />
-                    }
+                    icon={<Building2 size={17} />}
                     title="Property Details"
                   />
 
                   <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-100">
                     <DetailRow
                       label="Category"
-                      value={
-                        property.category
-                      }
+                      value={property.category}
                     />
 
                     <DetailRow
                       label="Property Type"
-                      value={
-                        property.propertyType
-                      }
+                      value={property.propertyType}
                     />
 
                     <DetailRow
                       label="House Type"
-                      value={
-                        property.houseType
-                      }
+                      value={property.houseType}
                     />
 
                     <DetailRow
                       label="Storey"
-                      value={
-                        property.storey
-                      }
+                      value={property.storey}
                     />
                   </div>
                 </section>
+                  {/* DEVELOPER */}
+                  {property.developer && (
+                    <section>
+                      <SectionTitle
+                        icon={
+                          <Building2 size={17} />
+                        }
+                        title="Developer"
+                      />
 
-                {/* DEVELOPER */}
-                {property.developer && (
+                      <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                        <p className="text-sm font-bold text-slate-800">
+                          {property.developer}
+                        </p>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* DESCRIPTION */}
+                  {property.description && (
+                    <section>
+                      <SectionTitle
+                        icon={
+                          <FileText size={17} />
+                        }
+                        title="Description"
+                      />
+
+                      <div className="relative mt-4">
+                        <div
+                          className={`property-description overflow-hidden text-sm leading-7 text-slate-600 transition-[max-height] duration-500 ease-in-out ${
+                            descriptionExpanded
+                              ? 'max-h-[2000px]'
+                              : 'max-h-[180px]'
+                          }`}
+                        >
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html:
+                                property.description
+                                  .replace(
+                                    /&nbsp;/g,
+                                    ' ',
+                                  )
+                                  .replace(
+                                    /&amp;/g,
+                                    '&',
+                                  )
+                                  .replace(
+                                    /&quot;/g,
+                                    '"',
+                                  )
+                                  .replace(
+                                    /&#39;/g,
+                                    "'",
+                                  ),
+                            }}
+                          />
+                        </div>
+
+                        {!descriptionExpanded && (
+                          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white via-white/90 to-transparent" />
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDescriptionExpanded(
+                            (current) => !current,
+                          )
+                        }
+                        className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-[#a47d3c] transition-colors duration-200 hover:text-[#8f6a31]"
+                      >
+                        {descriptionExpanded
+                          ? 'See Less'
+                          : 'See More'}
+
+                        <ChevronRight
+                          size={15}
+                          className={`transition-transform duration-300 ${
+                            descriptionExpanded
+                              ? '-rotate-90'
+                              : 'rotate-90'
+                          }`}
+                        />
+                      </button>
+                    </section>
+                  )}
+
+                  {/* BANK FINANCING */}
+                  {(property.totalcp ||
+                    property.bankFinancing
+                      ?.length) && (
                   <section>
                     <SectionTitle
-                      icon={
-                        <Building2 size={17} />
-                      }
-                      title="Developer"
+                      icon={<Landmark size={17} />}
+                      title="Bank Financing"
                     />
 
-                    <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-                      <p className="text-sm font-bold text-slate-800">
-                        {property.developer}
-                      </p>
+                    <div className="mt-4 space-y-4">
+                      {property.totalcp && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            Total Contract Price
+                          </span>
+
+                          <span className="text-right text-sm font-bold text-slate-800">
+                            {formatPrice(property.totalcp)}
+                          </span>
+                        </div>
+                      )}
+
+                      {property.bankFinancing?.length ? (
+                        <div>
+                          <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            Accepted Financing
+                          </p>
+
+                          <div className="flex flex-wrap gap-2">
+                            {property.bankFinancing.map(
+                              (financing, index) => (
+                                <span
+                                  key={`${financing}-${index}`}
+                                  className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:border-emerald-300 hover:bg-emerald-100"
+                                >
+                                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                                    <CheckCircle2
+                                      size={13}
+                                      className="text-emerald-600"
+                                    />
+                                  </span>
+
+                                  <span>{financing}</span>
+                                </span>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </section>
-                )}
+                  )}
 
-                {/* DESCRIPTION */}
-                {property.description && (
+                  {/* PROPERTY VIDEO */}
                   <section>
                     <SectionTitle
-                      icon={
-                        <FileText size={17} />
-                      }
-                      title="Description"
+                      icon={<Video size={17} />}
+                      title="Property Video"
                     />
 
-                    <div className="relative mt-4">
-                      <div
-                        className={`property-description overflow-hidden text-sm leading-7 text-slate-600 transition-[max-height] duration-500 ease-in-out ${
-                          descriptionExpanded
-                            ? 'max-h-[2000px]'
-                            : 'max-h-[180px]'
+                    <div className="mt-4">
+                      {renderVideo()}
+                    </div>
+                  </section>
+
+                  {/* PROPERTY GALLERY */}
+                  {galleryImages.length > 0 && (
+                    <section>
+                      <SectionTitle
+                        icon={
+                          <ImageIcon size={17} />
+                        }
+                        title="Property Gallery"
+                      />
+
+                      <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                        {galleryImages.map(
+                          (image, index) => (
+                            <button
+                              type="button"
+                              key={`${image}-${index}`}
+                              onClick={() =>
+                                openGalleryPreview(
+                                  index,
+                                )
+                              }
+                              aria-label={`Open image ${
+                                index + 1
+                              } in fullscreen`}
+                              className={`group relative aspect-square overflow-hidden rounded-xl ${
+                                selectedImageIndex ===
+                                index
+                                  ? 'ring-2 ring-[#c9a96e] ring-offset-2'
+                                  : ''
+                              }`}
+                            >
+                              <img
+                                src={image}
+                                alt={`${property.title} ${
+                                  index + 1
+                                }`}
+                                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                              />
+
+                              <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/15" />
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    </section>
+                  )}
+
+                  <div className="h-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FULLSCREEN GALLERY PREVIEW */}
+          {galleryPreviewOpen && (
+            <div
+              className="fixed inset-0 z-[200000] flex items-center justify-center bg-black/95 p-3 sm:p-6"
+              onMouseDown={(event) => {
+                if (
+                  event.target ===
+                  event.currentTarget
+                ) {
+                  closeGalleryPreview();
+                }
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeGalleryPreview}
+                aria-label="Close image preview"
+                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-6 sm:top-6"
+              >
+                <X size={22} />
+              </button>
+
+              <div className="absolute left-1/2 top-5 z-20 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md">
+                {selectedImageIndex + 1} /{' '}
+                {galleryImages.length}
+              </div>
+
+              {galleryImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={previousImage}
+                  aria-label="Previous image"
+                  className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:left-6 sm:h-12 sm:w-12"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+              )}
+
+              <div className="flex h-full w-full items-center justify-center">
+                <img
+                  src={currentImage}
+                  alt={`${property.title} ${
+                    selectedImageIndex + 1
+                  }`}
+                  onClick={(event) =>
+                    event.stopPropagation()
+                  }
+                  className="max-h-[90vh] max-w-[94vw] select-none object-contain sm:max-h-[88vh] sm:max-w-[90vw]"
+                />
+              </div>
+
+              {galleryImages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={nextImage}
+                  aria-label="Next image"
+                  className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md sm:right-6 sm:h-12 sm:w-12"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              )}
+
+              {galleryImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 z-20 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-2xl bg-black/45 p-2 backdrop-blur-md">
+                  {galleryImages.map(
+                    (image, index) => (
+                      <button
+                        key={`${image}-preview-${index}`}
+                        type="button"
+                        onClick={() =>
+                          setSelectedImageIndex(
+                            index,
+                          )
+                        }
+                        aria-label={`View image ${
+                          index + 1
+                        }`}
+                        className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16 ${
+                          selectedImageIndex ===
+                          index
+                            ? 'border-[#c9a96e] opacity-100'
+                            : 'border-transparent opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html:
-                              property.description
-                                .replace(
-                                  /&nbsp;/g,
-                                  ' ',
-                                )
-                                .replace(
-                                  /&amp;/g,
-                                  '&',
-                                )
-                                .replace(
-                                  /&quot;/g,
-                                  '"',
-                                )
-                                .replace(
-                                  /&#39;/g,
-                                  "'",
-                                ),
-                          }}
+                        <img
+                          src={image}
+                          alt=""
+                          className="h-full w-full object-cover"
                         />
-                      </div>
-
-                      {!descriptionExpanded && (
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white via-white/90 to-transparent" />
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDescriptionExpanded(
-                          (current) => !current,
-                        )
-                      }
-                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-[#a47d3c] transition-colors duration-200 hover:text-[#8f6a31]"
-                    >
-                      {descriptionExpanded
-                        ? 'See Less'
-                        : 'See More'}
-
-                      <ChevronRight
-                        size={15}
-                        className={`transition-transform duration-300 ${
-                          descriptionExpanded
-                            ? '-rotate-90'
-                            : 'rotate-90'
-                        }`}
-                      />
-                    </button>
-                  </section>
-                )}
-
-                {/* BANK FINANCING */}
-                {(property.totalcp ||
-                  property.bankFinancing
-                    ?.length) && (
-                 <section>
-                  <SectionTitle
-                    icon={<Landmark size={17} />}
-                    title="Bank Financing"
-                  />
-
-                  <div className="mt-4 space-y-4">
-                    {property.totalcp && (
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                          Total Contract Price
-                        </span>
-
-                        <span className="text-right text-sm font-bold text-slate-800">
-                          {formatPrice(property.totalcp)}
-                        </span>
-                      </div>
-                    )}
-
-                    {property.bankFinancing?.length ? (
-                      <div>
-                        <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                          Accepted Financing
-                        </p>
-
-                        <div className="flex flex-wrap gap-2">
-                          {property.bankFinancing.map(
-                            (financing, index) => (
-                              <span
-                                key={`${financing}-${index}`}
-                                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:border-emerald-300 hover:bg-emerald-100"
-                              >
-                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                                  <CheckCircle2
-                                    size={13}
-                                    className="text-emerald-600"
-                                  />
-                                </span>
-
-                                <span>{financing}</span>
-                              </span>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </section>
-                )}
-
-                {/* PROPERTY VIDEO */}
-                <section>
-                  <SectionTitle
-                    icon={<Video size={17} />}
-                    title="Property Video"
-                  />
-
-                  <div className="mt-4">
-                    {renderVideo()}
-                  </div>
-                </section>
-
-                {/* PROPERTY GALLERY */}
-                {galleryImages.length > 0 && (
-                  <section>
-                    <SectionTitle
-                      icon={
-                        <ImageIcon size={17} />
-                      }
-                      title="Property Gallery"
-                    />
-
-                    <div className="mt-4 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-                      {galleryImages.map(
-                        (image, index) => (
-                          <button
-                            type="button"
-                            key={`${image}-${index}`}
-                            onClick={() =>
-                              openGalleryPreview(
-                                index,
-                              )
-                            }
-                            aria-label={`Open image ${
-                              index + 1
-                            } in fullscreen`}
-                            className={`group relative aspect-square overflow-hidden rounded-xl ${
-                              selectedImageIndex ===
-                              index
-                                ? 'ring-2 ring-[#c9a96e] ring-offset-2'
-                                : ''
-                            }`}
-                          >
-                            <img
-                              src={image}
-                              alt={`${property.title} ${
-                                index + 1
-                              }`}
-                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                            />
-
-                            <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/15" />
-                          </button>
-                        ),
-                      )}
-                    </div>
-                  </section>
-                )}
-
-                <div className="h-1" />
-              </div>
+                      </button>
+                    ),
+                  )}
+                </div>
+              )}
             </div>
-          </div>
+            
+          )}
+          {unitGalleryPreviewOpen &&
+            selectedUnit &&
+            selectedUnitImages.length > 0 && (
+              <div
+                className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/95 p-3 sm:p-6"
+                onClick={closeUnitGalleryPreview}
+              >
+                {/* CLOSE */}
+                <button
+                  type="button"
+                  onClick={closeUnitGalleryPreview}
+                  className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
+                  aria-label="Close unit gallery"
+                >
+                  <X size={21} />
+                </button>
+
+                {/* UNIT LABEL */}
+                <div className="absolute left-4 top-4 z-20 max-w-[70%] sm:left-6 sm:top-6">
+                  <div className="rounded-2xl bg-black/40 px-4 py-3 backdrop-blur-md">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+                      Unit Photos
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-white">
+                      {selectedUnit.unitName ||
+                        selectedUnit.unitType}
+                    </p>
+                  </div>
+                </div>
+
+                {/* IMAGE */}
+                <div
+                  className="relative flex h-full w-full items-center justify-center"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <img
+                    src={currentUnitImage}
+                    alt={
+                      selectedUnit.unitName ||
+                      selectedUnit.unitType
+                    }
+                    className="max-h-[88vh] max-w-[94vw] rounded-xl object-contain shadow-2xl"
+                  />
+
+                  {selectedUnitImages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={previousUnitImage}
+                        className="absolute left-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:left-4"
+                        aria-label="Previous unit photo"
+                      >
+                        <ChevronLeft size={23} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={nextUnitImage}
+                        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-4"
+                        aria-label="Next unit photo"
+                      >
+                        <ChevronRight size={23} />
+                      </button>
+                    </>
+                  )}
+
+                  {/* COUNTER */}
+                  {selectedUnitImages.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md">
+                      {selectedUnitImageIndex + 1} /{' '}
+                      {selectedUnitImages.length}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
         </div>
-
-        {/* FULLSCREEN GALLERY PREVIEW */}
-        {galleryPreviewOpen && (
-          <div
-            className="fixed inset-0 z-[200000] flex items-center justify-center bg-black/95 p-3 sm:p-6"
-            onMouseDown={(event) => {
-              if (
-                event.target ===
-                event.currentTarget
-              ) {
-                closeGalleryPreview();
-              }
-            }}
-          >
-            <button
-              type="button"
-              onClick={closeGalleryPreview}
-              aria-label="Close image preview"
-              className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-6 sm:top-6"
-            >
-              <X size={22} />
-            </button>
-
-            <div className="absolute left-1/2 top-5 z-20 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md">
-              {selectedImageIndex + 1} /{' '}
-              {galleryImages.length}
-            </div>
-
-            {galleryImages.length > 1 && (
-              <button
-                type="button"
-                onClick={previousImage}
-                aria-label="Previous image"
-                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 sm:left-6 sm:h-12 sm:w-12"
-              >
-                <ChevronLeft size={24} />
-              </button>
-            )}
-
-            <div className="flex h-full w-full items-center justify-center">
-              <img
-                src={currentImage}
-                alt={`${property.title} ${
-                  selectedImageIndex + 1
-                }`}
-                onClick={(event) =>
-                  event.stopPropagation()
-                }
-                className="max-h-[90vh] max-w-[94vw] select-none object-contain sm:max-h-[88vh] sm:max-w-[90vw]"
-              />
-            </div>
-
-            {galleryImages.length > 1 && (
-              <button
-                type="button"
-                onClick={nextImage}
-                aria-label="Next image"
-                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md sm:right-6 sm:h-12 sm:w-12"
-              >
-                <ChevronRight size={24} />
-              </button>
-            )}
-
-            {galleryImages.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 z-20 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-2xl bg-black/45 p-2 backdrop-blur-md">
-                {galleryImages.map(
-                  (image, index) => (
-                    <button
-                      key={`${image}-preview-${index}`}
-                      type="button"
-                      onClick={() =>
-                        setSelectedImageIndex(
-                          index,
-                        )
-                      }
-                      aria-label={`View image ${
-                        index + 1
-                      }`}
-                      className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition sm:h-16 sm:w-16 ${
-                        selectedImageIndex ===
-                        index
-                          ? 'border-[#c9a96e] opacity-100'
-                          : 'border-transparent opacity-60 hover:opacity-100'
-                      }`}
-                    >
-                      <img
-                        src={image}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  ),
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
+      );
+    }
 
   return (
     <>

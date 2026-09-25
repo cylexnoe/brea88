@@ -35,7 +35,7 @@ model Agent {
 }
 
 model Property {
-  id            Int       @id @default(autoincrement())
+  id            Int                @id @default(autoincrement())
   title         String
   tag           String
   price         String
@@ -44,23 +44,24 @@ model Property {
   beds          Int?
   baths         Int?
   sqft          Float?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  images        String[]  @default([])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  images        String[]           @default([])
   agentId       Int?
   category      String?
   propertyType  String?
   houseType     String?
   storey        String?
   developer     String?
-  bankFinancing String[]  @default([])
+  bankFinancing String[]           @default([])
   description   String?
   videoUrl      String?
   totalcp       String?
   lotArea       Float?
   perMonth      String?
   inquiries     Inquiry[]
-  agent         Agent?    @relation(fields: [agentId], references: [id])
+  agent         Agent?             @relation(fields: [agentId], references: [id])
+  units         PropertyUnit[]
 
   @@index([tag])
   @@index([category])
@@ -69,6 +70,38 @@ model Property {
   @@index([agentId])
   @@index([developer])
   @@map("properties")
+}
+
+model PropertyUnit {
+  id          Int                 @id @default(autoincrement())
+  propertyId Int
+  unitType    String
+  unitName    String?
+  price       String
+  lotArea     Float?
+  floorArea   Float?
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  property    Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  images      PropertyUnitImage[]
+
+  @@index([propertyId])
+  @@index([unitType])
+  @@map("property_units")
+}
+
+model PropertyUnitImage {
+  id        Int         @id @default(autoincrement())
+  unitId    Int
+  url       String
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  unit      PropertyUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([unitId])
+  @@index([unitId, sortOrder])
+  @@map("property_unit_images")
 }
 
 model Inquiry {

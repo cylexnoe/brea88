@@ -399,6 +399,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Agent: 'Agent',
   Property: 'Property',
+  PropertyUnit: 'PropertyUnit',
+  PropertyUnitImage: 'PropertyUnitImage',
   Inquiry: 'Inquiry',
   PushSubscription: 'PushSubscription'
 } as const
@@ -416,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "agent" | "property" | "inquiry" | "pushSubscription"
+    modelProps: "agent" | "property" | "propertyUnit" | "propertyUnitImage" | "inquiry" | "pushSubscription"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -565,6 +567,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.PropertyCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.PropertyCountAggregateOutputType> | number
+        }
+      }
+    }
+    PropertyUnit: {
+      payload: Prisma.$PropertyUnitPayload<ExtArgs>
+      fields: Prisma.PropertyUnitFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PropertyUnitFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PropertyUnitFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>
+        }
+        findFirst: {
+          args: Prisma.PropertyUnitFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PropertyUnitFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>
+        }
+        findMany: {
+          args: Prisma.PropertyUnitFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>[]
+        }
+        create: {
+          args: Prisma.PropertyUnitCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>
+        }
+        createMany: {
+          args: Prisma.PropertyUnitCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PropertyUnitCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>[]
+        }
+        delete: {
+          args: Prisma.PropertyUnitDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>
+        }
+        update: {
+          args: Prisma.PropertyUnitUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>
+        }
+        deleteMany: {
+          args: Prisma.PropertyUnitDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PropertyUnitUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PropertyUnitUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>[]
+        }
+        upsert: {
+          args: Prisma.PropertyUnitUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitPayload>
+        }
+        aggregate: {
+          args: Prisma.PropertyUnitAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePropertyUnit>
+        }
+        groupBy: {
+          args: Prisma.PropertyUnitGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PropertyUnitGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PropertyUnitCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PropertyUnitCountAggregateOutputType> | number
+        }
+      }
+    }
+    PropertyUnitImage: {
+      payload: Prisma.$PropertyUnitImagePayload<ExtArgs>
+      fields: Prisma.PropertyUnitImageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PropertyUnitImageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PropertyUnitImageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>
+        }
+        findFirst: {
+          args: Prisma.PropertyUnitImageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PropertyUnitImageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>
+        }
+        findMany: {
+          args: Prisma.PropertyUnitImageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>[]
+        }
+        create: {
+          args: Prisma.PropertyUnitImageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>
+        }
+        createMany: {
+          args: Prisma.PropertyUnitImageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PropertyUnitImageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>[]
+        }
+        delete: {
+          args: Prisma.PropertyUnitImageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>
+        }
+        update: {
+          args: Prisma.PropertyUnitImageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>
+        }
+        deleteMany: {
+          args: Prisma.PropertyUnitImageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PropertyUnitImageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PropertyUnitImageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>[]
+        }
+        upsert: {
+          args: Prisma.PropertyUnitImageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PropertyUnitImagePayload>
+        }
+        aggregate: {
+          args: Prisma.PropertyUnitImageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePropertyUnitImage>
+        }
+        groupBy: {
+          args: Prisma.PropertyUnitImageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PropertyUnitImageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PropertyUnitImageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PropertyUnitImageCountAggregateOutputType> | number
         }
       }
     }
@@ -805,6 +955,33 @@ export const PropertyScalarFieldEnum = {
 } as const
 
 export type PropertyScalarFieldEnum = (typeof PropertyScalarFieldEnum)[keyof typeof PropertyScalarFieldEnum]
+
+
+export const PropertyUnitScalarFieldEnum = {
+  id: 'id',
+  propertyId: 'propertyId',
+  unitType: 'unitType',
+  unitName: 'unitName',
+  price: 'price',
+  lotArea: 'lotArea',
+  floorArea: 'floorArea',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PropertyUnitScalarFieldEnum = (typeof PropertyUnitScalarFieldEnum)[keyof typeof PropertyUnitScalarFieldEnum]
+
+
+export const PropertyUnitImageScalarFieldEnum = {
+  id: 'id',
+  unitId: 'unitId',
+  url: 'url',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt'
+} as const
+
+export type PropertyUnitImageScalarFieldEnum = (typeof PropertyUnitImageScalarFieldEnum)[keyof typeof PropertyUnitImageScalarFieldEnum]
 
 
 export const InquiryScalarFieldEnum = {
@@ -1082,6 +1259,8 @@ export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaC
 export type GlobalOmitConfig = {
   agent?: Prisma.AgentOmit
   property?: Prisma.PropertyOmit
+  propertyUnit?: Prisma.PropertyUnitOmit
+  propertyUnitImage?: Prisma.PropertyUnitImageOmit
   inquiry?: Prisma.InquiryOmit
   pushSubscription?: Prisma.PushSubscriptionOmit
 }

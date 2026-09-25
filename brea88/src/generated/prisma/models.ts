@@ -10,6 +10,8 @@
  */
 export type * from './models/Agent'
 export type * from './models/Property'
+export type * from './models/PropertyUnit'
+export type * from './models/PropertyUnitImage'
 export type * from './models/Inquiry'
 export type * from './models/PushSubscription'
 export type * from './commonInputTypes'

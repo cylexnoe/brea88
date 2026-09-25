@@ -113,6 +113,84 @@ interface ImageItem {
   file?: File;
   source: 'upload' | 'url';
 }
+interface PropertyUnitImage {
+  id: number;
+  url: string;
+  sortOrder: number;
+}
+
+interface PropertyUnit {
+  id: number;
+  propertyId: number;
+  unitType: string;
+  unitName: string | null;
+  price: string;
+  lotArea: number | null;
+  floorArea: number | null;
+  description: string | null;
+  images: PropertyUnitImage[];
+}
+
+interface UnitImageItem {
+  id: string;
+  url: string;
+  file?: File;
+  source: 'upload' | 'url';
+}
+
+interface PendingUnit {
+  id: string;
+  existingId: number | null;
+  unitType: string;
+  unitName: string | null;
+  price: string;
+  lotArea: number | null;
+  floorArea: number | null;
+  description: string | null;
+  images: UnitImageItem[];
+}
+
+interface UnitFormData {
+  unitType: string;
+  customUnitType: string;
+  unitName: string;
+  price: string;
+  lotArea: string;
+  floorArea: string;
+  description: string;
+}
+
+const UNIT_TYPE_OPTIONS = [
+  'Studio',
+  'Studio-A',
+  'Studio-B',
+  '1BR',
+  '1BR-A',
+  '1BR-B',
+  '2BR',
+  '2BR-A',
+  '2BR-B',
+  '3BR',
+  '3BR-A',
+  '3BR-B',
+  'Penthouse',
+  'Loft',
+  'Townhouse',
+  'Custom',
+];
+
+const MAX_UNIT_IMAGES = 10;
+const MAX_UNIT_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const INITIAL_UNIT_FORM: UnitFormData = {
+  unitType: '',
+  customUnitType: '',
+  unitName: '',
+  price: '',
+  lotArea: '',
+  floorArea: '',
+  description: '',
+};
 
 interface Property {
   id?: number | string;
@@ -339,6 +417,35 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [saveCompleted, setSaveCompleted] = useState(false);
+  const [units, setUnits] = useState<PropertyUnit[]>([]);
+  const [pendingUnits, setPendingUnits] = useState<PendingUnit[]>([]);
+  const [pendingDeletedUnitIds, setPendingDeletedUnitIds] = useState<number[]>([]);
+  const [editingUnitDraftId, setEditingUnitDraftId] = useState<string | null>(null);
+
+
+const [unitForm, setUnitForm] =
+  useState<UnitFormData>(INITIAL_UNIT_FORM);
+
+const [unitImages, setUnitImages] =
+  useState<UnitImageItem[]>([]);
+
+const [unitEditorOpen, setUnitEditorOpen] =
+  useState(false);
+
+const [editingUnitId, setEditingUnitId] =
+  useState<number | null>(null);
+
+const [unitLoading, setUnitLoading] =
+  useState(false);
+
+const [unitSaving, setUnitSaving] =
+  useState(false);
+
+const [unitImageSource, setUnitImageSource] =
+  useState<'upload' | 'url'>('upload');
+
+const [unitImageUrl, setUnitImageUrl] =
+  useState('');
   
   const [
   duplicateTarget,
@@ -851,9 +958,33 @@ const [
     }
   }
 
+
   function resetForm() {
     images.forEach((image) => {
-      if (image.source === 'upload') {
+      if (
+        image.source === 'upload' &&
+        image.url.startsWith('blob:')
+      ) {
+        URL.revokeObjectURL(image.url);
+      }
+    });
+
+    pendingUnits.forEach((unit) => {
+      unit.images.forEach((image) => {
+        if (
+          image.source === 'upload' &&
+          image.url.startsWith('blob:')
+        ) {
+          URL.revokeObjectURL(image.url);
+        }
+      });
+    });
+
+    unitImages.forEach((image) => {
+      if (
+        image.source === 'upload' &&
+        image.url.startsWith('blob:')
+      ) {
         URL.revokeObjectURL(image.url);
       }
     });
@@ -864,9 +995,28 @@ const [
     setImageSource('upload');
     setStatus('idle');
     setEditingId(null);
+
+    setVideoFile(null);
+    setVideoUploading(false);
+    setVideoUploadProgress(0);
+
+    setUnits([]);
+    setPendingUnits([]);
+    setPendingDeletedUnitIds([]);
+
+    setUnitForm(INITIAL_UNIT_FORM);
+    setUnitImages([]);
+    setUnitEditorOpen(false);
+    setEditingUnitId(null);
+    setEditingUnitDraftId(null);
+    setUnitImageSource('upload');
+    setUnitImageUrl('');
+    setUnitSaving(false);
   }
 
-  function editProperty(
+
+
+ async function editProperty(
     property: Property,
   ) {
     const id =
@@ -881,105 +1031,131 @@ const [
 
     setEditingId(id);
 
-    setFormData({
-      title: property.title || '',
-      category:
-        property.category ||
-        'House & Lot',
+    // Load Unit Types for this property
+    const numericPropertyId =
+      Number(id);
 
-      propertyType:
-        property.propertyType || '',
+    if (
+      Number.isSafeInteger(
+        numericPropertyId
+      ) &&
+      numericPropertyId > 0
+    ) {
+      await fetchUnits(
+        numericPropertyId
+      );
+    }
 
-      houseType:
-        property.houseType || '',
+  setFormData({
+    title: property.title || '',
 
-      storey:
-        property.storey !== null &&
-        property.storey !== undefined
-          ? String(property.storey)
-          : '',
+    category:
+      property.category ||
+      'House & Lot',
 
-      tag:
-        property.tag === 'Brokerage'
+    propertyType:
+      property.propertyType || '',
+
+    houseType:
+      property.houseType || '',
+
+    storey:
+      property.storey !== null &&
+      property.storey !== undefined
+        ? String(property.storey)
+        : '',
+
+    tag:
+      property.tag === 'Brokerage'
         ? 'For Sale'
         : property.tag || 'Residential',
 
-      price:
-        property.price !== null &&
-        property.price !== undefined
-          ? String(property.price)
-          : '',
-
-      perMonth:
-        property.perMonth !== null &&
-        property.perMonth !== undefined
-          ? String(property.perMonth)
-          : '',
-
-      location:
-        property.location || '',
-
-      beds:
-        property.beds !== null &&
-        property.beds !== undefined
-          ? String(property.beds)
-          : '',
-
-      baths:
-        property.baths !== null &&
-        property.baths !== undefined
-          ? String(property.baths)
-          : '',
-
-      sqft:
-        property.sqft !== null &&
-        property.sqft !== undefined
-          ? String(property.sqft)
-          : '',
-
-      lotArea:
-        property.lotArea !== null &&
-        property.lotArea !== undefined
-          ? String(property.lotArea)
+    price:
+      property.price !== null &&
+      property.price !== undefined
+        ? String(property.price)
         : '',
-        
-      developer: property.developer || '',
-      bankFinancing: Array.isArray(property.bankFinancing)
+
+    perMonth:
+      property.perMonth !== null &&
+      property.perMonth !== undefined
+        ? String(property.perMonth)
+        : '',
+
+    location:
+      property.location || '',
+
+    beds:
+      property.beds !== null &&
+      property.beds !== undefined
+        ? String(property.beds)
+        : '',
+
+    baths:
+      property.baths !== null &&
+      property.baths !== undefined
+        ? String(property.baths)
+        : '',
+
+    sqft:
+      property.sqft !== null &&
+      property.sqft !== undefined
+        ? String(property.sqft)
+        : '',
+
+    lotArea:
+      property.lotArea !== null &&
+      property.lotArea !== undefined
+        ? String(property.lotArea)
+        : '',
+
+    developer:
+      property.developer || '',
+
+    bankFinancing:
+      Array.isArray(
+        property.bankFinancing
+      )
         ? property.bankFinancing.filter(Boolean)
         : [],
-      customBank: '',
-      description: property.description || '',
-      videoUrl: property.videoUrl || '',
-    });
 
-    const existingImages =
-      property.images &&
-      property.images.length
-        ? property.images
-        : property.image
-          ? [property.image]
-          : [];
+    customBank: '',
 
-    setImages(
-      existingImages.map(
-        (url, index) => ({
-          id: `existing-${index}-${Date.now()}`,
-          url,
-          source: 'url',
-        }),
-      ),
-    );
+    description:
+      property.description || '',
 
-    setImageSource('url');
-    setStatus('idle');
-    setActiveSection('add');
-    setSidebarOpen(false);
+    videoUrl:
+      property.videoUrl || '',
+  });
 
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
-  }
+  const existingImages =
+    property.images &&
+    property.images.length
+      ? property.images
+      : property.image
+        ? [property.image]
+        : [];
+
+  setImages(
+    existingImages.map(
+      (url, index) => ({
+        id: `existing-${index}-${Date.now()}`,
+        url,
+        source: 'url',
+      }),
+    ),
+  );
+
+  setImageSource('url');
+  setStatus('idle');
+  setActiveSection('add');
+  setSidebarOpen(false);
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+}
 
   async function deleteProperty(
     property: Property,
@@ -1130,189 +1306,641 @@ const [
   }
 }
 
-  async function handleSubmit(
-  event: FormEvent<HTMLFormElement>,
-) {
-  event.preventDefault();
+/* =========================================================
+   PROPERTY UNIT TYPES
+========================================================= */
 
-  if (!formData.title.trim()) {
-    alert('Please enter the property title.');
-    return;
-  }
+const getCurrentPropertyId = () => {
+  if (
+    editingId !== null &&
+    editingId !== undefined
+  ) {
+    const id = Number(editingId);
 
-  if (!formData.price.trim()) {
-    alert('Please enter the property price.');
-    return;
-  }
-
-  if (!formData.location.trim()) {
-    alert('Please enter the property location.');
-    return;
-  }
-
-  if (!formData.category) {
-    alert('Please select a property category.');
-    return;
-  }
-
-  if (!formData.propertyType) {
-    alert('Please select a property type.');
-    return;
-  }
-
-  const normalizedHouseType =
-    formData.houseType.trim() || null;
-
-  const normalizedStorey =
-    formData.storey.trim() || null;
-
-  if (!images.length) {
-    alert('Please add at least one property image.');
-    return;
-  }
-
-  setStatus('loading');
-
-  try {
-    const uploadedImageUrls: string[] = [];
-
-    for (const image of images) {
-      if (
-        image.source === 'upload' &&
-        image.file
-      ) {
-        const uploadedUrl =
-          await uploadImageToBlob(image.file);
-
-        if (!uploadedUrl) {
-          throw new Error(
-            `Failed to upload ${image.file.name}.`,
-          );
-        }
-
-        uploadedImageUrls.push(uploadedUrl);
-      } else if (image.url) {
-        uploadedImageUrls.push(
-          image.url.trim(),
-        );
-      }
+    if (
+      Number.isSafeInteger(id) &&
+      id > 0
+    ) {
+      return id;
     }
+  }
 
-    const validImageUrls =
-      uploadedImageUrls
-        .filter(Boolean)
-        .slice(0, MAX_IMAGES);
+  return null;
+};
 
-    if (!validImageUrls.length) {
+/* =========================================================
+   FETCH UNIT TYPES
+========================================================= */
+
+const fetchUnits = async (
+  propertyId: number
+) => {
+  try {
+    setUnitLoading(true);
+
+    const response = await fetch(
+      `/api/properties/${propertyId}/units`,
+      {
+        method: 'GET',
+        cache: 'no-store',
+        credentials: 'include',
+      }
+    );
+
+    const data =
+      await response
+        .json()
+        .catch(() => null);
+
+    if (!response.ok) {
       throw new Error(
-        'No valid property images were found.',
+        data?.message ||
+          'Failed to load unit types.'
       );
     }
 
-    const payload = {
-      ...(editingId !== null
-        ? { id: editingId }
-        : {}),
-
-      title: formData.title.trim(),
-
-      category:
-        formData.category.trim(),
-
-      propertyType:
-        formData.propertyType.trim(),
-
-      houseType:
-        showHouseDetails
-          ? normalizedHouseType
-          : null,
-
-      storey:
-        showHouseDetails
-          ? normalizedStorey
-          : null,
-
-      tag:
-        formData.tag.trim() ||
-        'Residential',
-
-      price:
-        formData.price.trim(),
-
-      location:
-        formData.location.trim(),
-
-      perMonth:
-        showPerMonth
-          ? formData.perMonth.trim() || null
-          : null,
-
-      beds:
-        formData.beds.trim()
-          ? Number(formData.beds)
-          : null,
-
-      baths:
-        formData.baths.trim()
-          ? Number(formData.baths)
-          : null,
-
-      sqft:
-        formData.sqft.trim()
-          ? Number(formData.sqft)
-          : null,
-
-      lotArea:
-        formData.lotArea.trim()
-          ? Number(formData.lotArea)
-          : null,
-
-      image:
-        validImageUrls[0],
-
-      images:
-        validImageUrls,
-
-      developer:
-        formData.developer.trim() || null,
-
-      bankFinancing:
-        formData.bankFinancing
-          .map((bank) => bank.trim())
-          .filter(Boolean),
-
-      description:
-        formData.description.trim() || null,
-
-      videoUrl:
-        formData.videoUrl.trim() || null,
-    };
-
-    const serializedPayload =
-      JSON.stringify(payload);
-
-    console.log(
-      '[Property Save] Payload size:',
-      `${new Blob([serializedPayload]).size} bytes`,
+    setUnits(
+      Array.isArray(data)
+        ? data
+        : Array.isArray(data?.units)
+          ? data.units
+          : []
+    );
+  } catch (error) {
+    console.error(
+      'Fetch unit types error:',
+      error
     );
 
-    console.log(
-      '[Property Save] Image count:',
-      validImageUrls.length,
+    setUnits([]);
+  } finally {
+    setUnitLoading(false);
+  }
+};
+
+/* =========================================================
+   RESET UNIT FORM
+========================================================= */
+
+const resetUnitForm = () => {
+  unitImages.forEach((image) => {
+    if (
+      image.source === 'upload' &&
+      image.url.startsWith('blob:')
+    ) {
+      URL.revokeObjectURL(image.url);
+    }
+  });
+
+  setUnitForm(INITIAL_UNIT_FORM);
+  setUnitImages([]);
+  setUnitEditorOpen(false);
+  setEditingUnitId(null);
+  setEditingUnitDraftId(null);
+  setUnitImageSource('upload');
+  setUnitImageUrl('');
+  setUnitSaving(false);
+};
+
+/* =========================================================
+   OPEN NEW UNIT EDITOR
+========================================================= */
+
+const openNewUnitEditor = () => {
+  resetUnitForm();
+  setUnitEditorOpen(true);
+};
+
+/* =========================================================
+   EDIT EXISTING UNIT
+========================================================= */
+
+const openUnitEditor = (unit: PropertyUnit) => {
+  setEditingUnitId(unit.id);
+  setEditingUnitDraftId(null);
+
+  setUnitForm({
+    unitType: unit.unitType ?? '',
+    customUnitType: '',
+    unitName: unit.unitName ?? '',
+    price: unit.price ?? '',
+    lotArea:
+      unit.lotArea !== null &&
+      unit.lotArea !== undefined
+        ? String(unit.lotArea)
+        : '',
+    floorArea:
+      unit.floorArea !== null &&
+      unit.floorArea !== undefined
+        ? String(unit.floorArea)
+        : '',
+    description: unit.description ?? '',
+  });
+
+  setUnitImages(
+    (unit.images ?? [])
+      .slice()
+      .sort(
+        (a, b) =>
+          a.sortOrder - b.sortOrder
+      )
+      .map((image) => ({
+        id: `existing-${image.id}`,
+        url: image.url,
+        source: 'url' as const,
+      }))
+  );
+
+  setUnitImageSource('url');
+  setUnitImageUrl('');
+  setUnitEditorOpen(true);
+};
+
+const openPendingUnitEditor = (unit: PendingUnit) => {
+  setEditingUnitId(unit.existingId);
+  setEditingUnitDraftId(unit.id);
+
+  setUnitForm({
+    unitType: unit.unitType ?? '',
+    customUnitType: '',
+    unitName: unit.unitName ?? '',
+    price: unit.price ?? '',
+    lotArea:
+      unit.lotArea !== null &&
+      unit.lotArea !== undefined
+        ? String(unit.lotArea)
+        : '',
+    floorArea:
+      unit.floorArea !== null &&
+      unit.floorArea !== undefined
+        ? String(unit.floorArea)
+        : '',
+    description: unit.description ?? '',
+  });
+
+  setUnitImages(
+    (unit.images ?? []).map((image) => ({
+      ...image,
+      id: image.id,
+    }))
+  );
+
+  setUnitImageSource('upload');
+  setUnitImageUrl('');
+  setUnitEditorOpen(true);
+};
+/* =========================================================
+   UNIT IMAGE UPLOAD
+========================================================= */
+
+const handleUnitImageUpload = (
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const files = Array.from(
+    e.target.files || []
+  );
+
+  if (!files.length) {
+    return;
+  }
+
+  if (
+    unitImages.length + files.length >
+    MAX_UNIT_IMAGES
+  ) {
+    alert(
+      `You can upload a maximum of ${MAX_UNIT_IMAGES} photos for each unit.`
     );
 
-    console.log(
-      '[Property Save] Image URLs:',
-      validImageUrls,
+    e.target.value = '';
+    return;
+  }
+
+  const allowedTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+  ];
+
+  const validImages: UnitImageItem[] = [];
+
+  files.forEach((file) => {
+    if (!allowedTypes.includes(file.type)) {
+      alert(
+        `${file.name} is not supported. Use JPG, JPEG, PNG, or WEBP.`
+      );
+
+      return;
+    }
+
+    if (file.size > MAX_UNIT_IMAGE_SIZE) {
+      alert(
+        `${file.name} is larger than 5MB.`
+      );
+
+      return;
+    }
+
+    validImages.push({
+      id: `unit-${Date.now()}-${Math.random()}`,
+      url: URL.createObjectURL(file),
+      file,
+      source: 'upload',
+    });
+  });
+
+  setUnitImages((previous) => [
+    ...previous,
+    ...validImages,
+  ]);
+
+  e.target.value = '';
+};
+
+/* =========================================================
+   ADD UNIT IMAGE URL
+========================================================= */
+
+const addUnitImageUrl = () => {
+  const url = unitImageUrl.trim();
+
+  if (!url) {
+    alert(
+      'Please enter an image URL.'
     );
+
+    return;
+  }
+
+  if (
+    unitImages.length >=
+    MAX_UNIT_IMAGES
+  ) {
+    alert(
+      `You can only add ${MAX_UNIT_IMAGES} photos per unit.`
+    );
+
+    return;
+  }
+
+  try {
+    const parsed = new URL(url);
+
+    if (
+      parsed.protocol !== 'http:' &&
+      parsed.protocol !== 'https:'
+    ) {
+      throw new Error();
+    }
+  } catch {
+    alert(
+      'Please enter a valid HTTP or HTTPS image URL.'
+    );
+
+    return;
+  }
+
+  setUnitImages((previous) => [
+    ...previous,
+    {
+      id: `unit-url-${Date.now()}-${Math.random()}`,
+      url,
+      source: 'url',
+    },
+  ]);
+
+  setUnitImageUrl('');
+};
+
+/* =========================================================
+   REMOVE UNIT IMAGE
+========================================================= */
+
+const removeUnitImage = (
+  id: string
+) => {
+  setUnitImages((previous) => {
+    const image = previous.find(
+      (item) => item.id === id
+    );
+
+    if (
+      image?.source === 'upload' &&
+      image.url.startsWith('blob:')
+    ) {
+      URL.revokeObjectURL(image.url);
+    }
+
+    return previous.filter(
+      (item) => item.id !== id
+    );
+  });
+};
+
+/* =========================================================
+   UPLOAD UNIT IMAGE
+========================================================= */
+
+const uploadUnitImageToBlob = async (
+    file: File
+  ): Promise<string> => {
+    const body = new FormData();
+
+    body.append('file', file);
+
+    body.append('type', 'property');
 
     const response = await fetch(
-      '/api/properties',
+      '/api/blob/upload',
       {
-        method:
-          editingId !== null
-            ? 'PUT'
-            : 'POST',
+        method: 'POST',
+        body,
+        credentials: 'include',
+      }
+    );
+
+    const data =
+      await response
+        .json()
+        .catch(() => null);
+
+    if (
+      !response.ok ||
+      !data?.success ||
+      !data?.url
+    ) {
+      throw new Error(
+        data?.message ||
+          'Failed to upload unit photo.'
+      );
+    }
+
+    return data.url;
+  };
+  /* =========================================================
+    SAVE UNIT
+  ========================================================= */
+  const finalUnitType =
+    unitForm.unitType === 'Custom'
+      ? unitForm.customUnitType.trim()
+      : unitForm.unitType;
+      
+
+  const saveUnit = () => {
+  if (!unitForm.unitType.trim()) {
+    alert('Please select a Unit Type.');
+    return;
+  }
+
+  if (!unitForm.price.trim()) {
+    alert('Unit price is required.');
+    return;
+  }
+
+  if (unitImages.length > MAX_UNIT_IMAGES) {
+    alert(
+      `A Unit Type can have up to ${MAX_UNIT_IMAGES} photos.`
+    );
+    return;
+  }
+
+  if (!finalUnitType) {
+    alert('Please enter a Custom Unit Type.');
+    return;
+  }
+  const pendingUnit: PendingUnit = {
+    id:
+      editingUnitDraftId ??
+      `pending-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 9)}`,
+
+    existingId:
+      editingUnitDraftId
+        ? pendingUnits.find(
+            (unit) =>
+              unit.id === editingUnitDraftId
+          )?.existingId ?? editingUnitId
+        : editingUnitId,
+
+    unitType: finalUnitType.trim(),
+
+    unitName:
+      unitForm.unitName.trim() || null,
+
+    price: unitForm.price.trim(),
+
+    lotArea:
+      unitForm.lotArea.trim()
+        ? Number(unitForm.lotArea)
+        : null,
+
+    floorArea:
+      unitForm.floorArea.trim()
+        ? Number(unitForm.floorArea)
+        : null,
+
+    description:
+      unitForm.description.trim() || null,
+
+    images: unitImages.map((image) => ({
+      ...image,
+    })),
+  };
+
+  /*
+   * If editing an existing database Unit,
+   * remove it from the visible saved list.
+   * It will be updated only when the main
+   * Property Save/Update button is clicked.
+   */
+  if (editingUnitId !== null) {
+    setUnits((current) =>
+      current.filter(
+        (unit) =>
+          unit.id !== editingUnitId
+      )
+    );
+
+    setPendingDeletedUnitIds((current) =>
+      current.filter(
+        (id) =>
+          id !== editingUnitId
+      )
+    );
+  }
+
+  /*
+   * If editing an existing temporary Unit,
+   * replace the temporary version.
+   */
+  if (editingUnitDraftId) {
+    setPendingUnits((current) =>
+      current.map((unit) =>
+        unit.id === editingUnitDraftId
+          ? pendingUnit
+          : unit
+      )
+    );
+  } else {
+    /*
+     * New Unit Type.
+     * Nothing is sent to the database yet.
+     */
+    setPendingUnits((current) => [
+      ...current,
+      pendingUnit,
+    ]);
+  }
+
+  /*
+   * Close the Unit editor.
+   * The Unit now appears as a pill.
+   */
+  setUnitForm(INITIAL_UNIT_FORM);
+  setUnitImages([]);
+  setUnitEditorOpen(false);
+  setEditingUnitId(null);
+  setEditingUnitDraftId(null);
+  setUnitImageSource('upload');
+  setUnitImageUrl('');
+};
+
+
+  /* =========================================================
+    DELETE UNIT
+  ========================================================= */
+
+  const deleteUnit = (unitId: number) => {
+  /*
+   * If this Unit is currently a pending edit,
+   * remove the temporary version.
+   */
+  setPendingUnits((current) =>
+    current.filter(
+      (unit) =>
+        unit.existingId !== unitId
+    )
+  );
+
+  /*
+   * Hide the existing database Unit from
+   * the current form and remember that it
+   * should be deleted when the property is saved.
+   */
+  setUnits((current) =>
+    current.filter(
+      (unit) =>
+        unit.id !== unitId
+    )
+  );
+
+  setPendingDeletedUnitIds((current) =>
+    current.includes(unitId)
+      ? current
+      : [...current, unitId]
+  );
+};
+
+const persistPendingUnits = async (
+  propertyId: number
+) => {
+  /*
+   * First delete Units that the admin removed.
+   */
+  for (const unitId of pendingDeletedUnitIds) {
+    const response = await fetch(
+      `/api/properties/${propertyId}/units?unitId=${unitId}`,
+      {
+        method: 'DELETE',
+        credentials: 'include',
+      }
+    );
+
+    const data =
+      await response
+        .json()
+        .catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.message ||
+          'Failed to delete a Unit Type.'
+      );
+    }
+  }
+
+  /*
+   * Then create/update pending Units.
+   */
+  for (const unit of pendingUnits) {
+    const uploadedImages: string[] = [];
+
+    for (const image of unit.images) {
+      /*
+       * Existing URL image.
+       */
+      if (image.source === 'url') {
+        uploadedImages.push(image.url);
+        continue;
+      }
+
+      /*
+       * Newly uploaded image.
+       */
+      if (!image.file) {
+        throw new Error(
+          'A Unit Type photo file is missing.'
+        );
+      }
+
+      const url =
+        await uploadUnitImageToBlob(
+          image.file
+        );
+
+      uploadedImages.push(url);
+    }
+
+    const payload = {
+      ...(unit.existingId
+        ? {
+            id: unit.existingId,
+          }
+        : {}),
+
+      unitType:
+        unit.unitType.trim(),
+
+      unitName:
+        unit.unitName?.trim() || null,
+
+      price:
+        unit.price.trim(),
+
+      lotArea:
+        unit.lotArea !== null
+          ? Number(unit.lotArea)
+          : null,
+
+      floorArea:
+        unit.floorArea !== null
+          ? Number(unit.floorArea)
+          : null,
+
+      description:
+        unit.description?.trim() || null,
+
+      images: uploadedImages,
+    };
+
+    const response = await fetch(
+      `/api/properties/${propertyId}/units`,
+      {
+        method: unit.existingId
+          ? 'PUT'
+          : 'POST',
 
         headers: {
           'Content-Type':
@@ -1321,8 +1949,9 @@ const [
 
         credentials: 'include',
 
-        body: serializedPayload,
-      },
+        body:
+          JSON.stringify(payload),
+      }
     );
 
     const data =
@@ -1334,39 +1963,389 @@ const [
       throw new Error(
         data?.message ||
           `Failed to ${
-            editingId !== null
+            unit.existingId
               ? 'update'
               : 'create'
-          } property. HTTP ${response.status}`,
+          } Unit Type.`
       );
     }
-
-    setStatus('success');
-
-    await fetchProperties();
-
-    window.setTimeout(() => {
-      resetForm();
-
-      setActiveSection(
-        'properties',
-      );
-    }, 800);
-  } catch (error) {
-    console.error(
-      'Save property error:',
-      error,
-    );
-
-    setStatus('error');
-
-    alert(
-      error instanceof Error
-        ? error.message
-        : 'Failed to save property.',
-    );
   }
-}
+};
+
+    async function handleSubmit(
+      event: FormEvent<HTMLFormElement>,
+    ) {
+      event.preventDefault();
+
+      if (!formData.title.trim()) {
+        alert('Please enter the property title.');
+        return;
+      }
+
+      if (!formData.price.trim()) {
+        alert('Please enter the property price.');
+        return;
+      }
+
+      if (!formData.location.trim()) {
+        alert('Please enter the property location.');
+        return;
+      }
+
+      if (!formData.category) {
+        alert('Please select a property category.');
+        return;
+      }
+
+      if (!formData.propertyType) {
+        alert('Please select a property type.');
+        return;
+      }
+
+      const normalizedHouseType =
+        formData.houseType.trim() || null;
+
+      const normalizedStorey =
+        formData.storey.trim() || null;
+
+      if (!images.length) {
+        alert('Please add at least one property image.');
+        return;
+      }
+
+      setStatus('loading');
+
+      /*
+      * Remember whether this was an existing property
+      * BEFORE changing editingId later.
+      */
+      const wasEditing = editingId !== null;
+
+      try {
+        /*
+        * ---------------------------------------------------------
+        * 1. UPLOAD PROPERTY IMAGES
+        * ---------------------------------------------------------
+        */
+
+        const uploadedImageUrls: string[] = [];
+
+        for (const image of images) {
+          if (
+            image.source === 'upload' &&
+            image.file
+          ) {
+            const uploadedUrl =
+              await uploadImageToBlob(image.file);
+
+            if (!uploadedUrl) {
+              throw new Error(
+                `Failed to upload ${image.file.name}.`,
+              );
+            }
+
+            uploadedImageUrls.push(uploadedUrl);
+          } else if (image.url) {
+            uploadedImageUrls.push(
+              image.url.trim(),
+            );
+          }
+        }
+
+        const validImageUrls =
+          uploadedImageUrls
+            .filter(Boolean)
+            .slice(0, MAX_IMAGES);
+
+        if (!validImageUrls.length) {
+          throw new Error(
+            'No valid property images were found.',
+          );
+        }
+
+        /*
+        * ---------------------------------------------------------
+        * 2. BUILD PROPERTY PAYLOAD
+        * ---------------------------------------------------------
+        */
+
+        const payload = {
+          ...(editingId !== null
+            ? {
+                id: editingId,
+              }
+            : {}),
+
+          title:
+            formData.title.trim(),
+
+          category:
+            formData.category.trim(),
+
+          propertyType:
+            formData.propertyType.trim(),
+
+          houseType:
+            showHouseDetails
+              ? normalizedHouseType
+              : null,
+
+          storey:
+            showHouseDetails
+              ? normalizedStorey
+              : null,
+
+          tag:
+            formData.tag.trim() ||
+            'Residential',
+
+          price:
+            formData.price.trim(),
+
+          location:
+            formData.location.trim(),
+
+          perMonth:
+            showPerMonth
+              ? formData.perMonth.trim() || null
+              : null,
+
+          beds:
+            formData.beds.trim()
+              ? Number(formData.beds)
+              : null,
+
+          baths:
+            formData.baths.trim()
+              ? Number(formData.baths)
+              : null,
+
+          sqft:
+            formData.sqft.trim()
+              ? Number(formData.sqft)
+              : null,
+
+          lotArea:
+            formData.lotArea.trim()
+              ? Number(formData.lotArea)
+              : null,
+
+          image:
+            validImageUrls[0],
+
+          images:
+            validImageUrls,
+
+          developer:
+            formData.developer.trim() || null,
+
+          bankFinancing:
+            formData.bankFinancing
+              .map((bank) => bank.trim())
+              .filter(Boolean),
+
+          description:
+            formData.description.trim() || null,
+
+          videoUrl:
+            formData.videoUrl.trim() || null,
+        };
+
+        const serializedPayload =
+          JSON.stringify(payload);
+
+        console.log(
+          '[Property Save] Payload size:',
+          `${new Blob([serializedPayload]).size} bytes`,
+        );
+
+        console.log(
+          '[Property Save] Image count:',
+          validImageUrls.length,
+        );
+
+        console.log(
+          '[Property Save] Image URLs:',
+          validImageUrls,
+        );
+
+        /*
+        * ---------------------------------------------------------
+        * 3. SAVE PROPERTY
+        * ---------------------------------------------------------
+        */
+
+        const response = await fetch(
+          '/api/properties',
+          {
+            method:
+              editingId !== null
+                ? 'PUT'
+                : 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            credentials: 'include',
+
+            body: serializedPayload,
+          },
+        );
+
+        const data =
+          await response
+            .json()
+            .catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message ||
+              `Failed to ${
+                editingId !== null
+                  ? 'update'
+                  : 'create'
+              } property. HTTP ${response.status}`,
+          );
+        }
+
+        /*
+        * ---------------------------------------------------------
+        * 4. GET SAVED PROPERTY ID
+        * ---------------------------------------------------------
+        *
+        * Existing property:
+        *     editingId already contains the ID.
+        *
+        * New property:
+        *     use the ID returned by the API.
+        */
+
+        const savedPropertyId =
+          editingId !== null
+            ? Number(editingId)
+            : Number(
+                data?.property?.id ??
+                  data?.data?.id ??
+                  data?.id,
+              );
+
+        if (
+          !Number.isSafeInteger(
+            savedPropertyId,
+          ) ||
+          savedPropertyId <= 0
+        ) {
+          throw new Error(
+            'Property was saved, but the property ID could not be determined.',
+          );
+        }
+
+        console.log(
+          '[Property Save] Saved property ID:',
+          savedPropertyId,
+        );
+
+        /*
+        * ---------------------------------------------------------
+        * 5. KEEP PROPERTY IN EDIT MODE
+        * ---------------------------------------------------------
+        *
+        * This is important for newly-created properties.
+        *
+        * After the property is created, editingId now contains
+        * the real database ID.
+        */
+
+        setEditingId(savedPropertyId);
+
+        /*
+        * ---------------------------------------------------------
+        * 6. SAVE ALL PENDING UNIT TYPES
+        * ---------------------------------------------------------
+        *
+        * Unit Types are intentionally NOT saved when
+        * "Add Unit" is clicked.
+        *
+        * They are saved here only after the main property
+        * has successfully been created/updated.
+        */
+
+        if (
+          pendingUnits.length > 0 ||
+          pendingDeletedUnitIds.length > 0
+        ) {
+          console.log(
+            '[Property Save] Persisting Unit Types:',
+            {
+              pendingUnits:
+                pendingUnits.length,
+              deletedUnits:
+                pendingDeletedUnitIds.length,
+            },
+          );
+
+          await persistPendingUnits(
+            savedPropertyId,
+          );
+        }
+
+        /*
+        * ---------------------------------------------------------
+        * 7. CLEAR TEMPORARY UNIT STATE
+        * ---------------------------------------------------------
+        *
+        * At this point the Unit Types are now in the database,
+        * so the temporary pending list can be cleared.
+        */
+
+        setPendingUnits([]);
+        setPendingDeletedUnitIds([]);
+
+        /*
+        * ---------------------------------------------------------
+        * 8. REFRESH UNIT TYPES
+        * ---------------------------------------------------------
+        */
+
+        await fetchUnits(
+          savedPropertyId,
+        );
+
+        /*
+        * ---------------------------------------------------------
+        * 9. REFRESH PROPERTY LIST
+        * ---------------------------------------------------------
+        */
+
+        await fetchProperties();
+
+        /*
+        * ---------------------------------------------------------
+        * 10. SUCCESS
+        * ---------------------------------------------------------
+        */
+
+        setStatus('success');
+        resetForm();
+        setActiveSection('properties');
+
+      } catch (error) {
+        console.error(
+          'Save property error:',
+          error,
+        );
+
+        setStatus('error');
+
+        alert(
+          error instanceof Error
+            ? error.message
+            : 'Failed to save property.',
+        );
+      }
+    }
 
   async function handleLogout() {
     try {
@@ -3676,7 +4655,834 @@ const [
                     )}
                   </div>
                 </div>
+              {/* =========================================================
+                  UNIT TYPES
+              ========================================================= */}
 
+              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="rounded-xl bg-blue-50 p-2.5">
+                        <Building2 className="h-5 w-5 text-blue-600" />
+                      </div>
+
+                      <div>
+
+                        <h2 className="font-black">
+                          Unit Types
+                        </h2>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          Add different unit configurations and their dedicated photos.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    {!unitEditorOpen && (
+                      <button
+                        type="button"
+                        onClick={openNewUnitEditor}
+                        disabled={status === 'loading'}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                        Add Unit Type
+                      </button>
+                    )}
+
+                  </div>
+
+                </div>
+
+                <div className="p-5 sm:p-6">
+
+                  {!editingId && (
+                    <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+                      <div className="flex items-start gap-3">
+                        <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+
+                        <div>
+                          <p className="text-sm font-bold text-blue-900">
+                            Unit Types can be added now
+                          </p>
+
+                          <p className="mt-1 text-xs leading-5 text-blue-700">
+                            Add your Unit Types and photos first. They will remain
+                            temporarily attached to this form and will be saved together
+                            when you publish the property.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SAVED UNIT PILLS */}
+
+                  {(units.length > 0 ||
+                    pendingUnits.length > 0) && (
+                    <div className="mb-5">
+
+                      <div className="mb-3 flex items-center justify-between">
+
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                          Unit Types
+                        </p>
+
+                        <span className="text-xs font-bold text-slate-400">
+                          {units.length +
+                            pendingUnits.length}{' '}
+                          unit
+                          {units.length +
+                            pendingUnits.length ===
+                          1
+                            ? ''
+                            : 's'}
+                        </span>
+
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+
+                        {/* EXISTING DATABASE UNITS */}
+
+                        {units.map((unit) => (
+                          <div
+                            key={`saved-${unit.id}`}
+                            className="group flex w-full max-w-full items-center overflow-hidden rounded-full border border-blue-100 bg-gradient-to-r from-blue-50 via-sky-50 to-cyan-50 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:from-blue-100 hover:via-sky-100 hover:to-cyan-100 hover:shadow-md sm:w-auto"
+                          >
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openUnitEditor(unit)
+                              }
+                              className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-2.5 text-left"
+                            >
+
+                              <span className="flex shrink-0 items-center rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-blue-700 shadow-sm ring-1 ring-blue-100">
+                                {unit.unitType}
+                              </span>
+
+                              <span className="max-w-[120px] truncate text-xs font-bold text-slate-700 sm:max-w-[150px]">
+                                {unit.unitName ||
+                                  'Unit'}
+                              </span>
+
+                              <span className="h-3.5 w-px shrink-0 bg-blue-200/70" />
+
+                              <span className="whitespace-nowrap text-xs font-black text-slate-800">
+                                ₱{formatPrice(unit.price)}
+                              </span>
+
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteUnit(unit.id)
+                              }
+                              className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition-all duration-200 hover:bg-white hover:text-red-500 hover:shadow-sm"
+                              aria-label={`Delete ${unit.unitType}`}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+
+                          </div>
+                        ))}
+
+
+                        {/* TEMPORARY / PENDING UNITS */}
+
+                        {pendingUnits.map(
+                          (unit) => (
+                            <div
+                              key={unit.id}
+                              className="group flex w-full max-w-full items-center overflow-hidden rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md sm:w-auto"
+                            >
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openPendingUnitEditor(
+                                    unit
+                                  )
+                                }
+                                className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-2.5 text-left"
+                              >
+
+                                <span className="flex shrink-0 items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700 shadow-sm ring-1 ring-emerald-100">
+                                  {unit.unitType}
+                                </span>
+
+                                <span className="max-w-[120px] truncate text-xs font-bold text-slate-700 sm:max-w-[150px]">
+                                  {unit.unitName ||
+                                    'Unit'}
+                                </span>
+
+                                <span className="h-3.5 w-px shrink-0 bg-emerald-200/70" />
+
+                                <span className="whitespace-nowrap text-xs font-black text-slate-800">
+                                  ₱{formatPrice(unit.price)}
+                                </span>
+
+                                <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide text-white">
+                                  Pending
+                                </span>
+
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  unit.images.forEach(
+                                    (image) => {
+                                      if (
+                                        image.source ===
+                                          'upload' &&
+                                        image.url.startsWith(
+                                          'blob:'
+                                        )
+                                      ) {
+                                        URL.revokeObjectURL(
+                                          image.url
+                                        );
+                                      }
+                                    }
+                                  );
+
+                                  setPendingUnits(
+                                    (current) =>
+                                      current.filter(
+                                        (item) =>
+                                          item.id !==
+                                          unit.id
+                                      )
+                                  );
+                                }}
+                                className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition-all duration-200 hover:bg-white hover:text-red-500 hover:shadow-sm"
+                                aria-label={`Remove ${unit.unitType}`}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+
+                            </div>
+                          )
+                        )}
+
+                      </div>
+
+                      {/* Small helper */}
+
+                      {pendingUnits.length > 0 && (
+                        <div className="mt-3 flex items-center gap-2 text-[11px] font-medium text-emerald-600">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+
+                          <span>
+                            {pendingUnits.length}{' '}
+                            Unit Type
+                            {pendingUnits.length ===
+                            1
+                              ? ''
+                              : 's'}{' '}
+                            will be saved when you publish or update the property.
+                          </span>
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+
+                  {/* EMPTY STATE */}
+
+                  {!units.length &&
+                    !unitEditorOpen &&
+                    editingId && (
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
+
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                          <Building2 className="h-5 w-5 text-slate-400" />
+                        </div>
+
+                        <p className="mt-4 text-sm font-bold text-slate-700">
+                          No Unit Types yet
+                        </p>
+
+                        <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-400">
+                          Add unit configurations such as Studio, 1BR, 2BR, 3BR,
+                          or custom unit types.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={openNewUnitEditor}
+                          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white"
+                        >
+                          <PlusCircle className="h-4 w-4" />
+                          Add First Unit
+                        </button>
+
+                      </div>
+                    )}
+
+                  {/* UNIT EDITOR */}
+
+                  {unitEditorOpen && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50">
+
+                      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-5">
+
+                        <div>
+
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600">
+                            {editingUnitId !== null ||
+                              editingUnitDraftId !== null
+                                ? 'Edit Unit'
+                                : 'New Unit'}
+                          </p>
+
+                          <h3 className="mt-1 text-base font-black text-slate-900">
+                            Unit Details
+                          </h3>
+
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={resetUnitForm}
+                          disabled={unitSaving}
+                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm transition hover:text-slate-700"
+                          aria-label="Close unit editor"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+
+                      </div>
+
+                      <div className="space-y-5 p-4 sm:p-5">
+
+                        {/* UNIT TYPE */}
+
+<div>
+
+  <label
+    htmlFor="unitType"
+    className="mb-2 block text-sm font-semibold text-slate-700"
+  >
+    Unit Type
+    <span className="ml-1 text-red-500">*</span>
+  </label>
+
+  <div className="relative">
+
+    <select
+      id="unitType"
+      value={unitForm.unitType}
+      onChange={(e) => {
+        const value = e.target.value;
+
+        setUnitForm((previous) => ({
+          ...previous,
+          unitType: value,
+          customUnitType:
+            value === 'Custom'
+              ? previous.customUnitType
+              : '',
+        }));
+      }}
+      disabled={unitSaving}
+      className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+    >
+      <option value="">
+        Select Unit Type
+      </option>
+
+      {UNIT_TYPE_OPTIONS.map((option) => (
+        <option
+          key={option}
+          value={option}
+        >
+          {option}
+        </option>
+      ))}
+    </select>
+
+    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+  </div>
+
+  {unitForm.unitType === 'Custom' && (
+    <div className="mt-3">
+
+      <label
+        htmlFor="customUnitType"
+        className="mb-2 block text-sm font-semibold text-slate-700"
+      >
+        Custom Unit Type
+        <span className="ml-1 text-red-500">*</span>
+      </label>
+
+      <input
+        id="customUnitType"
+        type="text"
+        value={unitForm.customUnitType}
+        onChange={(e) =>
+          setUnitForm((previous) => ({
+            ...previous,
+            customUnitType: e.target.value,
+          }))
+        }
+        disabled={unitSaving}
+        placeholder="e.g. Daisy, Diane, Executive Unit"
+        maxLength={100}
+        autoComplete="off"
+        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+      />
+
+      <p className="mt-1.5 text-[11px] text-slate-400">
+        Enter your own unit type name.
+      </p>
+
+    </div>
+  )}
+
+</div>
+
+                        {/* UNIT NAME */}
+                        <div>
+
+                          <label
+                            htmlFor="unitName"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Unit Name
+                            <span className="ml-1 text-xs font-normal text-slate-400">
+                              Optional
+                            </span>
+                          </label>
+
+                          <input
+                            id="unitName"
+                            value={unitForm.unitName}
+                            onChange={(e) =>
+                              setUnitForm((previous) => ({
+                                ...previous,
+                                unitName:
+                                  e.target.value,
+                              }))
+                            }
+                            placeholder="e.g. Classic, Premium, End Unit"
+                            disabled={unitSaving}
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                          />
+
+                        </div>
+
+                        {/* PRICE */}
+
+                        <div className="grid gap-5 md:grid-cols-3">
+
+                          <div>
+
+                            <label
+                              htmlFor="unitPrice"
+                              className="mb-2 block text-sm font-semibold text-slate-700"
+                            >
+                              Unit Price
+                              <span className="ml-1 text-red-500">
+                                *
+                              </span>
+                            </label>
+
+                            <div className="relative">
+
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                                ₱
+                              </span>
+
+                              <input
+                                id="unitPrice"
+                                value={unitForm.price}
+                                onChange={(e) =>
+                                  setUnitForm((previous) => ({
+                                    ...previous,
+                                    price:
+                                      e.target.value,
+                                  }))
+                                }
+                                placeholder="2,511,000"
+                                inputMode="decimal"
+                                disabled={unitSaving}
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                              />
+
+                            </div>
+
+                          </div>
+
+                          {/* LOT AREA */}
+
+                          <div>
+
+                            <label
+                              htmlFor="unitLotArea"
+                              className="mb-2 block text-sm font-semibold text-slate-700"
+                            >
+                              Lot Area
+                            </label>
+
+                            <div className="relative">
+
+                              <input
+                                id="unitLotArea"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={unitForm.lotArea}
+                                onChange={(e) =>
+                                  setUnitForm((previous) => ({
+                                    ...previous,
+                                    lotArea:
+                                      e.target.value,
+                                  }))
+                                }
+                                placeholder="40.00"
+                                disabled={unitSaving}
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 pr-14 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                              />
+
+                              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                sqm
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                          {/* FLOOR AREA */}
+
+                          <div>
+
+                            <label
+                              htmlFor="unitFloorArea"
+                              className="mb-2 block text-sm font-semibold text-slate-700"
+                            >
+                              Floor Area
+                            </label>
+
+                            <div className="relative">
+
+                              <input
+                                id="unitFloorArea"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={unitForm.floorArea}
+                                onChange={(e) =>
+                                  setUnitForm((previous) => ({
+                                    ...previous,
+                                    floorArea:
+                                      e.target.value,
+                                  }))
+                                }
+                                placeholder="42.00"
+                                disabled={unitSaving}
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 pr-14 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                              />
+
+                              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                sqm
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                        {/* DESCRIPTION */}
+
+                        <div>
+
+                          <label
+                            htmlFor="unitDescription"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Unit Description
+                            <span className="ml-1 text-xs font-normal text-slate-400">
+                              Optional
+                            </span>
+                          </label>
+
+                          <textarea
+                            id="unitDescription"
+                            value={unitForm.description}
+                            onChange={(e) =>
+                              setUnitForm((previous) => ({
+                                ...previous,
+                                description:
+                                  e.target.value,
+                              }))
+                            }
+                            rows={4}
+                            placeholder="Describe this specific unit..."
+                            disabled={unitSaving}
+                            className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                          />
+
+                        </div>
+
+                        {/* UNIT PHOTOS */}
+
+                        <div className="rounded-2xl border border-slate-200 bg-white">
+
+                          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+
+                            <div>
+
+                              <p className="text-sm font-black text-slate-800">
+                                Unit Photos
+                              </p>
+
+                              <p className="mt-1 text-xs text-slate-400">
+                                Up to {MAX_UNIT_IMAGES} photos for this unit.
+                              </p>
+
+                            </div>
+
+                            <span className="text-xs font-black text-slate-400">
+                              {unitImages.length}/{MAX_UNIT_IMAGES}
+                            </span>
+
+                          </div>
+
+                          <div className="p-4">
+
+                            <div className="mb-4 flex rounded-xl bg-slate-100 p-1">
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setUnitImageSource(
+                                    'upload'
+                                  )
+                                }
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold transition ${
+                                  unitImageSource ===
+                                  'upload'
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                <Upload className="h-4 w-4" />
+                                Upload
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setUnitImageSource(
+                                    'url'
+                                  )
+                                }
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-bold transition ${
+                                  unitImageSource ===
+                                  'url'
+                                    ? 'bg-white text-slate-900 shadow-sm'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                <LinkIcon className="h-4 w-4" />
+                                Image URL
+                              </button>
+
+                            </div>
+
+                            {unitImageSource ===
+                            'upload' ? (
+                              <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center transition hover:border-blue-300 hover:bg-blue-50/30">
+
+                                <div className="rounded-xl bg-white p-3 shadow-sm">
+                                  <Upload className="h-5 w-5 text-slate-500" />
+                                </div>
+
+                                <p className="mt-3 text-sm font-bold text-slate-700">
+                                  Add unit photos
+                                </p>
+
+                                <p className="mt-1 text-xs text-slate-400">
+                                  JPG, PNG, WEBP up to 5MB each
+                                </p>
+
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                                  multiple
+                                  onChange={
+                                    handleUnitImageUpload
+                                  }
+                                  disabled={
+                                    unitSaving ||
+                                    unitImages.length >=
+                                      MAX_UNIT_IMAGES
+                                  }
+                                  className="hidden"
+                                />
+
+                              </label>
+                            ) : (
+                              <div className="flex flex-col gap-2 sm:flex-row">
+
+                                <div className="relative flex-1">
+
+                                  <LinkIcon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                                  <input
+                                    type="url"
+                                    value={unitImageUrl}
+                                    onChange={(e) =>
+                                      setUnitImageUrl(
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="https://example.com/unit.jpg"
+                                    disabled={
+                                      unitSaving ||
+                                      unitImages.length >=
+                                        MAX_UNIT_IMAGES
+                                    }
+                                    className="h-11 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                                  />
+
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={
+                                    addUnitImageUrl
+                                  }
+                                  disabled={
+                                    unitSaving ||
+                                    unitImages.length >=
+                                      MAX_UNIT_IMAGES
+                                  }
+                                  className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white disabled:opacity-40"
+                                >
+                                  Add
+                                </button>
+
+                              </div>
+                            )}
+
+                            {/* PHOTO GRID */}
+
+                            {unitImages.length > 0 && (
+                              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+
+                                {unitImages.map(
+                                  (image, index) => (
+                                    <div
+                                      key={image.id}
+                                      className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                                    >
+
+                                      <img
+                                        src={image.url}
+                                        alt={`Unit photo ${index + 1}`}
+                                        className="h-full w-full object-cover"
+                                      />
+
+                                      {index === 0 && (
+                                        <div className="absolute left-2 top-2 rounded-full bg-slate-900 px-2 py-1 text-[9px] font-black text-white">
+                                          COVER
+                                        </div>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          removeUnitImage(
+                                            image.id
+                                          )
+                                        }
+                                        disabled={unitSaving}
+                                        className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 text-white shadow-lg transition hover:bg-red-600 disabled:opacity-50"
+                                        aria-label="Remove unit photo"
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+
+                                    </div>
+                                  )
+                                )}
+
+                              </div>
+                            )}
+
+                          </div>
+
+                        </div>
+
+                        {/* UNIT ACTIONS */}
+
+                        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+
+                          <button
+                            type="button"
+                            onClick={resetUnitForm}
+                            disabled={unitSaving}
+                            className="h-11 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={saveUnit}
+                            disabled={
+                              unitSaving ||
+                              !unitForm.unitType ||
+                              (unitForm.unitType === 'Custom' &&
+                                !unitForm.customUnitType.trim()) ||
+                              !unitForm.price.trim()
+                            }
+                            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+
+                            {unitSaving ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Adding Unit...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-4 w-4" />
+                                {editingUnitId !== null ||
+                                editingUnitDraftId !== null
+                                  ? 'Add Changes'
+                                  : 'Add Unit'}
+                              </>
+                            )}
+
+                          </button>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+                
+
+              </section>
                 {/* Actions */}
                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-2 sm:flex-row sm:justify-end">
                   <button

@@ -53,6 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Agent: 'Agent',
   Property: 'Property',
+  PropertyUnit: 'PropertyUnit',
+  PropertyUnitImage: 'PropertyUnitImage',
   Inquiry: 'Inquiry',
   PushSubscription: 'PushSubscription'
 } as const
@@ -123,6 +125,33 @@ export const PropertyScalarFieldEnum = {
 } as const
 
 export type PropertyScalarFieldEnum = (typeof PropertyScalarFieldEnum)[keyof typeof PropertyScalarFieldEnum]
+
+
+export const PropertyUnitScalarFieldEnum = {
+  id: 'id',
+  propertyId: 'propertyId',
+  unitType: 'unitType',
+  unitName: 'unitName',
+  price: 'price',
+  lotArea: 'lotArea',
+  floorArea: 'floorArea',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PropertyUnitScalarFieldEnum = (typeof PropertyUnitScalarFieldEnum)[keyof typeof PropertyUnitScalarFieldEnum]
+
+
+export const PropertyUnitImageScalarFieldEnum = {
+  id: 'id',
+  unitId: 'unitId',
+  url: 'url',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt'
+} as const
+
+export type PropertyUnitImageScalarFieldEnum = (typeof PropertyUnitImageScalarFieldEnum)[keyof typeof PropertyUnitImageScalarFieldEnum]
 
 
 export const InquiryScalarFieldEnum = {

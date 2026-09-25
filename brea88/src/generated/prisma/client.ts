@@ -52,6 +52,16 @@ export type Agent = Prisma.AgentModel
  */
 export type Property = Prisma.PropertyModel
 /**
+ * Model PropertyUnit
+ * 
+ */
+export type PropertyUnit = Prisma.PropertyUnitModel
+/**
+ * Model PropertyUnitImage
+ * 
+ */
+export type PropertyUnitImage = Prisma.PropertyUnitImageModel
+/**
  * Model Inquiry
  * 
  */
