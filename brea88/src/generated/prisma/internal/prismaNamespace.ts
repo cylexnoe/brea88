@@ -963,6 +963,8 @@ export const PropertyUnitScalarFieldEnum = {
   unitType: 'unitType',
   unitName: 'unitName',
   price: 'price',
+  bedrooms: 'bedrooms',
+  bathrooms: 'bathrooms',
   lotArea: 'lotArea',
   floorArea: 'floorArea',
   description: 'description',

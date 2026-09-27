@@ -29,6 +29,8 @@ export type AggregatePropertyUnit = {
 export type PropertyUnitAvgAggregateOutputType = {
   id: number | null
   propertyId: number | null
+  bedrooms: number | null
+  bathrooms: number | null
   lotArea: number | null
   floorArea: number | null
 }
@@ -36,6 +38,8 @@ export type PropertyUnitAvgAggregateOutputType = {
 export type PropertyUnitSumAggregateOutputType = {
   id: number | null
   propertyId: number | null
+  bedrooms: number | null
+  bathrooms: number | null
   lotArea: number | null
   floorArea: number | null
 }
@@ -46,6 +50,8 @@ export type PropertyUnitMinAggregateOutputType = {
   unitType: string | null
   unitName: string | null
   price: string | null
+  bedrooms: number | null
+  bathrooms: number | null
   lotArea: number | null
   floorArea: number | null
   description: string | null
@@ -59,6 +65,8 @@ export type PropertyUnitMaxAggregateOutputType = {
   unitType: string | null
   unitName: string | null
   price: string | null
+  bedrooms: number | null
+  bathrooms: number | null
   lotArea: number | null
   floorArea: number | null
   description: string | null
@@ -72,6 +80,8 @@ export type PropertyUnitCountAggregateOutputType = {
   unitType: number
   unitName: number
   price: number
+  bedrooms: number
+  bathrooms: number
   lotArea: number
   floorArea: number
   description: number
@@ -84,6 +94,8 @@ export type PropertyUnitCountAggregateOutputType = {
 export type PropertyUnitAvgAggregateInputType = {
   id?: true
   propertyId?: true
+  bedrooms?: true
+  bathrooms?: true
   lotArea?: true
   floorArea?: true
 }
@@ -91,6 +103,8 @@ export type PropertyUnitAvgAggregateInputType = {
 export type PropertyUnitSumAggregateInputType = {
   id?: true
   propertyId?: true
+  bedrooms?: true
+  bathrooms?: true
   lotArea?: true
   floorArea?: true
 }
@@ -101,6 +115,8 @@ export type PropertyUnitMinAggregateInputType = {
   unitType?: true
   unitName?: true
   price?: true
+  bedrooms?: true
+  bathrooms?: true
   lotArea?: true
   floorArea?: true
   description?: true
@@ -114,6 +130,8 @@ export type PropertyUnitMaxAggregateInputType = {
   unitType?: true
   unitName?: true
   price?: true
+  bedrooms?: true
+  bathrooms?: true
   lotArea?: true
   floorArea?: true
   description?: true
@@ -127,6 +145,8 @@ export type PropertyUnitCountAggregateInputType = {
   unitType?: true
   unitName?: true
   price?: true
+  bedrooms?: true
+  bathrooms?: true
   lotArea?: true
   floorArea?: true
   description?: true
@@ -227,6 +247,8 @@ export type PropertyUnitGroupByOutputType = {
   unitType: string
   unitName: string | null
   price: string
+  bedrooms: number | null
+  bathrooms: number | null
   lotArea: number | null
   floorArea: number | null
   description: string | null
@@ -263,6 +285,8 @@ export type PropertyUnitWhereInput = {
   unitType?: Prisma.StringFilter<"PropertyUnit"> | string
   unitName?: Prisma.StringNullableFilter<"PropertyUnit"> | string | null
   price?: Prisma.StringFilter<"PropertyUnit"> | string
+  bedrooms?: Prisma.IntNullableFilter<"PropertyUnit"> | number | null
+  bathrooms?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   lotArea?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   floorArea?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   description?: Prisma.StringNullableFilter<"PropertyUnit"> | string | null
@@ -278,6 +302,8 @@ export type PropertyUnitOrderByWithRelationInput = {
   unitType?: Prisma.SortOrder
   unitName?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrderInput | Prisma.SortOrder
+  bathrooms?: Prisma.SortOrderInput | Prisma.SortOrder
   lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   floorArea?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -296,6 +322,8 @@ export type PropertyUnitWhereUniqueInput = Prisma.AtLeast<{
   unitType?: Prisma.StringFilter<"PropertyUnit"> | string
   unitName?: Prisma.StringNullableFilter<"PropertyUnit"> | string | null
   price?: Prisma.StringFilter<"PropertyUnit"> | string
+  bedrooms?: Prisma.IntNullableFilter<"PropertyUnit"> | number | null
+  bathrooms?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   lotArea?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   floorArea?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   description?: Prisma.StringNullableFilter<"PropertyUnit"> | string | null
@@ -311,6 +339,8 @@ export type PropertyUnitOrderByWithAggregationInput = {
   unitType?: Prisma.SortOrder
   unitName?: Prisma.SortOrderInput | Prisma.SortOrder
   price?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrderInput | Prisma.SortOrder
+  bathrooms?: Prisma.SortOrderInput | Prisma.SortOrder
   lotArea?: Prisma.SortOrderInput | Prisma.SortOrder
   floorArea?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -332,6 +362,8 @@ export type PropertyUnitScalarWhereWithAggregatesInput = {
   unitType?: Prisma.StringWithAggregatesFilter<"PropertyUnit"> | string
   unitName?: Prisma.StringNullableWithAggregatesFilter<"PropertyUnit"> | string | null
   price?: Prisma.StringWithAggregatesFilter<"PropertyUnit"> | string
+  bedrooms?: Prisma.IntNullableWithAggregatesFilter<"PropertyUnit"> | number | null
+  bathrooms?: Prisma.FloatNullableWithAggregatesFilter<"PropertyUnit"> | number | null
   lotArea?: Prisma.FloatNullableWithAggregatesFilter<"PropertyUnit"> | number | null
   floorArea?: Prisma.FloatNullableWithAggregatesFilter<"PropertyUnit"> | number | null
   description?: Prisma.StringNullableWithAggregatesFilter<"PropertyUnit"> | string | null
@@ -343,6 +375,8 @@ export type PropertyUnitCreateInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -358,6 +392,8 @@ export type PropertyUnitUncheckedCreateInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -370,6 +406,8 @@ export type PropertyUnitUpdateInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -385,6 +423,8 @@ export type PropertyUnitUncheckedUpdateInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -399,6 +439,8 @@ export type PropertyUnitCreateManyInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -410,6 +452,8 @@ export type PropertyUnitUpdateManyMutationInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -423,6 +467,8 @@ export type PropertyUnitUncheckedUpdateManyInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -446,6 +492,8 @@ export type PropertyUnitCountOrderByAggregateInput = {
   unitType?: Prisma.SortOrder
   unitName?: Prisma.SortOrder
   price?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrder
+  bathrooms?: Prisma.SortOrder
   lotArea?: Prisma.SortOrder
   floorArea?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -456,6 +504,8 @@ export type PropertyUnitCountOrderByAggregateInput = {
 export type PropertyUnitAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrder
+  bathrooms?: Prisma.SortOrder
   lotArea?: Prisma.SortOrder
   floorArea?: Prisma.SortOrder
 }
@@ -466,6 +516,8 @@ export type PropertyUnitMaxOrderByAggregateInput = {
   unitType?: Prisma.SortOrder
   unitName?: Prisma.SortOrder
   price?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrder
+  bathrooms?: Prisma.SortOrder
   lotArea?: Prisma.SortOrder
   floorArea?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -479,6 +531,8 @@ export type PropertyUnitMinOrderByAggregateInput = {
   unitType?: Prisma.SortOrder
   unitName?: Prisma.SortOrder
   price?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrder
+  bathrooms?: Prisma.SortOrder
   lotArea?: Prisma.SortOrder
   floorArea?: Prisma.SortOrder
   description?: Prisma.SortOrder
@@ -489,6 +543,8 @@ export type PropertyUnitMinOrderByAggregateInput = {
 export type PropertyUnitSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   propertyId?: Prisma.SortOrder
+  bedrooms?: Prisma.SortOrder
+  bathrooms?: Prisma.SortOrder
   lotArea?: Prisma.SortOrder
   floorArea?: Prisma.SortOrder
 }
@@ -558,6 +614,8 @@ export type PropertyUnitCreateWithoutPropertyInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -571,6 +629,8 @@ export type PropertyUnitUncheckedCreateWithoutPropertyInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -614,6 +674,8 @@ export type PropertyUnitScalarWhereInput = {
   unitType?: Prisma.StringFilter<"PropertyUnit"> | string
   unitName?: Prisma.StringNullableFilter<"PropertyUnit"> | string | null
   price?: Prisma.StringFilter<"PropertyUnit"> | string
+  bedrooms?: Prisma.IntNullableFilter<"PropertyUnit"> | number | null
+  bathrooms?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   lotArea?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   floorArea?: Prisma.FloatNullableFilter<"PropertyUnit"> | number | null
   description?: Prisma.StringNullableFilter<"PropertyUnit"> | string | null
@@ -625,6 +687,8 @@ export type PropertyUnitCreateWithoutImagesInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -639,6 +703,8 @@ export type PropertyUnitUncheckedCreateWithoutImagesInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -666,6 +732,8 @@ export type PropertyUnitUpdateWithoutImagesInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -680,6 +748,8 @@ export type PropertyUnitUncheckedUpdateWithoutImagesInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -692,6 +762,8 @@ export type PropertyUnitCreateManyPropertyInput = {
   unitType: string
   unitName?: string | null
   price: string
+  bedrooms?: number | null
+  bathrooms?: number | null
   lotArea?: number | null
   floorArea?: number | null
   description?: string | null
@@ -703,6 +775,8 @@ export type PropertyUnitUpdateWithoutPropertyInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -716,6 +790,8 @@ export type PropertyUnitUncheckedUpdateWithoutPropertyInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -729,6 +805,8 @@ export type PropertyUnitUncheckedUpdateManyWithoutPropertyInput = {
   unitType?: Prisma.StringFieldUpdateOperationsInput | string
   unitName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   price?: Prisma.StringFieldUpdateOperationsInput | string
+  bedrooms?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  bathrooms?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lotArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   floorArea?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -773,6 +851,8 @@ export type PropertyUnitSelect<ExtArgs extends runtime.Types.Extensions.Internal
   unitType?: boolean
   unitName?: boolean
   price?: boolean
+  bedrooms?: boolean
+  bathrooms?: boolean
   lotArea?: boolean
   floorArea?: boolean
   description?: boolean
@@ -789,6 +869,8 @@ export type PropertyUnitSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   unitType?: boolean
   unitName?: boolean
   price?: boolean
+  bedrooms?: boolean
+  bathrooms?: boolean
   lotArea?: boolean
   floorArea?: boolean
   description?: boolean
@@ -803,6 +885,8 @@ export type PropertyUnitSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   unitType?: boolean
   unitName?: boolean
   price?: boolean
+  bedrooms?: boolean
+  bathrooms?: boolean
   lotArea?: boolean
   floorArea?: boolean
   description?: boolean
@@ -817,6 +901,8 @@ export type PropertyUnitSelectScalar = {
   unitType?: boolean
   unitName?: boolean
   price?: boolean
+  bedrooms?: boolean
+  bathrooms?: boolean
   lotArea?: boolean
   floorArea?: boolean
   description?: boolean
@@ -824,7 +910,7 @@ export type PropertyUnitSelectScalar = {
   updatedAt?: boolean
 }
 
-export type PropertyUnitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "propertyId" | "unitType" | "unitName" | "price" | "lotArea" | "floorArea" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["propertyUnit"]>
+export type PropertyUnitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "propertyId" | "unitType" | "unitName" | "price" | "bedrooms" | "bathrooms" | "lotArea" | "floorArea" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["propertyUnit"]>
 export type PropertyUnitInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   property?: boolean | Prisma.PropertyDefaultArgs<ExtArgs>
   images?: boolean | Prisma.PropertyUnit$imagesArgs<ExtArgs>
@@ -849,6 +935,8 @@ export type $PropertyUnitPayload<ExtArgs extends runtime.Types.Extensions.Intern
     unitType: string
     unitName: string | null
     price: string
+    bedrooms: number | null
+    bathrooms: number | null
     lotArea: number | null
     floorArea: number | null
     description: string | null
@@ -1284,6 +1372,8 @@ export interface PropertyUnitFieldRefs {
   readonly unitType: Prisma.FieldRef<"PropertyUnit", 'String'>
   readonly unitName: Prisma.FieldRef<"PropertyUnit", 'String'>
   readonly price: Prisma.FieldRef<"PropertyUnit", 'String'>
+  readonly bedrooms: Prisma.FieldRef<"PropertyUnit", 'Int'>
+  readonly bathrooms: Prisma.FieldRef<"PropertyUnit", 'Float'>
   readonly lotArea: Prisma.FieldRef<"PropertyUnit", 'Float'>
   readonly floorArea: Prisma.FieldRef<"PropertyUnit", 'Float'>
   readonly description: Prisma.FieldRef<"PropertyUnit", 'String'>

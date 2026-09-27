@@ -72,6 +72,54 @@ function parseOptionalFloat(
   return number;
 }
 
+function parseOptionalInteger(
+  value: unknown,
+): number | null | 'invalid' {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ''
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (
+    !Number.isSafeInteger(number) ||
+    number < 0 ||
+    number > 100
+  ) {
+    return 'invalid';
+  }
+
+  return number;
+}
+
+function parseOptionalBathroom(
+  value: unknown,
+): number | null | 'invalid' {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ''
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (
+    !Number.isFinite(number) ||
+    number < 0 ||
+    number > 100
+  ) {
+    return 'invalid';
+  }
+
+  return number;
+}
+
 function parsePropertyId(
   value: string,
 ): number | null {
@@ -408,11 +456,55 @@ export async function POST(
       );
     }
 
+    const bedrooms =
+      parseOptionalInteger(
+        data.bedrooms,
+      );
+
+    const bathrooms =
+      parseOptionalBathroom(
+        data.bathrooms,
+      );
+
+    if (
+      bedrooms === 'invalid'
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Bedrooms must be a valid whole number from 0 to 100.',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      bathrooms === 'invalid'
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Bathrooms must be a valid number from 0 to 100.',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
     const lotArea =
-      parseOptionalFloat(data.lotArea);
+      parseOptionalFloat(
+        data.lotArea,
+      );
 
     const floorArea =
-      parseOptionalFloat(data.floorArea);
+      parseOptionalFloat(
+        data.floorArea,
+      );
 
     if (
       lotArea === 'invalid' ||
@@ -437,6 +529,8 @@ export async function POST(
           unitType,
           unitName,
           price,
+          bedrooms,
+          bathrooms,
           lotArea,
           floorArea,
           description,
@@ -450,6 +544,7 @@ export async function POST(
             ),
           },
         },
+
         include: {
           images: {
             orderBy: {
@@ -674,11 +769,55 @@ export async function PUT(
       );
     }
 
+    const bedrooms =
+      parseOptionalInteger(
+        data.bedrooms,
+      );
+
+    const bathrooms =
+      parseOptionalBathroom(
+        data.bathrooms,
+      );
+
+    if (
+      bedrooms === 'invalid'
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Bedrooms must be a valid whole number from 0 to 100.',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (
+      bathrooms === 'invalid'
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Bathrooms must be a valid number from 0 to 100.',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
     const lotArea =
-      parseOptionalFloat(data.lotArea);
+      parseOptionalFloat(
+        data.lotArea,
+      );
 
     const floorArea =
-      parseOptionalFloat(data.floorArea);
+      parseOptionalFloat(
+        data.floorArea,
+      );
 
     if (
       lotArea === 'invalid' ||
@@ -697,53 +836,57 @@ export async function PUT(
     }
 
     const unit =
-    await prisma.$transaction(
-      async (transaction) => {
-        /*
-        * Replace the Unit's image list with
-        * the images currently supplied by the
-        * admin dashboard.
-        */
-        await transaction.propertyUnitImage.deleteMany({
-          where: {
-            unitId: unitId,
-          },
-        });
-
-        const updatedUnit =
-          await transaction.propertyUnit.update({
+      await prisma.$transaction(
+        async (transaction) => {
+          /*
+           * Replace the Unit's image list with
+           * the images currently supplied by the
+           * admin dashboard.
+           */
+          await transaction.propertyUnitImage.deleteMany({
             where: {
-              id: unitId,
-            },
-            data: {
-              unitType,
-              unitName,
-              price,
-              lotArea,
-              floorArea,
-              description,
-
-              images: {
-                create: images.map(
-                  (url, index) => ({
-                    url,
-                    sortOrder: index,
-                  }),
-                ),
-              },
-            },
-            include: {
-              images: {
-                orderBy: {
-                  sortOrder: 'asc',
-                },
-              },
+              unitId: unitId,
             },
           });
 
-        return updatedUnit;
-      },
-    );
+          const updatedUnit =
+            await transaction.propertyUnit.update({
+              where: {
+                id: unitId,
+              },
+
+              data: {
+                unitType,
+                unitName,
+                price,
+                bedrooms,
+                bathrooms,
+                lotArea,
+                floorArea,
+                description,
+
+                images: {
+                  create: images.map(
+                    (url, index) => ({
+                      url,
+                      sortOrder: index,
+                    }),
+                  ),
+                },
+              },
+
+              include: {
+                images: {
+                  orderBy: {
+                    sortOrder: 'asc',
+                  },
+                },
+              },
+            });
+
+          return updatedUnit;
+        },
+      );
 
     return NextResponse.json(
       {

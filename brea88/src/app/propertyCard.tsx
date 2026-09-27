@@ -47,6 +47,8 @@ interface PropertyUnit {
   unitType: string;
   unitName?: string | null;
   price: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
   lotArea?: number | null;
   floorArea?: number | null;
   description?: string | null;
@@ -2377,12 +2379,42 @@ useEffect(() => {
                                 </div>
                               </div>
 
+                              <div className="grid grid-cols-2 gap-3">
+
+                                {unit.bedrooms !== null &&
+                                  unit.bedrooms !== undefined && (
+                                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                        Bedrooms
+                                      </div>
+
+                                      <div className="mt-1 text-sm font-bold text-slate-800">
+                                        {unit.bedrooms}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {unit.bathrooms !== null &&
+                                  unit.bathrooms !== undefined && (
+                                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                        Bathrooms
+                                      </div>
+
+                                      <div className="mt-1 text-sm font-bold text-slate-800">
+                                        {unit.bathrooms}
+                                      </div>
+                                    </div>
+                                  )}
+
+                              </div>
                               {unit.description && (
                                 <p className="mt-3 whitespace-pre-line break-words text-sm leading-6 text-slate-600">
                                   {unit.description}
                                 </p>
                               )}
                             </div>
+                            
                             {/* UNIT SPECIFICATIONS */}
                             {(unit.lotArea != null ||
                               unit.floorArea != null) && (

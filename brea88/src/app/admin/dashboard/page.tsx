@@ -125,6 +125,8 @@ interface PropertyUnit {
   unitType: string;
   unitName: string | null;
   price: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
   lotArea: number | null;
   floorArea: number | null;
   description: string | null;
@@ -144,6 +146,8 @@ interface PendingUnit {
   unitType: string;
   unitName: string | null;
   price: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
   lotArea: number | null;
   floorArea: number | null;
   description: string | null;
@@ -155,6 +159,8 @@ interface UnitFormData {
   customUnitType: string;
   unitName: string;
   price: string;
+  bedrooms: string;
+  bathrooms: string;
   lotArea: string;
   floorArea: string;
   description: string;
@@ -187,6 +193,8 @@ const INITIAL_UNIT_FORM: UnitFormData = {
   customUnitType: '',
   unitName: '',
   price: '',
+  bedrooms: '',
+  bathrooms: '',
   lotArea: '',
   floorArea: '',
   description: '',
@@ -1419,21 +1427,46 @@ const openUnitEditor = (unit: PropertyUnit) => {
   setEditingUnitId(unit.id);
   setEditingUnitDraftId(null);
 
+  const isCustomUnitType = !UNIT_TYPE_OPTIONS.includes(
+    unit.unitType as (typeof UNIT_TYPE_OPTIONS)[number]
+  );
+
   setUnitForm({
-    unitType: unit.unitType ?? '',
-    customUnitType: '',
+    unitType: isCustomUnitType
+      ? 'Custom'
+      : unit.unitType,
+
+    customUnitType: isCustomUnitType
+      ? unit.unitType
+      : '',
+
     unitName: unit.unitName ?? '',
     price: unit.price ?? '',
+
+    bedrooms:
+      unit.bedrooms !== null &&
+      unit.bedrooms !== undefined
+        ? String(unit.bedrooms)
+        : '',
+
+    bathrooms:
+      unit.bathrooms !== null &&
+      unit.bathrooms !== undefined
+        ? String(unit.bathrooms)
+        : '',
+
     lotArea:
       unit.lotArea !== null &&
       unit.lotArea !== undefined
         ? String(unit.lotArea)
         : '',
+
     floorArea:
       unit.floorArea !== null &&
       unit.floorArea !== undefined
         ? String(unit.floorArea)
         : '',
+
     description: unit.description ?? '',
   });
 
@@ -1461,22 +1494,45 @@ const openPendingUnitEditor = (unit: PendingUnit) => {
   setEditingUnitDraftId(unit.id);
 
   setUnitForm({
-    unitType: unit.unitType ?? '',
-    customUnitType: '',
-    unitName: unit.unitName ?? '',
-    price: unit.price ?? '',
-    lotArea:
-      unit.lotArea !== null &&
-      unit.lotArea !== undefined
-        ? String(unit.lotArea)
-        : '',
-    floorArea:
-      unit.floorArea !== null &&
-      unit.floorArea !== undefined
-        ? String(unit.floorArea)
-        : '',
-    description: unit.description ?? '',
-  });
+  unitType:
+    UNIT_TYPE_OPTIONS.includes(unit.unitType)
+      ? unit.unitType
+      : 'Custom',
+
+  customUnitType:
+    UNIT_TYPE_OPTIONS.includes(unit.unitType)
+      ? ''
+      : unit.unitType,
+
+  unitName: unit.unitName ?? '',
+  price: unit.price,
+
+  bedrooms:
+    unit.bedrooms !== null &&
+    unit.bedrooms !== undefined
+      ? String(unit.bedrooms)
+      : '',
+
+  bathrooms:
+    unit.bathrooms !== null &&
+    unit.bathrooms !== undefined
+      ? String(unit.bathrooms)
+      : '',
+
+  lotArea:
+    unit.lotArea !== null &&
+    unit.lotArea !== undefined
+      ? String(unit.lotArea)
+      : '',
+
+  floorArea:
+    unit.floorArea !== null &&
+    unit.floorArea !== undefined
+      ? String(unit.floorArea)
+      : '',
+
+  description: unit.description ?? '',
+});
 
   setUnitImages(
     (unit.images ?? []).map((image) => ({
@@ -1750,6 +1806,16 @@ const uploadUnitImageToBlob = async (
         ? Number(unitForm.floorArea)
         : null,
 
+    bedrooms:
+      unitForm.bedrooms.trim() !== ''
+        ? Number(unitForm.bedrooms)
+        : null,
+
+    bathrooms:
+      unitForm.bathrooms.trim() !== ''
+        ? Number(unitForm.bathrooms)
+        : null,
+
     description:
       unitForm.description.trim() || null,
 
@@ -1927,6 +1993,16 @@ const persistPendingUnits = async (
 
       price:
         unit.price.trim(),
+
+      bedrooms:
+        unit.bedrooms !== null
+          ? Number(unit.bedrooms)
+          : null,
+
+      bathrooms:
+        unit.bathrooms !== null
+          ? Number(unit.bathrooms)
+          : null,
 
       lotArea:
         unit.lotArea !== null
@@ -4978,90 +5054,90 @@ const persistPendingUnits = async (
 
                         {/* UNIT TYPE */}
 
-<div>
+                        <div>
 
-  <label
-    htmlFor="unitType"
-    className="mb-2 block text-sm font-semibold text-slate-700"
-  >
-    Unit Type
-    <span className="ml-1 text-red-500">*</span>
-  </label>
+                          <label
+                            htmlFor="unitType"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Unit Type
+                            <span className="ml-1 text-red-500">*</span>
+                          </label>
 
-  <div className="relative">
+                          <div className="relative">
 
-    <select
-      id="unitType"
-      value={unitForm.unitType}
-      onChange={(e) => {
-        const value = e.target.value;
+                            <select
+                              id="unitType"
+                              value={unitForm.unitType}
+                              onChange={(e) => {
+                                const value = e.target.value;
 
-        setUnitForm((previous) => ({
-          ...previous,
-          unitType: value,
-          customUnitType:
-            value === 'Custom'
-              ? previous.customUnitType
-              : '',
-        }));
-      }}
-      disabled={unitSaving}
-      className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
-    >
-      <option value="">
-        Select Unit Type
-      </option>
+                                setUnitForm((previous) => ({
+                                  ...previous,
+                                  unitType: value,
+                                  customUnitType:
+                                    value === 'Custom'
+                                      ? previous.customUnitType
+                                      : '',
+                                }));
+                              }}
+                              disabled={unitSaving}
+                              className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                            >
+                              <option value="">
+                                Select Unit Type
+                              </option>
 
-      {UNIT_TYPE_OPTIONS.map((option) => (
-        <option
-          key={option}
-          value={option}
-        >
-          {option}
-        </option>
-      ))}
-    </select>
+                              {UNIT_TYPE_OPTIONS.map((option) => (
+                                <option
+                                  key={option}
+                                  value={option}
+                                >
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
 
-    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-  </div>
+                          </div>
 
-  {unitForm.unitType === 'Custom' && (
-    <div className="mt-3">
+                          {unitForm.unitType === 'Custom' && (
+                            <div className="mt-3">
 
-      <label
-        htmlFor="customUnitType"
-        className="mb-2 block text-sm font-semibold text-slate-700"
-      >
-        Custom Unit Type
-        <span className="ml-1 text-red-500">*</span>
-      </label>
+                              <label
+                                htmlFor="customUnitType"
+                                className="mb-2 block text-sm font-semibold text-slate-700"
+                              >
+                                Custom Unit Type
+                                <span className="ml-1 text-red-500">*</span>
+                              </label>
 
-      <input
-        id="customUnitType"
-        type="text"
-        value={unitForm.customUnitType}
-        onChange={(e) =>
-          setUnitForm((previous) => ({
-            ...previous,
-            customUnitType: e.target.value,
-          }))
-        }
-        disabled={unitSaving}
-        placeholder="e.g. Daisy, Diane, Executive Unit"
-        maxLength={100}
-        autoComplete="off"
-        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
-      />
+                              <input
+                                id="customUnitType"
+                                type="text"
+                                value={unitForm.customUnitType}
+                                onChange={(e) =>
+                                  setUnitForm((previous) => ({
+                                    ...previous,
+                                    customUnitType: e.target.value,
+                                  }))
+                                }
+                                disabled={unitSaving}
+                                placeholder="e.g. Daisy, Diane, Executive Unit"
+                                maxLength={100}
+                                autoComplete="off"
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                              />
 
-      <p className="mt-1.5 text-[11px] text-slate-400">
-        Enter your own unit type name.
-      </p>
+                              <p className="mt-1.5 text-[11px] text-slate-400">
+                                Enter your own unit type name.
+                              </p>
 
-    </div>
-  )}
+                            </div>
+                          )}
 
-</div>
+                        </div>
 
                         {/* UNIT NAME */}
                         <div>
@@ -5214,6 +5290,65 @@ const persistPendingUnits = async (
                           </div>
 
                         </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                        {/* BEDROOMS */}
+                        <div>
+                          <label
+                            htmlFor="unitBedrooms"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Bedrooms
+                          </label>
+
+                          <input
+                            id="unitBedrooms"
+                            type="number"
+                            min="0"
+                            step="1"
+                            inputMode="numeric"
+                            value={unitForm.bedrooms}
+                            onChange={(e) =>
+                              setUnitForm((previous) => ({
+                                ...previous,
+                                bedrooms: e.target.value,
+                              }))
+                            }
+                            disabled={unitSaving}
+                            placeholder="e.g. 2"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                          />
+                        </div>
+
+                        {/* BATHROOMS */}
+                        <div>
+                          <label
+                            htmlFor="unitBathrooms"
+                            className="mb-2 block text-sm font-semibold text-slate-700"
+                          >
+                            Bathrooms
+                          </label>
+
+                          <input
+                            id="unitBathrooms"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            inputMode="decimal"
+                            value={unitForm.bathrooms}
+                            onChange={(e) =>
+                              setUnitForm((previous) => ({
+                                ...previous,
+                                bathrooms: e.target.value,
+                              }))
+                            }
+                            disabled={unitSaving}
+                            placeholder="e.g. 2"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 disabled:bg-slate-100"
+                          />
+                        </div>
+
+                      </div>
 
                         {/* DESCRIPTION */}
 

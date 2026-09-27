@@ -73,16 +73,19 @@ model Property {
 }
 
 model PropertyUnit {
-  id          Int                 @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   propertyId Int
   unitType    String
   unitName    String?
   price       String
+  bedrooms    Int?
+  bathrooms   Float?
   lotArea     Float?
   floorArea   Float?
   description String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
   property    Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   images      PropertyUnitImage[]
 
