@@ -612,13 +612,18 @@ useEffect(() => {
         .join(' ')
         .toLowerCase();
 
-      if (
-        normalizedSearch &&
-        !searchableText.includes(
-          normalizedSearch,
-        )
-      ) {
-        return false;
+      if (normalizedSearch) {
+        const searchTerms = normalizedSearch
+          .split(/\s+/)
+          .filter(Boolean);
+
+        const matchesSearch = searchTerms.every((term) =>
+          searchableText.includes(term)
+        );
+
+        if (!matchesSearch) {
+          return false;
+        }
       }
 
       /*
