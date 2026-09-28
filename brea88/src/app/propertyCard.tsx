@@ -2369,14 +2369,20 @@ useEffect(() => {
                                   </p>
 
                                   <p className="mt-0.5 text-base font-extrabold text-blue-700 sm:text-lg">
-                                      ₱
-                                      {Number(
+                                    ₱
+                                    {(() => {
+                                      const numericPrice = Number(
                                         String(unit.price ?? '')
                                           .replace(/₱/g, '')
                                           .replace(/,/g, '')
                                           .trim()
-                                      ).toLocaleString('en-PH')}
-                                    </p>
+                                      );
+
+                                      return Number.isFinite(numericPrice)
+                                        ? numericPrice.toLocaleString('en-PH')
+                                        : '0';
+                                    })()}
+                                  </p>
                                 </div>
                               </div>
 
