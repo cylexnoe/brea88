@@ -1704,7 +1704,6 @@ const uploadUnitImageToBlob = async (
     const body = new FormData();
 
     body.append('file', file);
-
     body.append('type', 'property');
 
     const response = await fetch(
