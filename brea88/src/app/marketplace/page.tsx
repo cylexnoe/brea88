@@ -73,6 +73,12 @@ const PROPERTY_CATEGORIES = [
     icon: Home,
   },
   {
+    value: 'For Sale',
+    label: 'For Sale',
+    description: 'Properties available for sale',
+    icon: Tag,
+  },
+  {
     value: 'Residential',
     label: 'Residential',
     description: 'Homes and residential properties',
@@ -133,15 +139,233 @@ const HOUSE_TYPES = [
 
 const STOREY_OPTIONS = ['1', '2', '3', '4+'];
 
-function parsePrice(value: string | number | null | undefined) {
+function parsePrice(
+  value: string | number | null | undefined,
+) {
   if (value === null || value === undefined) {
     return 0;
   }
 
-  const numeric = String(value).replace(/[^\d.-]/g, '');
+  const numeric = String(value).replace(
+    /[^\d.-]/g,
+    '',
+  );
+
   const parsed = Number(numeric);
 
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/*
+ * Normalize text before comparing filter values.
+ * This prevents filters from failing because of:
+ * - different capitalization
+ * - extra spaces
+ * - minor formatting differences
+ */
+function normalizeFilterValue(
+  value: string | number | null | undefined,
+): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+/*
+ * PROPERTY CATEGORY FILTER
+ *
+ * Marketplace categories are based on the current
+ * BREA 88 classification:
+ *
+ * Residential -> Listing Tag
+ * Commercial  -> Listing Tag
+ * Investment  -> Listing Tag
+ * For Rent    -> Category / Tag / Property Type
+ * Brokerage   -> Category
+ */
+function matchesCategoryFilter(
+  property: Property,
+  selectedCategory: string,
+): boolean {
+  if (selectedCategory === 'All') {
+    return true;
+  }
+
+  const selected =
+    normalizeFilterValue(
+      selectedCategory,
+    );
+
+  const category =
+    normalizeFilterValue(
+      property.category,
+    );
+
+  const tag =
+    normalizeFilterValue(
+      property.tag,
+    );
+
+  const propertyType =
+    normalizeFilterValue(
+      property.propertyType,
+    );
+
+  /*
+   * Brokerage is CATEGORY only.
+   */
+  if (selected === 'brokerage') {
+    return category === 'brokerage';
+  }
+
+  /*
+   * Residential, Commercial and Investment
+   * are Listing Tags.
+   */
+  if (
+    selected === 'residential' ||
+    selected === 'commercial' ||
+    selected === 'investment'
+  ) {
+    return tag === selected;
+  }
+
+  /*
+   * For Rent can appear in different fields
+   * depending on how an older property was saved.
+   */
+  if (selected === 'for rent') {
+    return (
+      category === 'for rent' ||
+      tag === 'for rent' ||
+      propertyType.includes(
+        'for rent',
+      )
+    );
+  }
+
+  /*
+   * For Sale is not currently displayed as a
+   * marketplace category, but this keeps the
+   * filtering logic compatible if it is added.
+   */
+  if (selected === 'for sale') {
+    return (
+      category === 'for sale' ||
+      tag === 'for sale' ||
+      propertyType === 'for sale'
+    );
+  }
+
+  return false;
+}
+
+/*
+ * PROPERTY TYPE FILTER
+ */
+function matchesPropertyTypeFilter(
+  property: Property,
+  selectedPropertyType: string,
+): boolean {
+  if (selectedPropertyType === 'All') {
+    return true;
+  }
+
+  return (
+    normalizeFilterValue(
+      property.propertyType,
+    ) ===
+    normalizeFilterValue(
+      selectedPropertyType,
+    )
+  );
+}
+
+/*
+ * HOUSE TYPE FILTER
+ */
+function matchesHouseTypeFilter(
+  property: Property,
+  selectedHouseType: string,
+): boolean {
+  if (selectedHouseType === 'All') {
+    return true;
+  }
+
+  return (
+    normalizeFilterValue(
+      property.houseType,
+    ) ===
+    normalizeFilterValue(
+      selectedHouseType,
+    )
+  );
+}
+
+/*
+ * STOREY FILTER
+ *
+ * Handles values such as:
+ * "1"
+ * "1 Storey"
+ * "2"
+ * "2 Storey"
+ * "3"
+ * "3 Storey"
+ * "4+"
+ * "4 Storey"
+ * "5 Storey"
+ */
+function matchesStoreyFilter(
+  property: Property,
+  selectedStorey: string,
+): boolean {
+  if (selectedStorey === 'All') {
+    return true;
+  }
+
+  const propertyStorey =
+    normalizeFilterValue(
+      property.storey,
+    );
+
+  if (!propertyStorey) {
+    return false;
+  }
+
+  /*
+   * 4+ means four or more storeys.
+   */
+  if (selectedStorey === '4+') {
+    const numericStorey =
+      Number(
+        propertyStorey.match(
+          /\d+/,
+        )?.[0] ?? '',
+      );
+
+    return (
+      Number.isFinite(numericStorey) &&
+      numericStorey >= 4
+    );
+  }
+
+  const selectedNumber =
+    Number(selectedStorey);
+
+  const propertyNumber =
+    Number(
+      propertyStorey.match(
+        /\d+/,
+      )?.[0] ?? '',
+    );
+
+  return (
+    Number.isFinite(selectedNumber) &&
+    Number.isFinite(propertyNumber) &&
+    propertyNumber === selectedNumber
+  );
 }
 
 export default function MarketplacePage() {
@@ -345,20 +569,26 @@ useEffect(() => {
   }, [filterModalOpen, mobileSearchOpen]);
 
   const filteredProperties = useMemo(() => {
-    const normalizedSearch =
-      searchQuery.trim().toLowerCase();
+  const normalizedSearch =
+    searchQuery.trim().toLowerCase();
 
-    const minimum =
-      minimumBudget.trim() === ''
-        ? null
-        : parsePrice(minimumBudget);
+  const minimum =
+    minimumBudget.trim() === ''
+      ? null
+      : parsePrice(minimumBudget);
 
-    const maximum =
-      maximumBudget.trim() === ''
-        ? null
-        : parsePrice(maximumBudget);
+  const maximum =
+    maximumBudget.trim() === ''
+      ? null
+      : parsePrice(maximumBudget);
 
-    const result = properties.filter((property) => {
+  const result = properties.filter(
+    (property) => {
+      /*
+       * ======================================================
+       * SEARCH
+       * ======================================================
+       */
       const searchableText = [
         property.title,
         property.tag,
@@ -371,46 +601,99 @@ useEffect(() => {
         property.description,
         property.agent?.fullName,
       ]
-        .filter(Boolean)
+        .filter(
+          (
+            value,
+          ) =>
+            value !== null &&
+            value !== undefined &&
+            String(value).trim() !== '',
+        )
         .join(' ')
         .toLowerCase();
 
       if (
         normalizedSearch &&
-        !searchableText.includes(normalizedSearch)
+        !searchableText.includes(
+          normalizedSearch,
+        )
       ) {
         return false;
       }
 
+      /*
+       * ======================================================
+       * CATEGORY
+       * ======================================================
+       *
+       * IMPORTANT:
+       * Residential / Commercial / Investment
+       * use TAG.
+       *
+       * Brokerage uses CATEGORY.
+       *
+       * For Rent checks category, tag and propertyType.
+       */
       if (
-        selectedCategory !== 'All' &&
-        property.category !== selectedCategory
+        !matchesCategoryFilter(
+          property,
+          selectedCategory,
+        )
       ) {
         return false;
       }
 
+      /*
+       * ======================================================
+       * PROPERTY TYPE
+       * ======================================================
+       */
       if (
-        selectedPropertyType !== 'All' &&
-        property.propertyType !== selectedPropertyType
+        !matchesPropertyTypeFilter(
+          property,
+          selectedPropertyType,
+        )
       ) {
         return false;
       }
 
+      /*
+       * ======================================================
+       * HOUSE TYPE
+       * ======================================================
+       */
       if (
-        selectedHouseType !== 'All' &&
-        property.houseType !== selectedHouseType
+        !matchesHouseTypeFilter(
+          property,
+          selectedHouseType,
+        )
       ) {
         return false;
       }
 
+      /*
+       * ======================================================
+       * STOREY
+       * ======================================================
+       */
       if (
-        selectedStorey !== 'All' &&
-        property.storey !== selectedStorey
+        !matchesStoreyFilter(
+          property,
+          selectedStorey,
+        )
       ) {
         return false;
       }
 
-      const propertyPrice = parsePrice(property.price);
+      /*
+       * ======================================================
+       * PRICE
+       * ======================================================
+       */
+      const propertyPrice =
+        parsePrice(
+          property.price,
+        );
 
       if (
         minimum !== null &&
@@ -426,37 +709,48 @@ useEffect(() => {
         return false;
       }
 
+      /*
+       * ======================================================
+       * PROPERTY PASSED ALL ACTIVE FILTERS
+       * ======================================================
+       */
       return true;
-    });
+    },
+  );
 
-    if (sortBy === 'price-asc') {
-      result.sort(
-        (a, b) =>
-          parsePrice(a.price) -
-          parsePrice(b.price),
-      );
-    }
+  /*
+   * ========================================================
+   * SORTING
+   * ========================================================
+   */
+  if (sortBy === 'price-asc') {
+    result.sort(
+      (a, b) =>
+        parsePrice(a.price) -
+        parsePrice(b.price),
+    );
+  }
 
-    if (sortBy === 'price-desc') {
-      result.sort(
-        (a, b) =>
-          parsePrice(b.price) -
-          parsePrice(a.price),
-      );
-    }
+  if (sortBy === 'price-desc') {
+    result.sort(
+      (a, b) =>
+        parsePrice(b.price) -
+        parsePrice(a.price),
+    );
+  }
 
-    return result;
-  }, [
-    properties,
-    searchQuery,
-    selectedCategory,
-    selectedPropertyType,
-    selectedHouseType,
-    selectedStorey,
-    minimumBudget,
-    maximumBudget,
-    sortBy,
-  ]);
+  return result;
+}, [
+  properties,
+  searchQuery,
+  selectedCategory,
+  selectedPropertyType,
+  selectedHouseType,
+  selectedStorey,
+  minimumBudget,
+  maximumBudget,
+  sortBy,
+]);
 
   const activeCategory = useMemo(() => {
     return (
