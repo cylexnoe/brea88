@@ -1699,40 +1699,40 @@ const removeUnitImage = (
 ========================================================= */
 
 const uploadUnitImageToBlob = async (
-    file: File
-  ): Promise<string> => {
-    const body = new FormData();
+  file: File
+): Promise<string> => {
+  const body = new FormData();
 
-    body.append('file', file);
-    body.append('type', 'property');
+  body.append('file', file);
+  body.append('type', 'unit');
 
-    const response = await fetch(
-      '/api/blob/upload',
-      {
-        method: 'POST',
-        body,
-        credentials: 'include',
-      }
-    );
-
-    const data =
-      await response
-        .json()
-        .catch(() => null);
-
-    if (
-      !response.ok ||
-      !data?.success ||
-      !data?.url
-    ) {
-      throw new Error(
-        data?.message ||
-          'Failed to upload unit photo.'
-      );
+  const response = await fetch(
+    '/api/blob/upload',
+    {
+      method: 'POST',
+      body,
+      credentials: 'include',
     }
+  );
 
-    return data.url;
-  };
+  const data =
+    await response
+      .json()
+      .catch(() => null);
+
+  if (
+    !response.ok ||
+    !data?.success ||
+    !data?.url
+  ) {
+    throw new Error(
+      data?.message ||
+        'Failed to upload unit photo.'
+    );
+  }
+
+  return data.url;
+};
   /* =========================================================
     SAVE UNIT
   ========================================================= */ 
