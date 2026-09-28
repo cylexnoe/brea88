@@ -19,22 +19,35 @@ const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
  * BREA 88 LOGO WATERMARK
  * ============================================================
  *
- * Watermark behavior:
+ * Watermark:
  *
- * - Uses the actual BREA 88 watermark from:
- *   public/img/watermark.png
- *
+ * - Uses public/img/watermark.png
  * - Centered horizontally and vertically
  * - Approximately 25% opacity
- * - Preserves the original watermark transparency
+ * - Minimum size: 140px
+ * - Maximum size: 360px
+ * - Approximately 25% of shortest image side
+ * - Preserves PNG transparency
+ * - No raw RGBA buffers
  * - No joinChannel()
  * - No extractChannel()
- * - No raw RGBA buffers
- * - No manual alpha-channel manipulation
- * - No SVG text or fonts
+ * - No manual alpha manipulation
  *
- * The SVG is only used as a safe image container so Sharp can
- * apply opacity without constructing a raw pixel buffer.
+ * Watermark is applied to:
+ *
+ * - property images
+ * - unit type images
+ *
+ * Watermark is NOT applied to:
+ *
+ * - profile images
+ * - other non-property uploads
+ */
+
+/*
+ * ============================================================
+ * CREATE WATERMARK
+ * ============================================================
  */
 
 async function createWatermark(
@@ -49,9 +62,7 @@ async function createWatermark(
   );
 
   /*
-   * ==========================================================
-   * CHECK WATERMARK
-   * ==========================================================
+   * Check that watermark exists.
    */
 
   try {
@@ -63,16 +74,14 @@ async function createWatermark(
   }
 
   /*
-   * ==========================================================
-   * READ LOGO
-   * ==========================================================
+   * Read watermark.
    */
 
   const logoBuffer =
     await fs.readFile(logoPath);
 
   /*
-   * Validate the logo before processing.
+   * Read watermark dimensions.
    */
 
   const logoMetadata =
@@ -91,8 +100,6 @@ async function createWatermark(
    * ==========================================================
    * WATERMARK SIZE
    * ==========================================================
-   *
-   * The watermark is sized relative to the uploaded image.
    *
    * Approximately 25% of the shortest side.
    *
@@ -116,12 +123,8 @@ async function createWatermark(
 
   /*
    * ==========================================================
-   * RESIZE LOGO
+   * RESIZE WATERMARK
    * ==========================================================
-   *
-   * Sharp keeps the original aspect ratio.
-   *
-   * We convert to PNG so transparency is retained reliably.
    */
 
   const resizedLogoBuffer =
@@ -136,7 +139,7 @@ async function createWatermark(
       .toBuffer();
 
   /*
-   * Read the final logo dimensions.
+   * Get resized dimensions.
    */
 
   const resizedLogoMetadata =
@@ -164,16 +167,10 @@ async function createWatermark(
    * APPLY OPACITY
    * ==========================================================
    *
-   * We wrap the actual PNG inside an SVG <image>.
+   * The actual watermark remains a PNG.
    *
-   * IMPORTANT:
-   *
-   * There is NO SVG text here.
-   *
-   * The SVG is simply being used as a safe compositing layer
-   * to control opacity.
-   *
-   * The actual BREA 88 logo remains the PNG image.
+   * SVG is only used as a transparent compositing layer
+   * to safely apply opacity.
    */
 
   const logoBase64 =
@@ -204,16 +201,7 @@ async function createWatermark(
     `);
 
   /*
-   * Render the SVG to a normal PNG.
-   *
-   * This avoids:
-   *
-   * - joinChannel()
-   * - extractChannel()
-   * - raw()
-   * - manually allocated RGBA buffers
-   *
-   * so we avoid the previous libvips memory-size mismatch.
+   * Render watermark SVG to PNG.
    */
 
   const watermarkBuffer =
@@ -223,16 +211,8 @@ async function createWatermark(
 
   /*
    * ==========================================================
-   * CENTER THE WATERMARK
+   * CENTER WATERMARK
    * ==========================================================
-   *
-   * Horizontal:
-   *
-   *   (image width - logo width) / 2
-   *
-   * Vertical:
-   *
-   *   (image height - logo height) / 2
    */
 
   const left =
@@ -260,15 +240,11 @@ async function createWatermark(
 
 /*
  * ============================================================
- * WATERMARK PROPERTY IMAGE
+ * WATERMARK IMAGE
  * ============================================================
- *
- * JPG  -> JPG
- * PNG  -> PNG
- * WEBP -> WEBP
  */
 
-async function watermarkPropertyImage(
+async function watermarkImage(
   file: File,
   extension:
     | 'jpg'
@@ -276,9 +252,7 @@ async function watermarkPropertyImage(
     | 'webp',
 ) {
   /*
-   * ==========================================================
-   * READ UPLOADED IMAGE
-   * ==========================================================
+   * Read uploaded image.
    */
 
   const inputBuffer =
@@ -290,9 +264,7 @@ async function watermarkPropertyImage(
     sharp(inputBuffer);
 
   /*
-   * ==========================================================
-   * IMAGE METADATA
-   * ==========================================================
+   * Read image metadata.
    */
 
   const metadata =
@@ -314,9 +286,7 @@ async function watermarkPropertyImage(
   }
 
   /*
-   * ==========================================================
-   * CREATE WATERMARK
-   * ==========================================================
+   * Create centered watermark.
    */
 
   const watermark =
@@ -326,15 +296,7 @@ async function watermarkPropertyImage(
     );
 
   /*
-   * ==========================================================
-   * COMPOSITE WATERMARK
-   * ==========================================================
-   *
-   * The logo is already a proper PNG with transparency.
-   *
-   * Sharp handles the compositing internally.
-   *
-   * No raw pixel operations are used.
+   * Composite watermark.
    */
 
   const processed =
@@ -560,13 +522,20 @@ export async function POST(
      * UPLOAD TYPE
      * ========================================================
      *
-     * ONLY property images receive the watermark.
+     * Watermark:
      *
-     * Profile images remain unchanged.
+     *   property -> YES
+     *   unit     -> YES
+     *
+     * No watermark:
+     *
+     *   profile  -> NO
+     *   anything else -> NO
      */
 
-    const isPropertyUpload =
-      uploadType === 'property';
+    const isWatermarkedUpload =
+      uploadType === 'property' ||
+      uploadType === 'unit';
 
     /*
      * ========================================================
@@ -603,21 +572,21 @@ export async function POST(
       | 'png'
       | 'webp';
 
-    if (isPropertyUpload) {
+    if (isWatermarkedUpload) {
       /*
        * ======================================================
-       * PROPERTY IMAGE
+       * PROPERTY / UNIT IMAGE
        * ======================================================
        *
        * Apply:
        *
-       * - BREA 88 logo
-       * - Center position
-       * - ~25% opacity
+       * - BREA 88 watermark
+       * - centered
+       * - 25% opacity
        */
 
       const processed =
-        await watermarkPropertyImage(
+        await watermarkImage(
           file,
           uploadExtension,
         );
@@ -633,10 +602,10 @@ export async function POST(
     } else {
       /*
        * ======================================================
-       * NON-PROPERTY IMAGE
+       * NON-WATERMARKED IMAGE
        * ======================================================
        *
-       * Keep profile images and other uploads untouched.
+       * Profile images and other uploads remain untouched.
        */
 
       finalBuffer =
@@ -645,7 +614,8 @@ export async function POST(
         );
 
       finalContentType =
-        file.type;
+        file.type ||
+        'application/octet-stream';
 
       finalExtension =
         uploadExtension;
@@ -658,7 +628,8 @@ export async function POST(
      */
 
     const folder =
-      isPropertyUpload
+      uploadType === 'property' ||
+      uploadType === 'unit'
         ? 'properties'
         : 'uploads';
 
